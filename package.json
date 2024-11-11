@@ -1,0 +1,16 @@
+{
+  "name": "openaq-transform-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch:build": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.13"
+  }
+}

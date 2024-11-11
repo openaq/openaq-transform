@@ -3,7 +3,6 @@
 import dayjs from 'dayjs';
 import {cleanKey} from './utils';
 import { FixedMeasure, MobileMeasure } from './measures';
-import proj4 from 'proj4';
 
 export interface MetaDefinition {
     locationKey?: string | undefined;
@@ -295,14 +294,6 @@ export class Client {
         }
     }
 
-
-    projectedCoordinates(data: { [x: string]: any; }): [number, number] {
-        if (this.source.meta.projection !== 'WGS84') {
-            return proj4(this.source.meta.projection, 'WGS84', [Number(data[this.longitudeKey]),Number(data[this.latitudeKey])])
-        } else {
-            return [Number(data[this.longitudeKey]),Number(data[this.latitudeKey])]
-        }
-    }
 
     /**
      * Add a location to our list

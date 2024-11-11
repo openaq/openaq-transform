@@ -2,13 +2,15 @@
 
 import dayjs from 'dayjs';
 import {cleanKey} from './utils';
-import { FixedMeasure, Measures, MobileMeasure } from './measures';
+import { FixedMeasure, MobileMeasure } from './measures';
+import proj4 from 'proj4';
 
 export interface MetaDefinition {
     locationKey: string | undefined;
     labelKey: string | undefined;
     parameterKey: string | undefined;
     valueKey: string | undefined;
+    projection: string;
     latitudeKey: string | undefined;
     longitudeKey: string | undefined;
     manufacturerKey: string | undefined;
@@ -38,6 +40,7 @@ export class Client {
     labelKey: string;
     parameterKey: string;
     valueKey: string;
+    sourceProjection: string;
     latitudeKey: string;
     longitudeKey: string;
     manufacturerKey: string;
@@ -61,6 +64,7 @@ export class Client {
         this.labelKey = source.meta.labelKey || 'location';
         this.parameterKey = source.meta.parameterKey || 'parameter';
         this.valueKey = source.meta.valueKey || 'value';
+        this.sourceProjection = source.meta.projection || 'WGS84';
         this.latitudeKey = source.meta.latitudeKey || 'lat';
         this.longitudeKey = source.meta.longitudeKey || 'lng';
         this.manufacturerKey = source.meta.manufacturerKey || 'manufacturer_name';
@@ -71,6 +75,7 @@ export class Client {
         this.datasources = {};
         this.missingDatasources = [];
         this.parameters = source.parameters || [];
+        this.measures = [];
         this.measurands = null;
         this.locations = {};
         this.sensors = {};
@@ -95,6 +100,9 @@ export class Client {
         const location = cleanKey(row[this.location_key]);
         return `${this.provider}-${location}`;
     }
+
+
+
 
     /**
      * Provide a system based ingest id
@@ -264,6 +272,15 @@ export class Client {
         }
     }
 
+
+    projectedCoordinates(data: { [x: string]: any; }): [number, number] {
+        if (this.source.meta.projection !== 'WGS84') {
+            return proj4(this.source.meta.projection, 'WGS84', [Number(data[this.longitudeKey]),Number(data[this.latitudeKey])])
+        } else {
+            return [Number(data[this.longitudeKey]),Number(data[this.latitudeKey])]
+        }
+    }
+
     /**
      * Add a location to our list
      *
@@ -277,8 +294,8 @@ export class Client {
                 location_id: key,
                 label: this.getLabel(data),
                 ismobile: truthy(data.ismobile),
-                lon: Number(data[this.longitudeKey]),
-                lat: Number(data[this.latitudeKey]),
+                lon: this.projectedCoordinates(data)[0],
+                lat: this.projectedCoordinates(data)[1],
                 ...data,
             });
         }

@@ -308,8 +308,8 @@ export class Client {
                 location_id: key,
                 label: this.getLabel(data),
                 ismobile: truthy(data.ismobile),
-                lon: this.projectedCoordinates(data)[0],
-                lat: this.projectedCoordinates(data)[1],
+                lon: data[this.longitudeKey],
+                lat: data[this.longitudeKey],
                 ...data,
             });
         }

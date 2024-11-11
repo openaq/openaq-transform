@@ -6,12 +6,12 @@ import { FixedMeasure, MobileMeasure } from './measures';
 import proj4 from 'proj4';
 
 export interface MetaDefinition {
-    locationKey: string | undefined;
-    labelKey: string | undefined;
-    parameterKey: string | undefined;
-    valueKey: string | undefined;
+    locationKey?: string | undefined;
+    labelKey?: string | undefined;
+    parameterKey?: string | undefined;
+    valueKey?: string | undefined;
     projection: string;
-    latitudeKey: string | undefined;
+    latitudeKey?: string | undefined;
     longitudeKey: string | undefined;
     manufacturerKey: string | undefined;
     modelKey: string | undefined;
@@ -27,13 +27,36 @@ export interface Source {
     parameters: string[];
 }
 
+
+type ErrorSummaryDefinition = { [key: string]: number; }
+
+interface SummaryDefinition {
+    source_name: string;
+    locations: number;
+    systems: number;
+    sensors: number;
+    flags: number;
+    measures: number;
+    errors: ErrorSummaryDefinition;
+    from: string;
+    to: string;
+}
+
 type MobileMeasureArray = MobileMeasure[];
 type FixedMeasureArray = FixedMeasure[];
 
 type MeasuresType = MobileMeasureArray | FixedMeasureArray;
 
-export class Client {
+interface LogEntry {
+    message: string;
+    err?: Error;
+};
 
+interface LogDefinition {
+    [key: string]: LogEntry[];
+};
+
+export class Client {
     fetched: boolean;
     source: Source;
     locationKey: string;
@@ -55,7 +78,7 @@ export class Client {
     measures: MeasuresType;
     locations: object;
     sensors: object;
-    log: object;
+    log: LogDefinition;
 
     constructor(source: Source) {
         this.fetched = false;
@@ -256,7 +279,7 @@ export class Client {
      *
      * @param {(string|file|object)} file - file path, object or file
      */
-    async processData(file) {
+    async processData(file: string | File) {
         const data = await this.fetchData(file);
         if (!data) {
             throw new Error('No data was returned from file');
@@ -442,11 +465,9 @@ export class Client {
 
     /**
      * Dump a summary that we can pass back to the log
-     *
-     * @returns {object} - json summary object
-     */
-    summary() {
-        const errorSummary = {};
+    */
+    summary(): SummaryDefinition {
+        const errorSummary: ErrorSummaryDefinition = {} ;
         Object.keys(this.log).map((k) => errorSummary[k] = this.log[k].length);
         return {
             source_name: this.provider,

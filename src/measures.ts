@@ -1,6 +1,4 @@
 export class Measures {
-
-
     headers: string[];
     measures: Measure[];
     from?: string;

@@ -8,10 +8,10 @@ export const stripNulls = <T extends object>(obj: T): { [K in keyof T]: T[K] } =
     );
 };
 
-export const cleanKey = (value) => {
+export const cleanKey = (value: string): string => {
     return value && value
-        .replace(/^[ ]+|[ ]+$/,'')
-        .replace(/[ ]+/g,'_')
+        .replace(/^\s+|\s+$/g,'')
+        .replace(/\s+/g,'_')
         .replace(/[^\w]/g,'')
         .toLowerCase();
 };

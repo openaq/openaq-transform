@@ -8,9 +8,6 @@ interface MeasurandParameters {
     unit: string;
 }
 
-type Normalizer = [string, (val: number) => number];
-
-
 export class Measurand {
 
     inputParameter: string;
@@ -24,29 +21,6 @@ export class Measurand {
         this.parameter = parameter;
         // Unit for measurand (e.g "ppb")
         this.unit = unit;
-    }
-
-    /**
-     * Normalize unit and values of a given measurand.
-     * @param {string} unit
-     *
-     * @returns { Object } normalizer
-     */
-    private get normalizer() : Normalizer {
-        const unitNormalizers: Record<string, Normalizer> = {
-                'ppb': ['ppm', (val: number):number => val / 1000],
-                'ng/m³': ['µg/m³', (val: number): number => val / 1000],
-                'pp100ml': ['particles/cm³', (val: number): number => val / 100]
-            }
-        return unitNormalizers[this.unit] ?? [this.unit, (val: number): number => val];
-    }
-
-    get normalizedUnit(): string {
-        return this.normalizer[0];
-    }
-
-    get normalizeValue(): Function {
-        return this.normalizer[1];
     }
 
     /**

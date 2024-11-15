@@ -1,28 +1,35 @@
 
 
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
 import {cleanKey} from './utils';
 import { FixedMeasure, MobileMeasure } from './measures';
 
-export interface MetaDefinition {
-    locationKey?: string | undefined;
-    labelKey?: string | undefined;
-    parameterKey?: string | undefined;
-    valueKey?: string | undefined;
-    projection: string;
-    latitudeKey?: string | undefined;
-    longitudeKey: string | undefined;
-    manufacturerKey: string | undefined;
-    modelKey: string | undefined;
-    timestampKey: string | undefined;
-    datetimeFormat: string | undefined;
-    timezone: string | undefined;
+dayjs.extend(utc);
 
-    
+
+export interface MetaDefinition {
+    locationKey: string;
+    labelKey: string;
+    parameterKey: string;
+    valueKey: string;
+    projection: string;
+    latitudeKey: string;
+    longitudeKey: string;
+    manufacturerKey: string;
+    modelKey: string;
+    ownerKey: string;
+    licenseKey: string;
+    timestampKey: string;
+    datetimeFormat: string;
+    timezone: string;
+    measurandMap: [];
 }
 
 export interface Source {
     meta: MetaDefinition;
+    provider: string;
     parameters: string[];
 }
 
@@ -67,6 +74,8 @@ export class Client {
     longitudeKey: string;
     manufacturerKey: string;
     modelKey: string;
+    ownerKey: string;
+    licenseKey: string;
     datetimeKey: string;
     datetimeFormat: string;
     timezone: string;
@@ -83,7 +92,7 @@ export class Client {
         this.fetched = false;
         this.source = source;
         this.locationKey = source.meta.locationKey || 'location';
-        this.labelKey = source.meta.labelKey || 'location';
+        this.labelKey = source.meta.labelKey || 'label';
         this.parameterKey = source.meta.parameterKey || 'parameter';
         this.valueKey = source.meta.valueKey || 'value';
         this.sourceProjection = source.meta.projection || 'WGS84';
@@ -91,8 +100,10 @@ export class Client {
         this.longitudeKey = source.meta.longitudeKey || 'lng';
         this.manufacturerKey = source.meta.manufacturerKey || 'manufacturer_name';
         this.modelKey = source.meta.modelKey || 'model_name';
+        this.ownerKey = source.meta.ownerKey || 'owner';
+        this.licenseKey = source.meta.licenseKey || 'license';
         this.datetimeKey = source.meta.timestampKey || 'datetime';
-        this.datetimeFormat =source.meta.datetimeFormat || 'YYYY-MM-DD HH-mm-ss';
+        this.datetimeFormat = '';
         this.timezone = source.meta.timezone || 'UTC';
         this.datasources = {};
         this.missingDatasources = [];
@@ -119,12 +130,9 @@ export class Client {
      * @returns {string} - location id key
      */
     getLocationId(row) {
-        const location = cleanKey(row[this.location_key]);
+        const location = cleanKey(row[this.locationKey]);
         return `${this.provider}-${location}`;
     }
-
-
-
 
     /**
      * Provide a system based ingest id
@@ -211,24 +219,11 @@ export class Client {
             data = { ...key };
             key = this.getSensorId(data);
         }
-
         sensor = this.sensors[key];
         if (!sensor) {
             //sensor = this.addSensor({ sensor_id: key, ...data });
         }
-
         return sensor;
-    }
-
-    /**
-     * Clean up a measurement value
-     *
-     * @param {object} meas - object with parameter info and value
-     * @returns {number} - cleaned value
-     */
-    normalize(meas) {
-        const measurand = this.measurands[meas.metric];
-        return measurand.normalize_value(meas.value);
     }
 
     /**
@@ -250,7 +245,7 @@ export class Client {
     }
 
     /**
-     *
+     * fetches data and convert to json
      *
      * @param {*} f -
      * @returns {*} -

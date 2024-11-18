@@ -8,6 +8,7 @@ export class Location {
     location_id: number;
     owner: string | undefined;
     label: string | undefined;
+    proj: string
     lat: number | undefined;
     lon: number | undefined;
     ismobile: boolean | undefined;
@@ -15,7 +16,15 @@ export class Location {
     systems: { [key: string]: any; }
 
     constructor(data) {
+        // data values should be keyed correctly by now
         this.location_id = data.location_id;
+        this.owner = data.owner
+        this.label = data.label
+        this.coordiates = {
+            lat: data.lat,
+            lon: data.lon,
+            proj: data.proj,
+        }
         this.systems = {};
     }
 

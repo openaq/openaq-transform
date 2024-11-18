@@ -5,13 +5,15 @@ import utc from 'dayjs/plugin/utc';
 
 import {cleanKey} from './utils';
 import { FixedMeasure, MobileMeasure } from './measures';
+import { Location } from './location.ts'
+import { truthy, parseData } from './utils.ts'
 
 dayjs.extend(utc);
 
 
 export interface MetaDefinition {
-    locationKey: string;
-    labelKey: string;
+    locationIdKey: string;
+    locationLabelKey: string;
     parameterKey: string;
     valueKey: string;
     projection: string;
@@ -63,60 +65,48 @@ interface LogDefinition {
 };
 
 export class Client {
-    fetched: boolean;
+    url: string;
+    fetched: boolean = false;
     source: Source;
-    locationKey: string;
-    labelKey: string;
-    parameterKey: string;
-    valueKey: string;
-    sourceProjection: string;
-    latitudeKey: string;
-    longitudeKey: string;
-    manufacturerKey: string;
-    modelKey: string;
-    ownerKey: string;
-    licenseKey: string;
-    datetimeKey: string;
-    datetimeFormat: string;
-    timezone: string;
-    datasources: object;
-    missingDatasources: string[];
-    parameters: string[];
-    measurands;
-    measures: MeasuresType;
-    locations: object;
-    sensors: object;
-    log: LogDefinition;
+    locationIdKey: string = 'location';
+    locationLabelKey: string = 'label';
+    parameterKey: string = 'parameter';
+    valueKey: string = 'value';
+    sourceProjection: string = 'WGS84';
+    latitudeKey: string = 'lat';
+    longitudeKey: string = 'lng';
+    manufacturerKey: string = 'manufacturer_name';
+    modelKey: string = 'model_name';
+    ownerKey: string = 'owner_name';
+    licenseKey: string = 'license';
+    datetimeKey: string = 'datetime';
+    datetimeFormat: string = 'YYYY-MM-DDTHH:mm:ssZ';
+    timezone: string = 'UTC';
 
-    constructor(source: Source) {
-        this.fetched = false;
-        this.source = source;
-        this.locationKey = source.meta.locationKey || 'location';
-        this.labelKey = source.meta.labelKey || 'label';
-        this.parameterKey = source.meta.parameterKey || 'parameter';
-        this.valueKey = source.meta.valueKey || 'value';
-        this.sourceProjection = source.meta.projection || 'WGS84';
-        this.latitudeKey = source.meta.latitudeKey || 'lat';
-        this.longitudeKey = source.meta.longitudeKey || 'lng';
-        this.manufacturerKey = source.meta.manufacturerKey || 'manufacturer_name';
-        this.modelKey = source.meta.modelKey || 'model_name';
-        this.ownerKey = source.meta.ownerKey || 'owner';
-        this.licenseKey = source.meta.licenseKey || 'license';
-        this.datetimeKey = source.meta.timestampKey || 'datetime';
-        this.datetimeFormat = '';
-        this.timezone = source.meta.timezone || 'UTC';
-        this.datasources = {};
-        this.missingDatasources = [];
-        this.parameters = source.parameters || [];
-        this.measures = [];
-        this.measurands = null;
-        this.locations = {};
-        this.sensors = {};
-        this.log = {}; // track errors and warnings to provide later
+    datasources: object = {};
+    missingDatasources: string[] = [];
+    parameters: string[] = [];
+
+    // keyed set of expected parameters for this client
+    measurands = null;
+    // list type for holding measurements
+    measures: MeasuresType =  [];
+    // keyed locations, sensors etc for internal tracking and retrieval
+    _locations: object = {};
+    _sensors: object = {};
+    // log object for compiling errors/warnings for later reference
+    log: LogDefinition = {};
+
+    constructor() {
+        // ??
     }
 
     get provider() {
         return cleanKey(this.source.provider);
+    }
+
+    get locations() {
+        return Object.values(this._locations);
     }
 
     async fetchMeasurands() {
@@ -130,7 +120,7 @@ export class Client {
      * @returns {string} - location id key
      */
     getLocationId(row) {
-        const location = cleanKey(row[this.locationKey]);
+        const location = cleanKey(row[this.locationIdKey]);
         return `${this.provider}-${location}`;
     }
 
@@ -180,7 +170,7 @@ export class Client {
      * @returns {string} - label
      */
     getLabel(row) {
-        return row[this.labelKey];
+        return row[this.locationLabelKey];
     }
 
 
@@ -197,7 +187,7 @@ export class Client {
             data = { ...key };
             key = this.getLocationId(data);
         }
-        loc = this.locations[key];
+        loc = this._locations[key];
         if (!loc) {
             loc = this.addLocation({ locationId: key, ...data });
         }
@@ -250,14 +240,15 @@ export class Client {
      * @param {*} f -
      * @returns {*} -
      */
-    fetchData (f) {
+    async fetchData (f) {
         // if its a non-json string it should be a string that represents a location
         // local://..
         // s3://
         // google://
         // if its binary than it should be an uploaded file
         // if its an object then ...
-        return fetchFile(f);
+        const res = await fetch(this.url)
+        return await res.json()
     }
 
     logMessage(type: string, message: string, err: Error | undefined) {
@@ -273,19 +264,19 @@ export class Client {
      *
      * @param {(string|file|object)} file - file path, object or file
      */
-    async processData(file: string | File) {
-        const data = await this.fetchData(file);
+    async fetch() {
+        const data = await this.fetchData();
         if (!data) {
             throw new Error('No data was returned from file');
         }
-        if (file.type === 'locations') {
-            this.processLocationsData(data);
-        } else if (file.type === 'sensors') {
-            this.processSensorsData(data);
-        } else if (file.type === 'measurements') {
-            this.processMeasurementsData(data);
-        } else if (file.type === 'flags') {
-            this.processFlagsData(data);
+        if (data.locations) {
+            this.processLocationsData(data.locations);
+        } else if (data.sensors) {
+            this.processSensorsData(data.sensors);
+        } else if (data.measurements) {
+            this.processMeasurementsData(data.measurements);
+        } else if (data.flags) {
+            this.processFlagsData(data.flags);
         }
     }
 
@@ -298,17 +289,19 @@ export class Client {
      */
     addLocation(data) {
         const key = this.getLocationId(data);
-        if (!this.locations[key]) {
-            this.locations[key] = new Location({
+        if (!this._locations[key]) {
+            // process data through the location map
+            console.debug(`Adding location: ${key}`)
+            this._locations[key] = new Location({
                 location_id: key,
-                label: this.getLabel(data),
-                ismobile: truthy(data.ismobile),
-                lon: data[this.longitudeKey],
-                lat: data[this.longitudeKey],
+                label: parseData(data, this.locationLabelKey),
+                ismobile: parseData(data, this.isMobileKey),
+                lon: parseData(data, this.longitudeKey),
+                lat: parseData(data, this.longitudeKey),
                 ...data,
             });
         }
-        return this.locations[key];
+        return this._locations[key];
     }
 
     /**
@@ -379,7 +372,7 @@ export class Client {
         measurements.map( (meas) => {
             try {
                 const datetime = this.getDatetime(meas);
-                const location = meas[this.locationKey];
+                const location = meas[this.locationIdKey];
                 params.map((p) => {
                     const value = long_format ? meas[this.valueKey] : meas[p];
                     const metric = long_format ? meas[p] : p;
@@ -416,7 +409,7 @@ export class Client {
             try {
 
                 const sensor = this.getSensor({
-                    location: d[this.locationKey],
+                    location: d[this.locationIdKey],
                     metric: d[this.parameterKey],
                     ...d,
                 });
@@ -445,7 +438,7 @@ export class Client {
                 matching_method: 'ingest-id'
             },
             measures: this.measures.json(),
-            locations: Object.values(this.locations).map((l)=>l.json())
+            locations: Object.values(this._locations).map((l)=>l.json())
         };
     }
 
@@ -457,9 +450,9 @@ export class Client {
         Object.keys(this.log).map((k) => errorSummary[k] = this.log[k].length);
         return {
             source_name: this.provider,
-            locations: Object.values(this.locations).length,
-            systems: Object.values(this.locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
-            sensors: Object.values(this.locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
+            locations: this.locations.length,
+            systems: Object.values(this._locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
+            sensors: Object.values(this._locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
             // taking advantage of the sensor object list
             flags: Object.values(this.sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
             measures: this.measures.length,

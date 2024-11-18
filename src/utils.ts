@@ -4,6 +4,7 @@ import {
   LongitudeBoundsError,
 } from './errors';
 
+
 export const stripNulls = <T extends object>(
   obj: T
 ): { [K in keyof T]: T[K] } => {
@@ -14,6 +15,18 @@ export const stripNulls = <T extends object>(
       .map(([k, v]) => ({ [k]: v }))
   );
 };
+
+export const truthy = (value): boolean => {
+    return [1,true,'TRUE','T','True','t','true'].includes(value);
+};
+
+export const parseData = (data, key) => {
+    if(typeof(key) === 'function') {
+        return key(data);
+    } else if (typeof(key) === 'string') {
+        return data[key];
+    }
+}
 
 export const cleanKey = (value: string): string => {
   return (
@@ -36,7 +49,7 @@ export const stripWhitespace = (value) => {
 
 function countDecimals(value: number) {
     if(Math.floor(value.valueOf()) === value.valueOf()) return 0;
-    return value.toString().split(".")[1].length || 0; 
+    return value.toString().split(".")[1].length || 0;
 }
 
 export function validateCoordinates(
@@ -73,6 +86,6 @@ export function timestampFactory(
     const hourStr = hour.toString().padStart(2,'0');
     const minuteStr = minutes.toString().padStart(2, '0');
     const secondStr = seconds.toString().padStart(2, '0');
-  
+
     return `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offset}`;
 }

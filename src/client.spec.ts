@@ -139,3 +139,5 @@ describe('Client with data in long format', () => {
 
 describe.todo('Adapter that requires custom fetch data method');
 describe.todo('Dynamic adapter that gets mapping from config');
+describe.todo('Provider with Locations that have different averaging times');
+describe.todo('Provider with both fixed and mobile locations');

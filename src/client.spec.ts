@@ -9,7 +9,7 @@ import { Client } from './client.ts'
 const handlers = [
   http.get("https://blah.org/wide", async ({ request }) => {
     return HttpResponse.json({
-        locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121 }],
+        locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
         sensors: [
             { station: 'ts1', parameter: 'tempf', units: 'f'},
             { station: 'ts1', parameter: 'particulate_matter_25', units: 'ug/m3'},
@@ -19,7 +19,7 @@ const handlers = [
   }),
   http.get("https://blah.org/long", async ({ request }) => {
     return HttpResponse.json({
-        locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121 }],
+        locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
         sensors: [
             { station: 'ts1', parameter: 'tempf', units: 'f'},
             { station: 'ts1', parameter: 'particulate_matter_25', units: 'ug/m3'},
@@ -53,8 +53,31 @@ const expectedOutput = {
             },
             ismobile: false,
             systems: [
-                { },
-                { },
+                {
+                    system_id: 'testing-ts1',
+                    manufacturer_name: 'default',
+                    model_name: 'default',
+                    sensors: [
+                        {
+                            sensor_id: 'testing-ts1-temperature',
+                            parameter: 'temperature',
+                            units: 'f',
+                            averaging_interval_secs: 3600,
+                            logging_interval_secs: 3600,
+                            status: 'asdf',
+                            flags: [],
+                        },
+                        {
+                            sensor_id: 'testing-ts1-pm25',
+                            parameter: 'pm25',
+                            units: 'ug/m3',
+                            averaging_interval_secs: 3600,
+                            logging_interval_secs: 3600,
+                            status: 'asdf',
+                            flags: [],
+                        },
+                    ]
+                },
             ],
         }
     ],
@@ -81,6 +104,8 @@ describe('Client with data in wide format', () => {
         provider = 'testing';
         // mapping data
         longitudeKey = 'longitude';
+        averagingIntervalKey = 'averaging';
+        sensorStatusKey = (d) => 'asdf'
         latitudeKey = 'latitude';
         locationIdKey = 'station';
         locationLabelKey = 'site_name';
@@ -98,12 +123,15 @@ describe('Client with data in wide format', () => {
         expect(cln.url).toBe('https://blah.org/wide');
     });
 
-    test('outputs correct format', async () => {
+    test.only('outputs correct format', async () => {
         const cln = new JsonClient()
         const data = await cln.fetch();
-        console.debug(data)
         expect(data).toStrictEqual(expectedOutput);
     })
+
+    test.todo('missing averaging interval throws error')
+    test.todo('parameter mismatch throws error')
+    test.todo('status mismatch throws error')
 
 })
 

@@ -7,16 +7,16 @@ export interface SystemDefinition {
     systemId: number;
     manufacturerName: string;
     modelName: string;
-    sensors: { [key: string]: Sensor; }; 
+    sensors: { [key: string]: Sensor; };
 }
 
 export class System {
 
     systemId: number;
-    manufacturerName: string | undefined;
-    modelName: string | undefined;
+    manufacturerName: string = 'default';
+    modelName: string = 'default';
     metadata: { [key: string]: any; } ;
-    sensors: { [key: string]: Sensor; }; 
+    sensors: { [key: string]: Sensor; };
 
     constructor(data) {
         this.systemId = data.systemId;
@@ -38,9 +38,9 @@ export class System {
 
     json() {
         return stripNulls({
-            systemId: this.systemId,
-            manufacturerName: this.manufacturerName,
-            modelName: this.modelName,
+            system_id: this.systemId,
+            manufacturer_name: this.manufacturerName,
+            model_name: this.modelName,
             sensors: Object.values(this.sensors).map((s) => s.json()),
         });
     }

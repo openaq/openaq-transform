@@ -27,7 +27,7 @@ export class Measures {
 
     json() {
         return this.measures.map((m) => ({
-            sensor_id: m.sensor_id,
+            sensor_id: m.sensorId,
             timestamp: m.timestamp.format(),
             value: m.measure,
 

@@ -88,6 +88,9 @@ export class Client {
     datetimeKey: string | ParseFunction = 'datetime';
     licenseKey: string | ParseFunction = 'license';
     isMobileKey: string | ParseFunction;
+    loggingIntervalKey : string | ParseFunction = 'logging_interval_seconds'
+    averagingIntervalKey : string | ParseFunction = 'averaging_interval_seconds'
+    sensorStatusKey: string | ParseFunction = 'status'
 
     datasources: object = {};
     missingDatasources: string[] = [];
@@ -204,7 +207,7 @@ export class Client {
             data = { ...key };
             key = this.getSensorId(data);
         }
-        sensor = this.sensors[key];
+        sensor = this._sensors[key];
         if (!sensor) {
             //sensor = this.addSensor({ sensor_id: key, ...data });
         }
@@ -300,6 +303,10 @@ export class Client {
                 lon: parseData(data, this.longitudeKey),
                 lat: parseData(data, this.latitudeKey),
                 proj: parseData(data, this.projectionKey),
+                // the following are for passing along to sensors
+                averagingIntervalSeconds: parseData(data, this.averagingIntervalKey),
+                loggingIntervalSeconds: parseData(data, this.loggingIntervalKey),
+                status: parseData(data, this.sensorStatusKey),
                 ...data,
             });
         }
@@ -332,13 +339,17 @@ export class Client {
         sensors.map((d) => {
             try {
 
-                const  metric_name = parseData(d, this.parameterNameKey)
-                const metric = this.measurands[metric_name]
-                const sensor_id = this.getSensorId({ ...d, metric })
-                const system_id = this.getSystemId(d);
+                const metric_name = parseData(d, this.parameterNameKey)
+                d.metric = this.measurands[metric_name]
+                const sensorId = this.getSensorId({ ...d })
+                const systemId = this.getSystemId(d);
                 const location = this.getLocation(d);
+                // check for averaging data but fall back to the location values
+                d.averagingIntervalSeconds = parseData(d, this.averagingIntervalKey) ?? location.averagingIntervalSeconds;
+                d.loggingIntervalSeconds = parseData(d, this.loggingIntervalKey) ?? location.loggingIntervalSeconds;
+                d.status = parseData(d, this.sensorStatusKey) ?? location.status
                 // maintain a way to get the sensor back without traversing everything
-                this.sensors[sensor_id] = location.add({ sensor_id, system_id, ...d });
+                this._sensors[sensorId] = location.add({ sensorId, systemId, ...d });
 
             } catch (e) {
                 this.logMessage(`Error adding sensor: ${e.message}`, 'error');
@@ -352,7 +363,7 @@ export class Client {
      * @param {array} measurements - list of measurement data
      */
     async processMeasurementsData(measurements) {
-        console.debug(`Processing ${measurements.length} measurements`);
+        console.debug(`Processing ${measurements.length} row of measurements`);
         // if we provided a parameter column key we use that
         // otherwise we use the list of parameters
         const params = this.longFormat
@@ -379,7 +390,7 @@ export class Client {
                         this.measures.add({
                             // using meas to rebuild the location_id each time
                             // may or may not be the way we want to go
-                            sensor_id: this.getSensorId({ ...meas, metric }),
+                            sensorId: this.getSensorId({ ...meas, metric }),
                             timestamp: datetime,
                             measure: value,
                         });
@@ -450,7 +461,7 @@ export class Client {
             systems: Object.values(this._locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
             sensors: Object.values(this._locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
             // taking advantage of the sensor object list
-            flags: Object.values(this.sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
+            flags: Object.values(this._sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
             measures: this.measures.length,
             errors: errorSummary,
             from: this.measures.from && this.measures.from.utc().format(),

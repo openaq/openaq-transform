@@ -1,5 +1,6 @@
 import { Flag, FlagDefinition } from "./flag";
 import { stripNulls } from "./utils";
+import { Measurand } from './measurand';
 
 
 export interface SensorDefinition {
@@ -14,24 +15,27 @@ export interface SensorDefinition {
 
 export class Sensor {
 
-
     sensorId: string;
-    parameter: string  | undefined;
-    intervalSeconds: number | undefined;
+    metric: Measurand;
+    averagingIntervalSeconds: number;
+    loggingIntervalSeconds: number;
+    status: string;
     versionDate: string | undefined;
     instance: string | undefined;
-    status: string | undefined;
-    flags: { [key: string]: Flag; } 
+    flags: { [key: string]: Flag; }
 
 
     constructor(data: SensorDefinition) {
         this.sensorId = data.sensorId;
-        this.parameter;
-        this.intervalSeconds;
-        this.versionDate;
-        this.instance;
-        this.status;
+        this.metric = data.metric;
+        this.averagingIntervalSeconds = data.averagingIntervalSeconds;
+        this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
+        this.versionDate = data.versionData;
+        this.instance = data.instance;
+        this.status = data.status;
         this.flags = {};
+
+        // add excpetions
     }
 
     add(f: FlagDefinition) {
@@ -47,8 +51,10 @@ export class Sensor {
             version_date: this.versionDate,
             status: this.status,
             instance: this.instance,
-            parameter: this.parameter,
-            interval_seconds: this.intervalSeconds,
+            parameter: this.metric.internalParameter,
+            units: this.metric.unit,
+            averaging_interval_secs: this.averagingIntervalSeconds,
+            logging_interval_secs: this.loggingIntervalSeconds,
             flags: Object.values(this.flags).map((s) => s.json()),
         });
     }

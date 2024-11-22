@@ -17,6 +17,14 @@ export class Location {
     label: string | undefined;
     coordinates: Coordinates
     ismobile: boolean | undefined;
+    // for setting periods at the location level
+    // not required because a provider could have a sensor file
+    // and the data could be passed directly to the sensor
+    averagingIntervalSeconds: number | undefined;
+    loggingIntervalSeconds: number | undefined;
+    // rename to sensorStatus??
+    status: number | undefined
+
     metadata: any; // TODO
     systems: { [key: string]: any; }
 
@@ -25,6 +33,9 @@ export class Location {
         this.location_id = data.location_id;
         this.site_id = data.site_id
         this.site_name = data.site_name
+        this.averagingIntervalSeconds = data.averagingIntervalSeconds;
+        this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
+        this.status = data.status
         this.coordinates = {
             lat: data.lat,
             lon: data.lon,
@@ -33,6 +44,7 @@ export class Location {
         this.owner = data.owner
         this.ismobile = data.ismobile;
         this.systems = {};
+
     }
 
     /**
@@ -64,6 +76,7 @@ export class Location {
     add(sensor: SensorDefinition) : Sensor {
         // first we get the system name
         // e.g. :provider/:site/:manufacturer-:model
+        console.debug(`Adding sensor to location`, sensor)
         const sys = this.getSystem(sensor);
         return sys.add(sensor);
     }

@@ -157,7 +157,7 @@ export class Client {
      * @param {object} row - data for building key
      * @returns {string} - sensor id key
      */
-    getSensorId(row) {
+    getSensorIngestId(row) {
         const location_id = this.getLocationIngestId(row);
         const measurand = row.metric;
         const version = cleanKey(row.version_date);
@@ -195,21 +195,21 @@ export class Client {
 
 
     /**
-     * Get sensor by key
+     * Get sensor by key or by data needed to build a key
      *
      * @param {(string|object)} key - key or data to build sensor
      * @returns {object} - sensor object
      */
-    getSensor(key) {
+    getSensor(key: string | object, addIfNotFound: boolean = true) {
         let sensor = null;
         let data = {};
         if (typeof(key) === 'object') {
             data = { ...key };
-            key = this.getSensorId(data);
+            key = this.getSensorIngestId(data);
         }
         sensor = this._sensors[key];
-        if (!sensor) {
-            //sensor = this.addSensor({ sensor_id: key, ...data });
+        if (!sensor && addIfNotFound) {
+            sensor = this.addSensorFromData(data);
         }
         return sensor;
     }
@@ -337,24 +337,35 @@ export class Client {
     async processSensorsData(sensors) {
         console.debug(`Processing ${sensors.length} sensors`);
         sensors.map((d) => {
-            try {
-
-                const metric_name = parseData(d, this.parameterNameKey)
-                d.metric = this.measurands[metric_name]
-                const sensorId = this.getSensorId({ ...d })
-                const systemId = this.getSystemId(d);
-                const location = this.getLocation(d);
-                // check for averaging data but fall back to the location values
-                d.averagingIntervalSeconds = parseData(d, this.averagingIntervalKey) ?? location.averagingIntervalSeconds;
-                d.loggingIntervalSeconds = parseData(d, this.loggingIntervalKey) ?? location.loggingIntervalSeconds;
-                d.status = parseData(d, this.sensorStatusKey) ?? location.status
-                // maintain a way to get the sensor back without traversing everything
-                this._sensors[sensorId] = location.add({ sensorId, systemId, ...d });
-
-            } catch (e) {
-                this.logMessage(`Error adding sensor: ${e.message}`, 'error');
-            }
+            this.addSensorFromData(d);
         });
+    }
+
+
+    private addSensorFromData(data) {
+        try {
+            let sensor;
+            // check if we already found the right metric
+            // if
+            if(!data.metric) {
+                const metric_name = parseData(data, this.parameterNameKey)
+                data.metric = this.measurands[metric_name]
+            }
+            const sensorId = this.getSensorIngestId({ ...data })
+            const systemId = this.getSystemId(data);
+            const location = this.getLocation(data);
+            // check for averaging data but fall back to the location values
+            data.averagingIntervalSeconds = parseData(data, this.averagingIntervalKey) ?? location.averagingIntervalSeconds;
+            data.loggingIntervalSeconds = parseData(data, this.loggingIntervalKey) ?? location.loggingIntervalSeconds;
+            data.status = parseData(data, this.sensorStatusKey) ?? location.status
+            // maintain a way to get the sensor back without traversing everything
+            sensor = location.add({ sensorId, systemId, ...data });
+            this._sensors[sensorId] = sensor;
+            return sensor
+        } catch (e) {
+            this.logMessage(`Error adding sensor: ${e.message}`, 'error');
+            console.debug(data, this.parameterNameKey, this.longFormat)
+        }
     }
 
     /**
@@ -373,7 +384,7 @@ export class Client {
         measurements.map( (meas) => {
             try {
                 const datetime = this.getDatetime(meas);
-                //const location = parseData(meas, this.locationIdKey);
+                const location = this.getLocation(meas);
 
                 params.map((p) => {
                     let metric, value;
@@ -387,10 +398,12 @@ export class Client {
                     }
 
                     if (value) {
+                        // get the approprate sensor, or create it
+                        const sensor = this.getSensor({ ...meas, metric })
                         this.measures.add({
                             // using meas to rebuild the location_id each time
                             // may or may not be the way we want to go
-                            sensorId: this.getSensorId({ ...meas, metric }),
+                            sensorId: sensor.id,
                             timestamp: datetime,
                             measure: value,
                         });

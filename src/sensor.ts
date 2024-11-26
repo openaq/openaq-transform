@@ -38,6 +38,10 @@ export class Sensor {
         // add excpetions
     }
 
+    get id() {
+        return this.sensorId;
+    }
+
     add(f: FlagDefinition) {
         f.sensorId = this.sensorId;
         const flag = new Flag(f);

@@ -26,10 +26,14 @@ export class System {
         this.sensors = {};
     }
 
+    get id() {
+        return this.systemId;
+    }
 
     add(sensor: SensorDefinition) : Sensor {
         const sensorId = sensor.sensorId;
         if (!this.sensors[sensorId]) {
+            console.debug('adding new sensor', sensorId)
             this.sensors[sensorId] = new Sensor(sensor);
         }
         return this.sensors[sensorId];

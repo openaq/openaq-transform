@@ -47,6 +47,10 @@ export class Location {
 
     }
 
+    get id() {
+        return this.location_id;
+    }
+
     /**
      * Get one of the sensor systems by data/key
      * If the system does not exist it will be created
@@ -76,7 +80,6 @@ export class Location {
     add(sensor: SensorDefinition) : Sensor {
         // first we get the system name
         // e.g. :provider/:site/:manufacturer-:model
-        console.debug(`Adding sensor to location`, sensor)
         const sys = this.getSystem(sensor);
         return sys.add(sensor);
     }

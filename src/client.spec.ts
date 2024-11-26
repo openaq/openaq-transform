@@ -199,7 +199,74 @@ describe('Provider that passes sensor data', () => {
 
 })
 
+describe('Dynamic adapter that gets mapping from initial config', () => {
+
+    class JsonClient extends Client{
+        url = 'https://blah.org/withsensors';
+        provider = 'testing';
+        longFormat = true;
+        parameters = {
+            pm25: ["particulate_matter_25","ug/m3"],
+            temperature: ["tempf", "f"],
+        }
+    }
+
+
+    test('outputs correct format', async () => {
+        const cln = new JsonClient({
+            longitudeKey: 'longitude',
+            latitudeKey: 'latitude',
+            averagingIntervalKey: 'averaging',
+            sensorStatusKey: (d) => 'asdf',
+            locationIdKey: 'station',
+            locationLabelKey: 'site_name',
+            projectionKey: (d) => 'WSG84',
+            ownerKey: (d) => 'test_owner',
+            isMobileKey: (d) => false,
+        })
+        const data = await cln.fetch();
+        expect(data).toStrictEqual(expectedOutput);
+    })
+
+});
+
+describe('Dynamic adapter that gets mapping from delayed configure', () => {
+
+    class JsonClient extends Client{
+        url = 'https://blah.org/withsensors';
+        provider = 'testing';
+        longFormat = true;
+        parameters = {
+            pm25: ["particulate_matter_25","ug/m3"],
+            temperature: ["tempf", "f"],
+        }
+    }
+
+
+    test('outputs correct format', async () => {
+        const cln = new JsonClient()
+        // Do some other things for whatever reasone
+        // configure by passing a map
+        cln.configure({
+            longitudeKey: 'longitude',
+            latitudeKey: 'latitude',
+            averagingIntervalKey: 'averaging',
+            sensorStatusKey: (d) => 'asdf',
+            locationIdKey: 'station',
+            locationLabelKey: 'site_name',
+            projectionKey: (d) => 'WSG84',
+            ownerKey: (d) => 'test_owner',
+            isMobileKey: (d) => false,
+        })
+
+        const data = await cln.fetch();
+        expect(data).toStrictEqual(expectedOutput);
+    })
+
+});
+
+
 describe.todo('Adapter that requires custom fetch data method');
-describe.todo('Dynamic adapter that gets mapping from config');
+
 describe.todo('Provider with Locations that have different averaging times');
 describe.todo('Provider with both fixed and mobile locations');

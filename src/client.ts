@@ -106,8 +106,11 @@ export class Client {
     // log object for compiling errors/warnings for later reference
     log: LogDefinition;
 
-    constructor() {
+    constructor(config: dict | undefined) {
         // ??
+        if(config) {
+            this.configure(config)
+        }
         this.measures = new Measures();
         this._locations = {};
         this._sensors = {};
@@ -121,6 +124,18 @@ export class Client {
     async fetchMeasurands() {
         this.measurands = await Measurand.getIndexedSupportedMeasurands(this.parameters);
     }
+
+    // needs some guardrails
+    setKey(key, value) {
+        this[key] = value;
+    }
+
+    configure(config) {
+        for (const [key, value] of Object.entries(config)) {
+            this.setKey(key, value);
+        }
+    }
+
 
     /**
      * Provide a location based ingest id

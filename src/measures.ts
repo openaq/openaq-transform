@@ -1,3 +1,6 @@
+import dayjs, { Dayjs } from './dayjs'
+
+
 export class Measures {
     headers: string[];
     measures: Measure[];
@@ -12,7 +15,7 @@ export class Measures {
         : ['sensor_id', 'measure', 'timestamp', 'longitude', 'latitude'];
     }
 
-    push(measure: Measure) {
+    add(measure: Measure) {
         this.to = this.to ? Math.max(this.to, measure.timestamp) : measure.timestamp;
         this.from = this.from ? Math.min(this.from, measure.timestamp) : measure.timestamp;
         this.measures.push(measure);
@@ -25,25 +28,27 @@ export class Measures {
     json() {
         return this.measures.map((m) => ({
             sensor_id: m.sensorId,
-            timestamp: m.timestamp.utc().format(),
-            measure: m.measure,
+            timestamp: m.timestamp.format(),
+            value: m.measure,
+
         }));
     }
 }
 
 
 interface MeasureDefinition {
-    sensorId?: number;
-    timestamp?: string;
-    measure?: string;
+    sensorId: number;
+    timestamp: Dayjs;
+    measure: number;
+    units: string;
     latitude?: number;
     longitude?: number;
 }
 
 export class Measure {
-    sensorId?: number;
-    timestamp?: string;
-    measure?: string;
+    sensorId: number;
+    timestamp: Dayjs;
+    measure: number;
 
     constructor(params: MeasureDefinition = {}) {
         this.sensorId = params.sensorId;

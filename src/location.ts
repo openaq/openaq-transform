@@ -3,20 +3,52 @@ import { System } from "./system";
 import { stripNulls } from "./utils";
 
 
+interface Coordinates {
+    lat: number,
+    lon: number,
+    proj: string,
+}
+
 export class Location {
 
-    location_id: number;
+    location_id: string; // the ingest id
+    site_id: string
     owner: string | undefined;
     label: string | undefined;
-    lat: number | undefined;
-    lon: number | undefined;
+    coordinates: Coordinates
     ismobile: boolean | undefined;
+    // for setting periods at the location level
+    // not required because a provider could have a sensor file
+    // and the data could be passed directly to the sensor
+    averagingIntervalSeconds: number | undefined;
+    loggingIntervalSeconds: number | undefined;
+    // rename to sensorStatus??
+    status: number | undefined
+
     metadata: any; // TODO
     systems: { [key: string]: any; }
 
     constructor(data) {
+        // data values should be keyed correctly by now
         this.location_id = data.location_id;
+        this.site_id = data.site_id
+        this.site_name = data.site_name
+        this.averagingIntervalSeconds = data.averagingIntervalSeconds;
+        this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
+        this.status = data.status
+        this.coordinates = {
+            lat: data.lat,
+            lon: data.lon,
+            proj: data.proj,
+        }
+        this.owner = data.owner
+        this.ismobile = data.ismobile;
         this.systems = {};
+
+    }
+
+    get id() {
+        return this.location_id;
     }
 
     /**
@@ -57,12 +89,11 @@ export class Location {
      */
     json() {
         return stripNulls({
-            location: this.location_id,
-            label: this.label,
-            lat: this.lat,
-            lon: this.lon,
+            location_id: this.location_id,
+            site_id: this.site_id,
+            site_name: this.site_name,
+            coordinates: this.coordinates,
             ismobile: this.ismobile,
-            metadata: this.metadata,
             systems: Object.values(this.systems).map((s) => s.json()),
         });
     }

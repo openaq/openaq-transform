@@ -16,14 +16,14 @@ export const stripNulls = <T extends object>(
   );
 };
 
-export const truthy = (value): boolean => {
+export const truthy = (value: any): boolean => {
     return [1,true,'TRUE','T','True','t','true'].includes(value);
 };
 
-export const parseData = (data, key) => {
-    if(typeof(key) === 'function') {
+export const parseData = (data, key: Function | string) => {
+    if(typeof key === 'function') {
         return key(data);
-    } else if (typeof(key) === 'string') {
+    } else if (typeof key === 'string') {
         return data[key];
     }
 }
@@ -39,12 +39,8 @@ export const cleanKey = (value: string): string => {
   );
 };
 
-export const stripWhitespace = (value) => {
-  if (typeof value === 'string') {
-    return value.replace(/^[ ]+|[ ]+$/, '');
-  } else {
-    return value;
-  }
+export const stripWhitespace = (value: string): string => {
+  return value.replace(/^[ ]+|[ ]+$/, '');
 };
 
 function countDecimals(value: number) {

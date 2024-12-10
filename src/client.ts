@@ -6,7 +6,7 @@ import {cleanKey} from './utils';
 import { Measures, FixedMeasure, MobileMeasure } from './measures';
 import { Measurand } from './measurand';
 import { Location } from './location'
-import { truthy, parseData } from './utils'
+import { parseData } from './utils'
 
 
 export interface MetaDefinition {
@@ -53,7 +53,7 @@ type FixedMeasureArray = FixedMeasure[];
 
 type MeasuresTypeArray = MobileMeasureArray | FixedMeasureArray;
 
-type ParseFunction = (data: object) => string | number | object
+type ParseFunction = (data: object) => string | number | object | boolean
 
 interface LogEntry {
     message: string;
@@ -64,7 +64,11 @@ interface LogDefinition {
     [key: string]: LogEntry[];
 };
 
-export class Client {
+interface ParametersDefinition {
+    [key: string]: string[]
+}
+
+export abstract class Client {
     // constant across provider
     url: string;
     provider: string;
@@ -94,7 +98,7 @@ export class Client {
 
     datasources: object = {};
     missingDatasources: string[] = [];
-    parameters: string[] = [];
+    parameters: ParametersDefinition;
 
     // keyed set of expected parameters for this client
     measurands = null;
@@ -106,8 +110,8 @@ export class Client {
     // log object for compiling errors/warnings for later reference
     log: LogDefinition;
 
-    constructor(config: dict | undefined) {
-        // ??
+    constructor(config: object | undefined) {
+        // why use configure instead just setting the keys directly in the constructor
         if(config) {
             this.configure(config)
         }
@@ -126,7 +130,7 @@ export class Client {
     }
 
     // needs some guardrails
-    setKey(key, value) {
+    setKey(key: string, value: any) {
         this[key] = value;
     }
 
@@ -246,6 +250,8 @@ export class Client {
         }
         return dt;
     }
+
+
 
     /**
      * fetches data and convert to json

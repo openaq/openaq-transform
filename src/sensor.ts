@@ -1,22 +1,49 @@
 import { Flag, FlagDefinition } from "./flag";
+import { Metric } from "./metric";
 import { stripNulls } from "./utils";
-import { Measurand } from './measurand';
+
+
 
 
 export interface SensorDefinition {
     sensorId: string;
-    parameter: string;
-    intervalSeconds: number;
+    systemId: string;
+    metric: Metric;
+    averagingIntervalSeconds: number;
+    loggingIntervalSeconds: number;
     versionDate: string;
     instance: string;
     status: string;
 }
 
 
+export class Sensors {
+
+    _sensors: Map<string, Sensor>;
+
+    constructor() {
+        this._sensors = new Map<string, Sensor>();
+    }
+
+    add(sensor: Sensor) {
+        this._sensors.set(sensor.sensorId, sensor);
+    }
+
+    get(sensorId: string) {
+        return this._sensors.get(sensorId);
+    }
+
+    length() {
+        return this._sensors.size;
+    }
+}
+
+
 export class Sensor {
 
     sensorId: string;
-    metric: Measurand;
+    systemId: string;
+    metric: Metric;
     averagingIntervalSeconds: number;
     loggingIntervalSeconds: number;
     status: string;
@@ -27,15 +54,14 @@ export class Sensor {
 
     constructor(data: SensorDefinition) {
         this.sensorId = data.sensorId;
+        this.systemId = data.systemId;
         this.metric = data.metric;
         this.averagingIntervalSeconds = data.averagingIntervalSeconds;
         this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
-        this.versionDate = data.versionData;
+        this.versionDate = data.versionDate;
         this.instance = data.instance;
         this.status = data.status;
         this.flags = {};
-
-        // add excpetions
     }
 
     get id() {
@@ -55,7 +81,7 @@ export class Sensor {
             version_date: this.versionDate,
             status: this.status,
             instance: this.instance,
-            parameter: this.metric.internalParameter,
+            parameter: this.metric.parameter,
             units: this.metric.unit,
             averaging_interval_secs: this.averagingIntervalSeconds,
             logging_interval_secs: this.loggingIntervalSeconds,

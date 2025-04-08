@@ -1,7 +1,6 @@
-import { describe, test, expect, beforeAll } from 'vitest';
-import { http, HttpResponse, rest } from 'msw';
+import { describe, test, expect } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import dayjs from 'dayjs'
 
 import { Client } from './client.ts'
 
@@ -266,7 +265,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
 });
 
 
-describe.todo('Adapter that requires custom fetch data method');
+// describe.todo('Adapter that requires custom fetch data method');
 
-describe.todo('Provider with Locations that have different averaging times');
-describe.todo('Provider with both fixed and mobile locations');
+// describe.todo('Provider with Locations that have different averaging times');
+// describe.todo('Provider with both fixed and mobile locations');

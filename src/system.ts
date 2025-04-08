@@ -1,53 +1,55 @@
-import { Sensor, SensorDefinition } from "./sensor";
-import { stripNulls } from "./utils";
-
-
+import { stripNulls } from './utils';
 
 export interface SystemDefinition {
-    systemId: number;
-    manufacturerName: string;
-    modelName: string;
-    sensors: { [key: string]: Sensor; };
+  systemId: string;
+  locationId: string;
+  manufacturerName?: string;
+  modelName?: string;
+}
+
+export class Systems {
+  _systems: Map<string, System>;
+
+  constructor() {
+    this._systems = new Map<string, System>();
+  }
+
+  add(system: System) {
+    this._systems.set(system.systemId, system);
+  }
+
+  length() {
+    return this._systems.size;
+  }
 }
 
 export class System {
+  systemId: string;
+  locationsId: string;
+  manufacturerName: string;
+  modelName: string;
+  metadata: { [key: string]: any };
+  _sensors: Set<string>;
 
-    systemId: number;
-    manufacturerName: string = 'default';
-    modelName: string = 'default';
-    metadata: { [key: string]: any; } ;
-    sensors: { [key: string]: Sensor; };
+  constructor(data: SystemDefinition) {
+    this.systemId = data.systemId;
+    this.locationsId = data.locationId;
+    this.manufacturerName = data.manufacturerName ?? 'default';
+    this.modelName = data.modelName ?? 'default';
+    this._sensors = new Set<string>();
+    this.metadata = {};
+  }
 
-    constructor(data) {
-        this.systemId = data.systemId;
-        this.manufacturerName;
-        this.modelName;
-        this.metadata = {};
-        this.sensors = {};
-    }
+  get id() {
+    return this.systemId;
+  }
 
-    get id() {
-        return this.systemId;
-    }
-
-    add(sensor: SensorDefinition) : Sensor {
-        const sensorId = sensor.sensorId;
-        if (!this.sensors[sensorId]) {
-            console.debug('adding new sensor', sensorId)
-            this.sensors[sensorId] = new Sensor(sensor);
-        }
-        return this.sensors[sensorId];
-    }
-
-
-    json() {
-        return stripNulls({
-            system_id: this.systemId,
-            manufacturer_name: this.manufacturerName,
-            model_name: this.modelName,
-            sensors: Object.values(this.sensors).map((s) => s.json()),
-        });
-    }
-
-
+  json() {
+    return stripNulls({
+      system_id: this.systemId,
+      manufacturer_name: this.manufacturerName,
+      model_name: this.modelName,
+    //   sensors: Object.values(this.sensors).map((s) => s.json()),
+    });
+  }
 }

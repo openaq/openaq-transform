@@ -20,7 +20,7 @@ export const truthy = (value: any): boolean => {
     return [1,true,'TRUE','T','True','t','true'].includes(value);
 };
 
-export const parseData = (data, key: Function | string) => {
+export const parseData = (data: any, key: Function | string) => {
     if(typeof key === 'function') {
         return key(data);
     } else if (typeof key === 'string') {

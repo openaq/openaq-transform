@@ -107,7 +107,7 @@ interface ClientDefinition {
 }
 
 
-export abstract class Client {
+export class Client {
     // Q how to handle secrets
 
     // constant across provider
@@ -151,9 +151,26 @@ export abstract class Client {
     // log object for compiling errors/warnings for later reference
     log: LogDefinition;
 
-    constructor(params: ClientDefinition) {
+    constructor(params?: ClientDefinition) {
 
-        params?.url && (this.url = params.url);
+      // update with config if the config was passed in
+      // this will still behave oddly in our abstract/extend framework
+      if(params) this.configure(params);
+
+      // this should convert the clients set of expected parameter to something we can use
+      // and include our transform methods
+      //this._measurands = new Measurands(this.parameters)
+        //this._measurements = new Measurements(this.parameters);
+        this._locations = new Locations();
+        this._sensors = new Sensors();
+        this.log = {};
+
+        //return this
+    }
+
+  configure(params: ClientDefinition) {
+
+       params?.url && (this.url = params.url);
         params?.provider && (this.provider = params.provider);
 
         params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
@@ -178,25 +195,17 @@ export abstract class Client {
         params?.loggingIntervalKey && (this.loggingIntervalKey = params.loggingIntervalKey);
         params?.averagingIntervalKey && (this.averagingIntervalKey = params.averagingIntervalKey);
         params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
-
-      // parameters will be in the form of
-      // openaq_ingest_id: [ client_data_key, client_data_units ]
-      // and it will need to be reshaped
         params?.parameters && (this.parameters = params.parameters)
 
+  }
 
-      // this should convert the clients set of expected parameter to something we can use
-      // and include our transform methods
-        //this._measurands = new Measurands(this.parameters)
 
-        this._measurements = new Measurements(this.parameters);
-        this._locations = new Locations();
-        this._sensors = new Sensors();
-        this.log = {};
-
-        //return this
+  get measurements() {
+    if(!this._measurements) {
+      this._measurements = new Measurements(this.parameters);
     }
-
+    return this._measurements
+  }
 
     // needs some guardrails
     // setKey(key: string, value: any) {
@@ -311,9 +320,9 @@ export abstract class Client {
             throw new Error(`Missing date/time field. Looking in ${this.datetimeKey}`);
         }
         const dt = new Datetime(dt_string, this.datetimeFormat, this.timezone);
-        // if(!dt.isValid()) {
+        //if(!dt.isValid()) {
         //     throw new Error(`A valid date could not be made from ${dt_string} using ${this.datetimeFormat}`);
-        // }
+       // }
         return dt;
     }
 
@@ -348,8 +357,10 @@ export abstract class Client {
      *
      * @param {(string|file|object)} file - file path, object or file
      */
+
     async fetch() {
         const data = await this.fetchData();
+
         if (!data) {
             throw new Error('No data was returned from file');
         }
@@ -365,7 +376,6 @@ export abstract class Client {
         if (data.flags) {
             this.processFlagsData(data.flags);
         }
-      console.log(this._measurements)
         return this.data();
     }
 
@@ -476,15 +486,15 @@ export abstract class Client {
      * @param {array} measurements - list of measurement data
      */
     async processMeasurementsData(measurements) {
-        console.debug(`Processing ${measurements.length} row of measurements`, this._measurements.parameters);
+        console.debug(`Processing ${measurements.length} row of measurements`, this.measurements.measurands());
         // if we provided a parameter column key we use that
         // otherwise we use the list of parameters
         // the end goal is just an array of parameter names to loop through
         const params = this.longFormat
             ? [this.parameterNameKey]
-            : Object.keys(this._measurements.measurands());
+            : Object.keys(this.measurements.measurands());
 
-      console.debug('asdfasf', params)
+
         measurements.map( (meas) => {
             try {
                 const datetime = this.getDatetime(meas);
@@ -495,18 +505,17 @@ export abstract class Client {
                   // for long format data we will need to extract the parameter name from the field
                     if(this.longFormat) {
                         let metric_name = this.getValueFromKey(meas, this.parameterNameKey)
-                        metric = this._measurements.measurand(metric_name)
+                        metric = this.measurements.measurand(metric_name)
                         value = this.getValueFromKey(meas, this.parameterValueKey)
                     } else {
-                        metric = this._measurements.measurand(p);
+                        metric = this.measurements.measurand(p);
                         value = meas[metric.parameter];
                     }
 
-                  console.log('value yo', params, value, meas, metric, datetime, p)
                     if (value) {
                         // get the approprate sensor, or create it
                         const sensor = this.getSensor({ ...meas, metric })
-                        this._measurements.add({
+                        this.measurements.add({
                             sensorId: sensor.id,
                             timestamp: datetime,
                             value: value,
@@ -555,13 +564,14 @@ export abstract class Client {
      * @returns {object} - data object formated for ingestion
      */
     data() {
+      console.log(this._locations)
         return {
             meta: {
                 schema: 'v0.1',
                 source: this.provider,
                 matching_method: 'ingest-id'
             },
-            measurements: this._measurements.json(),
+            measurements: this.measurements.json(),
             locations: this._locations.json(),
         };
     }
@@ -579,10 +589,10 @@ export abstract class Client {
             sensors: Object.values(this._locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
             // taking advantage of the sensor object list
             flags: Object.values(this._sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
-            measures: this._measurements.length,
+            measures: this.measurements.length,
             errors: errorSummary,
-            from: this._measurements.from && this._measurements.from.utc().format(),
-            to: this._measurements.to && this._measurements.to.utc().format(),
+            from: this.measurements.from && this.measurements.from.utc().format(),
+            to: this.measurements.to && this.measurements.to.utc().format(),
         };
     }
 }

@@ -3,6 +3,7 @@ import { Datetime } from './datetime';
 import { BBox } from 'geojson';
 import { Coordinates } from './coordinates';
 import { updateBounds } from './shared';
+import { stripNulls } from './utils';
 import { PARAMETERS, ParametersTransformDefinition } from './constants';
 
 
@@ -12,9 +13,9 @@ export class Measurements {
   from?: Date;
   to?: Date;
   bounds: BBox;
+  parameters: Object;
 
   constructor(parameters) {
-    console.debug('creating measurements', parameters)
     this._measurements = new Map<string, Measurement>();
     this.headers = [
       'sensor_id',
@@ -24,7 +25,7 @@ export class Measurements {
       'latitude',
     ];
     this.bounds = [Infinity, Infinity, -Infinity, -Infinity];
-    this.parameters = parameters
+    !!parameters && (this.parameters = parameters)
   }
 
  measurands() {
@@ -36,7 +37,7 @@ export class Measurements {
  }
 
   add(measurement: Measurement) {
-    console.debug('Adding measurement', measurement)
+    //console.debug('Adding measurement', measurement)
     this.updateBounds(measurement);
 
     // this.to = this.to
@@ -68,14 +69,14 @@ export class Measurements {
 
   json() {
     return Array.from(this._measurements.values(), (m) => {
-        return {
-          sensor_id: m.sensorId,
-          timestamp: m.timestamp.toString(),
-          value: m.value,
-          units: m.units,
-          coordinates: m.coordinates,
-        };
+      return stripNulls({
+        sensor_id: m.sensorId,
+        timestamp: m.timestamp.toString(),
+        value: m.value,
+        units: m.units,
+        coordinates: m.coordinates,
       });
+    });
   }
 }
 

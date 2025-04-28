@@ -116,7 +116,7 @@ export class Location {
     return this._systems;
   }
 
-  addSystme(systemId: string) {
+  addSystem(systemId: string) {
     this._systems.add(systemId);
   }
 

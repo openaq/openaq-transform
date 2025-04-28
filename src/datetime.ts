@@ -1,4 +1,5 @@
-import { fromUnixTime, parse, parseISO } from "date-fns";
+import { tz } from "@date-fns/tz";
+import { fromUnixTime, parse, parseISO, format } from "date-fns";
 
 export class Datetime {
 
@@ -30,17 +31,8 @@ export class Datetime {
 
   // this should just be an serializer/formatter
   toString() {
-    return this._date.toISOString();
+    return format(this._date, "yyyy-MM-dd'T'HH:mm:ssxxx");//, { in: tz(this.timezone) });
   }
 
-    get datetime(): Date {
-        if (typeof this._input == 'number') {
-            return fromUnixTime(this._input)
-        }
-        if (!this.format) {
-            return parseISO(this._input);
-        } else {
-            return parse(String(this._input), this.format, new Date())
-        }
-    }
+
 }

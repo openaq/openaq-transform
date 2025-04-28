@@ -85,7 +85,7 @@ const expectedOutput = {
             ],
         }
     ],
-    measures: [
+    measurements: [
         {
             sensor_id: 'testing-ts1-pm25',
             timestamp: '2024-01-01T00:00:00-08:00',
@@ -99,7 +99,7 @@ const expectedOutput = {
     ]
 };
 
-describe.only('Simple client example', () => {
+describe('Simple client example', () => {
 
     class FakeClient extends Client {
         url: string = 'fake.url';
@@ -134,6 +134,7 @@ describe.only('Simple client example', () => {
 
 describe('Client with data in wide format', () => {
 
+
     class JsonClient extends Client {
         url = 'https://blah.org/wide';
         provider = 'testing';
@@ -158,7 +159,8 @@ describe('Client with data in wide format', () => {
           // the client data, particulate_matter_25 should be mapped to pm25 and is currently in ugm3
             // particulate_matter_25: { parameter: "pm25", unit:"ugm3" },
             // tempf: { parameter: "temperature", unit: "f" },
-        }
+        };
+
     }
 
     test('Url check', () => {

@@ -17,6 +17,7 @@
     "vitest": "^3.1.2"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.2.0",
     "@types/geojson": "^7946.0.16",
     "date-fns": "^4.1.0",
     "proj4": "^2.15.0"

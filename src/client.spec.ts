@@ -99,9 +99,42 @@ const expectedOutput = {
     ]
 };
 
+describe.only('Simple client example', () => {
+
+    class FakeClient extends Client {
+        url: string = 'fake.url';
+    }
+
+    test('url is updated', () => {
+      const cln = new FakeClient()
+      expect(cln.url).toBe('fake.url');
+    });
+
+    test('abstract defaults persist', () => {
+      const cln = new FakeClient()
+      expect(cln.timezone).toBe('UTC');
+    });
+
+  test('passed provider overrides default', () => {
+    const provider = 'my-provider'
+    const cln = new FakeClient({ provider })
+    expect(cln.provider).toBe(provider);
+  });
+
+  test('url cant be overidden', () => {
+    const url = 'different.fake.url'
+    const provider = 'my-provider'
+    const cln = new FakeClient({ url, provider })
+    expect(cln.url).toBe('fake.url');
+    expect(cln.provider).toBe(provider);
+  });
+
+
+})
+
 describe('Client with data in wide format', () => {
 
-    class JsonClient extends Client{
+    class JsonClient extends Client {
         url = 'https://blah.org/wide';
         provider = 'testing';
         // mapping data
@@ -115,14 +148,28 @@ describe('Client with data in wide format', () => {
         ownerKey = (d) => 'test_owner';
         isMobileKey = (d) => false;
         parameters = {
-            pm25: ["particulate_matter_25","ug/m3"],
-            temperature: ["tempf", "f"],
+          // which of these do we want?
+          // pm25 is listed in the client data as 'particulate_matter_25` and is in ugm3
+            //pm25: ["particulate_matter_25","ugm3"],
+            //temperature: ["tempf", "f"],
+            pm25: { parameter: "particulate_matter_25", unit: "ugm3"},
+            temperature: { parameter: "tempf", unit: "f" },
+          // whereas this reads as
+          // the client data, particulate_matter_25 should be mapped to pm25 and is currently in ugm3
+            // particulate_matter_25: { parameter: "pm25", unit:"ugm3" },
+            // tempf: { parameter: "temperature", unit: "f" },
         }
     }
 
     test('Url check', () => {
         const cln = new JsonClient()
         expect(cln.url).toBe('https://blah.org/wide');
+    });
+
+
+    test('parameter check', () => {
+        const cln = new JsonClient()
+        expect(Object.keys(cln.parameters)).toStrictEqual(['pm25','temperature']);
     });
 
     test('outputs correct format', async () => {

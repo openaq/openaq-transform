@@ -6,15 +6,15 @@
   "scripts": {
     "build": "tsc",
     "watch:build": "tsc --watch",
-    "test": "vitest",
+    "test": "vitest --typecheck",
     "oxlint": "oxlint src"
   },
   "devDependencies": {
     "@types/proj4": "^2.5.6",
-    "msw": "^2.6.5",
-    "oxlint": "^0.11.1",
-    "typescript": "~5.6.2",
-    "vitest": "^2.1.4"
+    "msw": "^2.7.5",
+    "oxlint": "^0.16.8",
+    "typescript": "~5.8.3",
+    "vitest": "^3.1.2"
   },
   "dependencies": {
     "@types/geojson": "^7946.0.16",

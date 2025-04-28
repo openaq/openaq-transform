@@ -1,12 +1,12 @@
 
 
 
-import {cleanKey} from './utils';
+import { cleanKey } from './utils';
 import { Measurements } from './measurement';
 import { Location, Locations } from './location'
 import { Sensor, Sensors } from './sensor';
-import { PARAMETERS, ParametersTransformDefinition } from './constants';
-
+import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
+import { Datetime } from './datetime';
 
 export interface MetaDefinition {
     locationIdKey: string;
@@ -73,14 +73,6 @@ interface LogDefinition {
     [key: string]: LogEntry[];
 };
 
-interface ParameterUnitDefinition {
-    parameter: string;
-    unit: string
-}
-
-interface ParametersDefinition {
-    [key: string]: ParameterUnitDefinition
-}
 
 
 interface ClientDefinition {
@@ -109,8 +101,8 @@ interface ClientDefinition {
     averagingIntervalKey : string | ParseFunction
     sensorStatusKey: string | ParseFunction
 
-    datasources: object = {};
-    missingDatasources: string[] = [];
+    datasources: object;
+    missingDatasources: string[];
     parameters: ParametersDefinition;
 }
 
@@ -126,7 +118,7 @@ export abstract class Client {
     timezone: string = 'UTC';
     longFormat: boolean = false;
     geometryProjectionKey : string;
-    datetimeFormat: string = 'YYYY-MM-DDTHH:mm:ssZ';
+    datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssxxx";
 
     // mapped data variables
     locationIdKey: string | ParseFunction = 'location';
@@ -147,7 +139,10 @@ export abstract class Client {
 
     datasources: object = {};
     missingDatasources: string[] = [];
-    parameters: ParametersTransformDefinition = PARAMETERS;
+
+  // this should be the list of parameters in the data and how to extract them
+  // transforming could be later
+    parameters: ParametersDefinition = PARAMETER_DEFAULTS;
 
 
     _measurements: Measurements;
@@ -157,35 +152,49 @@ export abstract class Client {
     log: LogDefinition;
 
     constructor(params: ClientDefinition) {
-        this.url = params.url;
-        this.provider = params.provider;
-        this.timezone = 'UTC';
-        this.longFormat = false;
-        this.datetimeFormat = 'YYYY-MM-DDTHH:mm:ssZ';
-    
+
+        params?.url && (this.url = params.url);
+        params?.provider && (this.provider = params.provider);
+
+        params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
+        params?.timezone && (this.timezone = params.timezone);
+        params?.longFormat && (this.longFormat = params.longFormat);
+
         // mapped data variables
-        this.locationIdKey = params.locationIdKey ?? 'location';
-        this.locationLabelKey = params.locationLabelKey ?? 'label';
-        this.parameterNameKey = params.parameterNameKey ?? 'parameter';
-        this.parameterValueKey = params.parameterValueKey ?? 'value';
-        this.yGeometryKey = params.latitudeKey ?? 'x';
-        this.xGeometryKey = params.longitudeKey ?? 'y';
-        this.geometryProjectionKey = 'WGS84';
-        this.manufacturerKey = params.manufacturerKey ?? 'manufacturer_name';
-        this.modelKey = params.modelKey ?? 'model_name';
-        this.ownerKey = params.ownerKey ?? 'owner_name';
-        this.datetimeKey = params.datetimeKey ?? 'datetime';
-        this.licenseKey = params.licenseKey ?? 'license';
-        this.isMobileKey = params.isMobileKey;
-        this.loggingIntervalKey = params.loggingIntervalKey ?? 'logging_interval_seconds'
-        this.averagingIntervalKey = params.averagingIntervalKey ?? 'averaging_interval_seconds'
-        this.sensorStatusKey = params.sensorStatusKey ?? 'status'
+        params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
+        params?.locationLabelKey && (this.locationLabelKey = params.locationLabelKey);
+      // these are used for long format
+        params?.parameterNameKey && (this.parameterNameKey = params.parameterNameKey);
+        params?.parameterValueKey && (this.parameterValueKey = params.parameterValueKey);
+        params?.yGeometryKey && (this.yGeometryKey = params.latitudeKey);
+        params?.xGeometryKey && (this.xGeometryKey = params.longitudeKey);
+        params?.geometryProjectionKey && (this.geometryProjectionKey);
+        params?.manufacturerKey && (this.manufacturerKey = params.manufacturerKey);
+        params?.modelKey && (this.modelKey = params.modelKey);
+        params?.ownerKey && (this.ownerKey = params.ownerKey);
+        params?.datetimeKey && (this.datetimeKey = params.datetimeKey);
+        params?.licenseKey && (this.licenseKey = params.licenseKey);
+        params?.isMobileKey && (this.isMobileKey = params.isMobileKey);
+        params?.loggingIntervalKey && (this.loggingIntervalKey = params.loggingIntervalKey);
+        params?.averagingIntervalKey && (this.averagingIntervalKey = params.averagingIntervalKey);
+        params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
+
+      // parameters will be in the form of
+      // openaq_ingest_id: [ client_data_key, client_data_units ]
+      // and it will need to be reshaped
+        params?.parameters && (this.parameters = params.parameters)
 
 
-        this._measurements = new Measurements();
+      // this should convert the clients set of expected parameter to something we can use
+      // and include our transform methods
+        //this._measurands = new Measurands(this.parameters)
+
+        this._measurements = new Measurements(this.parameters);
         this._locations = new Locations();
         this._sensors = new Sensors();
         this.log = {};
+
+        //return this
     }
 
 
@@ -301,11 +310,11 @@ export abstract class Client {
         if(!dt_string) {
             throw new Error(`Missing date/time field. Looking in ${this.datetimeKey}`);
         }
-        // const dt = dayjs(dt_string, this.datetimeFormat);
+        const dt = new Datetime(dt_string, this.datetimeFormat, this.timezone);
         // if(!dt.isValid()) {
         //     throw new Error(`A valid date could not be made from ${dt_string} using ${this.datetimeFormat}`);
         // }
-        // return dt;
+        return dt;
     }
 
 
@@ -330,6 +339,7 @@ export abstract class Client {
         // if strict then throw error, otherwise just log for later
         if(!this.log[type]) this.log[type] = [];
         this.log[type].push({ message, err});
+        throw err
         console.debug(`${type}:`, err && err.message);
     }
 
@@ -355,6 +365,7 @@ export abstract class Client {
         if (data.flags) {
             this.processFlagsData(data.flags);
         }
+      console.log(this._measurements)
         return this.data();
     }
 
@@ -419,12 +430,14 @@ export abstract class Client {
 
 
     private addSensor(data: SensorDataDefinition) {
+      console.debug('adding sensor', data)
         try {
             // check if we already found the right metric
             // if
-            if(!data.metric) {
+            let { metric } = data
+            if(metric) {
                 const metricName = this.getValueFromKey(data, this.parameterNameKey)
-                metric = this.measurands[metricName]
+                metric = this.parameters[metricName]
             }
             const sensorId = this.getSensorIngestId({ ...data })
             const systemId = this.getSystemId(data);
@@ -441,13 +454,13 @@ export abstract class Client {
                     metric,
                     averagingIntervalSeconds,
                     loggingIntervalSeconds,
-                    versionDate,
-                    instance,
+                    //versionDate,
+                    //instance,
                     status
                 }
             );
 
-            this._sensors.set(sensorId, sensor);
+            this._sensors.add(sensorId, sensor);
             return sensor
         } catch (err:unknown) {
             if (err instanceof Error) {
@@ -463,13 +476,15 @@ export abstract class Client {
      * @param {array} measurements - list of measurement data
      */
     async processMeasurementsData(measurements) {
-        console.debug(`Processing ${measurements.length} row of measurements`);
+        console.debug(`Processing ${measurements.length} row of measurements`, this._measurements.parameters);
         // if we provided a parameter column key we use that
         // otherwise we use the list of parameters
+        // the end goal is just an array of parameter names to loop through
         const params = this.longFormat
             ? [this.parameterNameKey]
-            : Object.keys(this._measurements);
+            : Object.keys(this._measurements.measurands());
 
+      console.debug('asdfasf', params)
         measurements.map( (meas) => {
             try {
                 const datetime = this.getDatetime(meas);
@@ -477,24 +492,24 @@ export abstract class Client {
 
                 params.map((p) => {
                     let metric, value;
+                  // for long format data we will need to extract the parameter name from the field
                     if(this.longFormat) {
                         let metric_name = this.getValueFromKey(meas, this.parameterNameKey)
-                        metric = this.measurands[metric_name]
+                        metric = this._measurements.measurand(metric_name)
                         value = this.getValueFromKey(meas, this.parameterValueKey)
                     } else {
-                        metric = this.measurands[p];
+                        metric = this._measurements.measurand(p);
                         value = meas[metric.parameter];
                     }
 
+                  console.log('value yo', params, value, meas, metric, datetime, p)
                     if (value) {
                         // get the approprate sensor, or create it
                         const sensor = this.getSensor({ ...meas, metric })
                         this._measurements.add({
-                            // using meas to rebuild the location_id each time
-                            // may or may not be the way we want to go
                             sensorId: sensor.id,
                             timestamp: datetime,
-                            measure: value,
+                            value: value,
                         });
                     } else {
                         this.logMessage('VALUE_NOT_FOUND', 'error');
@@ -547,7 +562,7 @@ export abstract class Client {
                 matching_method: 'ingest-id'
             },
             measurements: this._measurements.json(),
-            locations: Object.values(this._locations).map((l)=>l.json())
+            locations: this._locations.json(),
         };
     }
 

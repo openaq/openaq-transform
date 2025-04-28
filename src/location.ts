@@ -49,7 +49,7 @@ export class Locations {
   }
 
   json() {
-    return Array.from(this._locations, (l) => {
+    return Array.from(this._locations.values(), (l) => {
       return { ...l };
     });
   }

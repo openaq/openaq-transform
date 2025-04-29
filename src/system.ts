@@ -1,4 +1,5 @@
 import { stripNulls } from './utils';
+import { Sensor } from './sensor';
 
 export interface SystemDefinition {
   systemId: string;
@@ -29,14 +30,14 @@ export class System {
   manufacturerName: string;
   modelName: string;
   metadata: { [key: string]: any };
-  _sensors: Set<string>;
+  _sensors: Map<string, Sensor>;
 
   constructor(data: SystemDefinition) {
     this.systemId = data.systemId;
     this.locationsId = data.locationId;
     this.manufacturerName = data.manufacturerName ?? 'default';
     this.modelName = data.modelName ?? 'default';
-    this._sensors = new Set<string>();
+    this._sensors = new Map<string, Sensor>();
     this.metadata = {};
   }
 
@@ -44,12 +45,18 @@ export class System {
     return this.systemId;
   }
 
+  add(sensor: Sensor): Sensor {
+    console.debug(`adding sensor (${sensor.id}) to system (${this.id})`)
+    this._sensors.set(sensor.id, sensor)
+    return sensor
+  }
+
   json() {
     return stripNulls({
       system_id: this.systemId,
       manufacturer_name: this.manufacturerName,
       model_name: this.modelName,
-    //   sensors: Object.values(this.sensors).map((s) => s.json()),
+      sensors: Array.from(this._sensors.values(), (s) => s.json()),
     });
   }
 }

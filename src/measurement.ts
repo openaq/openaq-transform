@@ -1,10 +1,9 @@
 import { max, min } from 'date-fns';
 import { Datetime } from './datetime';
 import { BBox } from 'geojson';
-import { Coordinates } from './coordinates';
-import { updateBounds } from './shared';
+import { Coordinates, updateBounds } from './coordinates';
 import { stripNulls } from './utils';
-import { PARAMETERS, ParametersTransformDefinition } from './constants';
+import { ParametersDefinition } from './constants';
 
 
 export class Measurements {
@@ -12,10 +11,10 @@ export class Measurements {
   _measurements: Map<string, Measurement>;
   from?: Date;
   to?: Date;
-  bounds: BBox;
-  parameters: Object;
+  bounds: BBox | null;
+  parameters: ParametersDefinition;
 
-  constructor(parameters) {
+  constructor(parameters?: ParametersDefinition) {
     this._measurements = new Map<string, Measurement>();
     this.headers = [
       'sensor_id',
@@ -24,46 +23,37 @@ export class Measurements {
       'longitude',
       'latitude',
     ];
-    this.bounds = [Infinity, Infinity, -Infinity, -Infinity];
+    this.bounds = null;
     !!parameters && (this.parameters = parameters)
   }
 
- measurands() {
-   return this.parameters;
- }
+  measurands() {
+    return this.parameters;
+  }
 
- measurand(key) {
-   return this.parameters[key]
- }
+  metricFromProviderKey(key: string) {
+    return this.parameters[key]
+  }
 
   add(measurement: Measurement) {
-    //console.debug('Adding measurement', measurement)
-    this.updateBounds(measurement);
+    this.bounds = updateBounds(measurement?.coordinates, this.bounds);
 
-    // this.to = this.to
-    //   ? max(this.to, measurement.timestamp)
-    //   : measurement.timestamp;
-    // this.from = this.from
-    //   ? min(this.from, measurement.timestamp)
-    //   : measurement.timestamp;
+    this.to = this.to
+      ? max([this.to, measurement.timestamp.toDate()])
+      : measurement.timestamp.toDate();
+    this.from = this.from
+      ? min([this.from, measurement.timestamp.toDate()])
+      : measurement.timestamp.toDate();
 
-    console.log('adding measurement', `${measurement.sensorId}:${measurement.timestamp}`, measurement)
+    console.debug(`adding measurement (${measurement.id}) to measurements (total: ${this.length})`)
     this._measurements.set(
-      `${measurement.sensorId}-${measurement.timestamp}`,
+      measurement.id,
       measurement
     );
   }
 
-  updateBounds(measurement: Measurement) {
-    if(!measurement.coordinates) return;
-    const {
-      coordinates: { longitude, latitude },
-    } = measurement;
 
-    this.bounds = updateBounds(longitude, latitude, this.bounds);
-  }
-
-  get length() {
+  get length(): number {
     return this._measurements.size;
   }
 
@@ -73,8 +63,8 @@ export class Measurements {
         sensor_id: m.sensorId,
         timestamp: m.timestamp.toString(),
         value: m.value,
-        units: m.units,
-        coordinates: m.coordinates,
+        //units: m.units,
+        coordinates: m.coordinates?.json(),
       });
     });
   }
@@ -84,7 +74,7 @@ interface MeasurementDefinition {
   sensorId: string;
   timestamp: Datetime;
   value: number;
-  units: string;
+  //units: string;
   coordinates: Coordinates;
 }
 
@@ -92,14 +82,18 @@ export class Measurement {
   sensorId: string; // revisit for possible rename to 'key'
   timestamp: Datetime;
   value: number;
-  units: string;
+  //units: string;
   coordinates: Coordinates;
 
   constructor(params: MeasurementDefinition) {
     this.sensorId = params.sensorId;
     this.timestamp = params.timestamp;
     this.value = params.value;
-    this.units = params.units;
+    //this.units = params.units;
     this.coordinates = params.coordinates;
+  }
+
+  get id(): string {
+    return `${this.sensorId}-${this.timestamp}`
   }
 }

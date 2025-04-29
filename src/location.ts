@@ -1,7 +1,8 @@
 import { BBox } from 'geojson';
-import { updateBounds } from './shared';
 import { stripNulls } from './utils';
-import { Coordinates } from './coordinates';
+import { System, SystemDefinition } from './system';
+import { Sensor, SensorDefinition } from './sensor';
+import { Coordinates, updateBounds } from './coordinates';
 
 interface LocationDefinition {
   locationId: string;
@@ -20,28 +21,20 @@ interface LocationDefinition {
 
 export class Locations {
   _locations: Map<string, Location>;
-  bounds: BBox;
+  bounds: BBox | null;
 
   constructor() {
     this._locations = new Map<string, Location>();
-    this.bounds = [Infinity, Infinity, -Infinity, -Infinity];
+    this.bounds = null; // its easier to work with a null boundary than the 4 number infinity boundary
   }
 
   add(location: Location) {
-    this.updateBounds(location);
+    this.bounds = updateBounds(location?.coordinates, this.bounds);
     this._locations.set(location.locationId, location);
   }
 
   get(locationId: string) {
     return this._locations.get(locationId);
-  }
-
-  updateBounds(location: Location) {
-    const {
-      coordinates: { longitude, latitude },
-    } = location;
-
-    this.bounds = updateBounds(longitude, latitude, this.bounds);
   }
 
   get length() {
@@ -50,7 +43,7 @@ export class Locations {
 
   json() {
     return Array.from(this._locations.values(), (l) => {
-      return { ...l };
+      return l.json();
     });
   }
 }
@@ -70,10 +63,10 @@ export class Location {
   loggingIntervalSeconds?: number;
   sensorStatus?: string;
 
-  metadata: any; // TODO
-  _systems: Set<string>;
+  _systems: Map<string, System>;
 
   constructor(data: LocationDefinition) {
+    console.debug(`New location: ${data.locationId}`)
     const coordinates = new Coordinates(data.x, data.y, data.projection);
     this.locationId = data.locationId;
     this.siteId = data.siteId;
@@ -85,11 +78,20 @@ export class Location {
     this.coordinates = coordinates;
     this.owner = data.owner;
     this.ismobile = data.ismobile;
-    this._systems = new Set<string>();
+
+    this._systems = new Map<string, System>();
   }
 
   get id() {
     return this.locationId;
+  }
+
+  get systems() {
+    return this._systems;
+  }
+
+  addSystem(system: System) {
+    this._systems.set(system.id, system);
   }
 
   /**
@@ -98,26 +100,18 @@ export class Location {
    * @param {(string|object)} data - object with data or key value
    * @returns {*} - system object
    */
-  //   getSystem(data: SystemDefinition | string): System {
-  //     let key;
-  //     if (typeof data === 'string') {
-  //       key = data;
-  //       data = { systemId: Number(key) }; // this needs better type coercion
-  //     } else {
-  //       key = data.systemId;
-  //     }
-  //     if (!this.systems[key]) {
-  //       this.systems[key] = new System(data);
-  //     }
-  //     return this.systems[key];
-  //   }
-
-  get systems() {
-    return this._systems;
-  }
-
-  addSystem(systemId: string) {
-    this._systems.add(systemId);
+  getSystem(data: SystemDefinition | string): System {
+    let key;
+    if (typeof data === 'string') {
+      key = data;
+      data = { systemId: Number(key) }; // this needs better type coercion
+    } else {
+      key = data.systemId;
+    }
+    if (!this._systems.has(key)) {
+      this.addSystem(new System(data));
+    }
+    return this._systems.get(key);
   }
 
   /**
@@ -126,12 +120,13 @@ export class Location {
    * @param {*} sensor - object that contains all the sensor data
    * @returns {*} - a sensor object
    */
-  //   add(Sensor: SensorDefinition): Sensor {
-  //     // first we get the system name
-  //     // e.g. :provider/:site/:manufacturer-:model
-  //     const sys = this.getSystem(sensor);
-  //     return sys.add(sensor);
-  //   }
+  add(sensor: Sensor): Sensor {
+    console.debug(`adding sensor (${sensor.id}) to location (${this.id})`)
+    // first we get the system name
+    // e.g. :provider/:site/:manufacturer-:model
+    const sys = this.getSystem(sensor);
+    return sys.add(sensor);
+  }
 
   /**
    * Export method to convert to json
@@ -141,9 +136,9 @@ export class Location {
       location_id: this.locationId,
       site_id: this.siteId,
       site_name: this.siteName,
-      coordinates: this.coordinates,
+      coordinates: this.coordinates.json(),
       ismobile: this.ismobile,
-      systems: Object.values(this.systems).map((s) => s.json()),
+      systems: Array.from(this._systems.values(), (s) => s.json()),
     });
   }
 }

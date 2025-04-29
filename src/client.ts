@@ -2,7 +2,7 @@
 
 
 import { cleanKey } from './utils';
-import { Measurements } from './measurement';
+import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location'
 import { Sensor, Sensors } from './sensor';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
@@ -140,8 +140,8 @@ export class Client {
     datasources: object = {};
     missingDatasources: string[] = [];
 
-  // this should be the list of parameters in the data and how to extract them
-  // transforming could be later
+    // this should be the list of parameters in the data and how to extract them
+    // transforming could be later
     parameters: ParametersDefinition = PARAMETER_DEFAULTS;
 
 
@@ -153,13 +153,13 @@ export class Client {
 
     constructor(params?: ClientDefinition) {
 
-      // update with config if the config was passed in
-      // this will still behave oddly in our abstract/extend framework
-      if(params) this.configure(params);
+        // update with config if the config was passed in
+        // this will still behave oddly in our abstract/extend framework
+        if(params) this.configure(params);
 
-      // this should convert the clients set of expected parameter to something we can use
-      // and include our transform methods
-      //this._measurands = new Measurands(this.parameters)
+        // this should convert the clients set of expected parameter to something we can use
+        // and include our transform methods
+        //this._measurands = new Measurands(this.parameters)
         //this._measurements = new Measurements(this.parameters);
         this._locations = new Locations();
         this._sensors = new Sensors();
@@ -168,9 +168,9 @@ export class Client {
         //return this
     }
 
-  configure(params: ClientDefinition) {
+    configure(params: ClientDefinition) {
 
-       params?.url && (this.url = params.url);
+        params?.url && (this.url = params.url);
         params?.provider && (this.provider = params.provider);
 
         params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
@@ -180,11 +180,11 @@ export class Client {
         // mapped data variables
         params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
         params?.locationLabelKey && (this.locationLabelKey = params.locationLabelKey);
-      // these are used for long format
+        // these are used for long format
         params?.parameterNameKey && (this.parameterNameKey = params.parameterNameKey);
         params?.parameterValueKey && (this.parameterValueKey = params.parameterValueKey);
-        params?.yGeometryKey && (this.yGeometryKey = params.latitudeKey);
-        params?.xGeometryKey && (this.xGeometryKey = params.longitudeKey);
+        params?.yGeometryKey && (this.yGeometryKey = params.yGeometryKey);
+        params?.xGeometryKey && (this.xGeometryKey = params.xGeometryKey);
         params?.geometryProjectionKey && (this.geometryProjectionKey);
         params?.manufacturerKey && (this.manufacturerKey = params.manufacturerKey);
         params?.modelKey && (this.modelKey = params.modelKey);
@@ -197,15 +197,15 @@ export class Client {
         params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
         params?.parameters && (this.parameters = params.parameters)
 
-  }
-
-
-  get measurements() {
-    if(!this._measurements) {
-      this._measurements = new Measurements(this.parameters);
     }
-    return this._measurements
-  }
+
+
+    get measurements() {
+        if(!this._measurements) {
+            this._measurements = new Measurements(this.parameters);
+        }
+        return this._measurements
+    }
 
     // needs some guardrails
     // setKey(key: string, value: any) {
@@ -229,7 +229,7 @@ export class Client {
 
     /**
      * Provide a system based ingest id
-    */
+     */
     getSystemId(row) : string {
         const manufacturer = cleanKey(row[this.manufacturerKey]);
         const model = cleanKey(row[this.modelKey]);
@@ -257,9 +257,9 @@ export class Client {
         const version = cleanKey(row.version_date);
         const instance = cleanKey(row.instance);
         if (!measurand) {
-            throw new Error(`Could not find measurand for ${row.metric}`);
+            throw new Error(`Could not find measurand for ${row}`);
         }
-        const key = [measurand.internalParameter];
+        const key = [measurand.parameter];
         if (instance) key.push(instance);
         if (version) key.push(version);
         return `${location_id}-${key.join(':')}`;
@@ -322,7 +322,7 @@ export class Client {
         const dt = new Datetime(dt_string, this.datetimeFormat, this.timezone);
         //if(!dt.isValid()) {
         //     throw new Error(`A valid date could not be made from ${dt_string} using ${this.datetimeFormat}`);
-       // }
+        // }
         return dt;
     }
 
@@ -389,7 +389,6 @@ export class Client {
         const location = this._locations.get(key);
         if (!location) {
             // process data through the location map
-            console.debug(`Adding location: ${key}`)
             const l = new Location({
                 locationId: key,
                 siteId: this.getValueFromKey(data, this.locationIdKey),
@@ -440,16 +439,17 @@ export class Client {
 
 
     private addSensor(data: SensorDataDefinition) {
-      console.debug('adding sensor', data)
         try {
             // check if we already found the right metric
+
             // if
-            let { metric } = data
-            if(metric) {
-                const metricName = this.getValueFromKey(data, this.parameterNameKey)
-                metric = this.parameters[metricName]
+            //let { metric } = data
+            if(!data.metric) {
+                let metricName = this.getValueFromKey(data, this.parameterNameKey)
+                data.metric = this.measurements.metricFromProviderKey(metricName)
             }
-            const sensorId = this.getSensorIngestId({ ...data })
+
+            const sensorId = this.getSensorIngestId(data)
             const systemId = this.getSystemId(data);
             const location = this.getLocation(data);
             // check for averaging data but fall back to the location values
@@ -461,7 +461,7 @@ export class Client {
                 {
                     sensorId,
                     systemId,
-                    metric,
+                    metric: data.metric,
                     averagingIntervalSeconds,
                     loggingIntervalSeconds,
                     //versionDate,
@@ -469,12 +469,12 @@ export class Client {
                     status
                 }
             );
-
+            location.add(sensor)
             this._sensors.add(sensorId, sensor);
             return sensor
         } catch (err:unknown) {
             if (err instanceof Error) {
-            this.logMessage('error',`Error adding sensor: ${err.message}`, err);
+                this.logMessage('error',`Error adding sensor: ${err.message}`, err);
             }
             console.debug(sensor, this.parameterNameKey, this.longFormat)
         }
@@ -486,14 +486,13 @@ export class Client {
      * @param {array} measurements - list of measurement data
      */
     async processMeasurementsData(measurements) {
-        console.debug(`Processing ${measurements.length} row of measurements`, this.measurements.measurands());
+        console.debug(`Processing ${measurements.length} measurement(s)`);
         // if we provided a parameter column key we use that
         // otherwise we use the list of parameters
         // the end goal is just an array of parameter names to loop through
         const params = this.longFormat
             ? [this.parameterNameKey]
             : Object.keys(this.measurements.measurands());
-
 
         measurements.map( (meas) => {
             try {
@@ -502,24 +501,25 @@ export class Client {
 
                 params.map((p) => {
                     let metric, value;
-                  // for long format data we will need to extract the parameter name from the field
+                    // for long format data we will need to extract the parameter name from the field
                     if(this.longFormat) {
-                        let metric_name = this.getValueFromKey(meas, this.parameterNameKey)
-                        metric = this.measurements.measurand(metric_name)
+                        let metricName = this.getValueFromKey(meas, this.parameterNameKey)
+                        metric = this.measurements.metricFromProviderKey(metricName)
                         value = this.getValueFromKey(meas, this.parameterValueKey)
                     } else {
-                        metric = this.measurements.measurand(p);
-                        value = meas[metric.parameter];
+                        metric = this.measurements.metricFromProviderKey(p);
+                        value = meas[p];
                     }
 
                     if (value) {
                         // get the approprate sensor, or create it
                         const sensor = this.getSensor({ ...meas, metric })
-                        this.measurements.add({
+                        this.measurements.add(new Measurement({
                             sensorId: sensor.id,
                             timestamp: datetime,
                             value: value,
-                        });
+                            units: metric.unit,
+                        }));
                     } else {
                         this.logMessage('VALUE_NOT_FOUND', 'error');
                     }
@@ -564,7 +564,6 @@ export class Client {
      * @returns {object} - data object formated for ingestion
      */
     data() {
-      console.log(this._locations)
         return {
             meta: {
                 schema: 'v0.1',
@@ -578,7 +577,7 @@ export class Client {
 
     /**
      * Dump a summary that we can pass back to the log
-    */
+     */
     summary(): SummaryDefinition {
         const errorSummary: ErrorSummaryDefinition = {} ;
         Object.keys(this.log).map((k) => errorSummary[k] = this.log[k].length);

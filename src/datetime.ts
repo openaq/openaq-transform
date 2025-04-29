@@ -29,10 +29,13 @@ export class Datetime {
 
     }
 
+  toDate() {
+    return this._date;
+  }
+
   // this should just be an serializer/formatter
   toString() {
     return format(this._date, "yyyy-MM-dd'T'HH:mm:ssxxx");//, { in: tz(this.timezone) });
   }
-
 
 }

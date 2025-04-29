@@ -1,4 +1,5 @@
 import proj4 from 'proj4';
+import { BBox } from 'geojson';
 
 /* Class representing geographic coordinates */
 export class Coordinates {
@@ -10,7 +11,7 @@ export class Coordinates {
   /**
    * Creates new coordinates instance
    *
-   * @param x 
+   * @param x
    * @param y
    * @param proj
    */
@@ -18,27 +19,50 @@ export class Coordinates {
     this.x = x;
     this.y = y;
     this.proj = proj;
-  }
+    this._projected = [this.x, this.y];
 
-  /**
-   * Projects the provided x and y values to the given projection.
-   *
-   * @returns The projected x,y values
-   */
-  private _project() : number[] {
-    if (['EPSG:4326','WGS84'].includes(this.proj)) {
-        return [this.x, this.y];
-      } else {
-        return proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
-      }
+
+    if (!['EPSG:4326','WGS84'].includes(this.proj)) {
+      this._projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+    }
+
   }
 
   get latitude() : number {
-    return this._project()[1]
+    return this._projected[1]
   }
 
   get longitude(): number {
-    return this._project()[0]
-
+    return this._projected[0]
   }
+
+  json() {
+    return {
+      latitude: this.latitude,
+      longitude: this.longitude,
+      proj: 'EPSG:4326',
+    }
+  }
+
+}
+
+export function updateBounds(coordinates: Coordinates,  bounds: BBox | null): BBox {
+  if(!coordinates) return bounds;
+  const { x, y } = coordinates
+  console.debug('updating boundary', x, y)
+  if(!bounds) return [x, y, x, y]
+  if (x < bounds[0]) {
+    bounds[0] = x;
+  }
+  if (x > bounds[2]) {
+    bounds[2] = x;
+  }
+
+  if (y > bounds[1]) {
+    bounds[1] = y;
+  }
+  if (y < bounds[3]) {
+    bounds[3] = y;
+  }
+  return bounds;
 }

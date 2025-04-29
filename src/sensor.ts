@@ -71,6 +71,7 @@ export class Sensor {
     add(f: FlagDefinition) {
         f.sensorId = this.sensorId;
         const flag = new Flag(f);
+        console.debug(`adding flag (${flag.flagId}) to sensor (${this.id})`)
         this.flags[flag.flagId] = flag;
         return flag;
     }

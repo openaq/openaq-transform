@@ -75,35 +75,36 @@ interface LogDefinition {
 
 
 
-interface ClientDefinition {
-    url: string;
-    provider: string;
-    fetched: boolean;
-    source: Source;
-    timezone: string;
-    longFormat: boolean
-    sourceProjection: string;
-    datetimeFormat: string
+interface ClientConfigDefinition {
+    url?: string;
+    provider?: string;
+    fetched?: boolean;
+    source?: Source;
+    timezone?: string;
+    longFormat?: boolean
+    sourceProjection?: string;
+    datetimeFormat?: string; 
 
-    locationIdKey: string | ParseFunction;
-    locationLabelKey: string | ParseFunction;
-    parameterNameKey: string | ParseFunction;
-    parameterValueKey: string | ParseFunction;
-    latitudeKey: string | ParseFunction;
-    longitudeKey: string | ParseFunction;
-    manufacturerKey: string | ParseFunction;
-    modelKey: string | ParseFunction;
-    ownerKey: string | ParseFunction;
-    datetimeKey: string | ParseFunction;
-    licenseKey: string | ParseFunction;
-    isMobileKey: string | ParseFunction;
-    loggingIntervalKey : string | ParseFunction
-    averagingIntervalKey : string | ParseFunction
-    sensorStatusKey: string | ParseFunction
+    locationIdKey?: string | ParseFunction;
+    locationLabelKey?: string | ParseFunction;
+    parameterNameKey?: string | ParseFunction;
+    parameterValueKey?: string | ParseFunction;
+    xGeometryKey?: string | ParseFunction;
+    yGeometryKey?: string | ParseFunction;
+    geometryProjectionKey?: string | ParseFunction;
+    manufacturerKey?: string | ParseFunction;
+    modelKey?: string | ParseFunction;
+    ownerKey?: string | ParseFunction;
+    datetimeKey?: string | ParseFunction;
+    licenseKey?: string | ParseFunction;
+    isMobileKey?: string | ParseFunction;
+    loggingIntervalKey?: string | ParseFunction
+    averagingIntervalKey?: string | ParseFunction
+    sensorStatusKey?: string | ParseFunction
 
-    datasources: object;
-    missingDatasources: string[];
-    parameters: ParametersDefinition;
+    datasources?: object;
+    missingDatasources?: string[];
+    parameters?: ParametersDefinition;
 }
 
 
@@ -111,28 +112,28 @@ export class Client {
     // Q how to handle secrets
 
     // constant across provider
-    url: string;
-    provider: string;
+    url?: string;
+    provider?: string;
     fetched: boolean = false;
     // source: Source;
     timezone: string = 'UTC';
     longFormat: boolean = false;
-    geometryProjectionKey : string;
+    geometryProjectionKey: string = 'projection';
     datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssxxx";
 
     // mapped data variables
     locationIdKey: string | ParseFunction = 'location';
     locationLabelKey: string | ParseFunction = 'label';
-    parameterNameKey: string | ParseFunction = 'parameter';
+    parameterNameKey: string | ParseFunction = 'parameter'; 
     parameterValueKey: string | ParseFunction = 'value';
-    yGeometryKey: string | ParseFunction;
-    xGeometryKey: string | ParseFunction;
+    yGeometryKey: string | ParseFunction = 'y';
+    xGeometryKey: string | ParseFunction = 'x';
     manufacturerKey: string | ParseFunction = 'manufacturer_name';
     modelKey: string | ParseFunction = 'model_name';
     ownerKey: string | ParseFunction = 'owner_name';
     datetimeKey: string | ParseFunction = 'datetime';
     licenseKey: string | ParseFunction = 'license';
-    isMobileKey: string | ParseFunction;
+    isMobileKey: string | ParseFunction = 'is_mobile';
     loggingIntervalKey : string | ParseFunction = 'logging_interval_seconds'
     averagingIntervalKey : string | ParseFunction = 'averaging_interval_seconds'
     sensorStatusKey: string | ParseFunction = 'status'
@@ -145,13 +146,13 @@ export class Client {
     parameters: ParametersDefinition = PARAMETER_DEFAULTS;
 
 
-    _measurements: Measurements;
+    _measurements?: Measurements;
     _locations: Locations;
     _sensors: Sensors;
     // log object for compiling errors/warnings for later reference
     log: LogDefinition;
 
-    constructor(params?: ClientDefinition) {
+    constructor(params?: ClientConfigDefinition) {
 
         // update with config if the config was passed in
         // this will still behave oddly in our abstract/extend framework
@@ -168,7 +169,7 @@ export class Client {
         //return this
     }
 
-    configure(params: ClientDefinition) {
+    configure(params: ClientConfigDefinition) {
 
         params?.url && (this.url = params.url);
         params?.provider && (this.provider = params.provider);
@@ -470,7 +471,7 @@ export class Client {
                 }
             );
             location.add(sensor)
-            this._sensors.add(sensorId, sensor);
+            this._sensors.add(sensor);
             return sensor
         } catch (err:unknown) {
             if (err instanceof Error) {

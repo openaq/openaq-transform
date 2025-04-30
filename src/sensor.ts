@@ -26,7 +26,7 @@ export class Sensors {
     }
 
     add(sensor: Sensor) {
-        this._sensors.set(sensor.sensorId, sensor);
+        this._sensors.set(sensor.id, sensor);
     }
 
     get(sensorId: string) {

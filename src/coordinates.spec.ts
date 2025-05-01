@@ -8,6 +8,13 @@ test('Coordinates latitude and longitude return unchanged value for WGS84', () =
   expect(coordinates.latitude).toBe(42);
 });
 
+test('Coordinates latitude and longitude return correct lat/lng value for projection with predefined alias', () => {
+
+  const coordinates = new Coordinates(-6796397.7770, 1644767.5597, 'EPSG:3857');
+  expect(coordinates.latitude).toBe(14.614111000419951);
+  expect(coordinates.longitude).toBe(-61.05308000035039);
+});
+
 test('Coordinates latitude and longitude return correct lat/lng value for custom projection', () => {
   proj4.defs(
     'EPSG:26913',

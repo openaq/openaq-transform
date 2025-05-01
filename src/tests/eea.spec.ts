@@ -48,6 +48,7 @@ describe('Simple client example', () => {
       parameterValueKey: 'VALUE_NUMERIC',
       datetimeKey: "DATETIME_END",
       datetimeFormat: 'yyyyMMddHHmmss',
+      longFormat: true,
       parameters: {
         NO2: { parameter: 'no2', unit: 'ugm3' },
       },

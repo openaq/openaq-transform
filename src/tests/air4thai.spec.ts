@@ -7,6 +7,12 @@ import { Client } from '../client.ts';
 import data from './fixtures/air4thai.json';
 
 const handlers = [
+  // return just the one so we can check result for formating errors
+  http.get('https://example.com/air4thai/02t', async ({ request }) => {
+    const d = { stations: [ data.stations.find(s => s.stationID === '02t')] }
+    return HttpResponse.json(d);
+  }),
+  // return a larger set so we can check summary stats at the end
   http.get('https://example.com/air4thai', async ({ request }) => {
     return HttpResponse.json(data);
   }),
@@ -47,7 +53,7 @@ interface Measurement {
   value: string;
 }
 
-interface Station {
+interface StationMeasurement {
   stationID: string;
   nameTH: string;
   nameEN: string;
@@ -64,26 +70,45 @@ interface Station {
 
 type ParameterKeys = 'PM25' | 'PM10' | 'O3' | 'NO2' | 'SO2' | 'AQI';
 
-describe('Simple client example', () => {
+describe.only('Simple client example', () => {
+
+
   class Air4ThaiClient extends Client {
+      url = 'https://example.com/air4thai'
+      longFormat = true
+      locationIdKey = 'stationID'
+      provider = 'air4thai'
+      locationLabelKey = 'nameTH'
+      xGeometryKey = 'long'
+      yGeometryKey = 'lat'
+      parameterNameKey = 'parameter'
+      parameterValueKey = 'value'
+      datetimeFormat = 'yyyy-MM-dd HH:mm'
+      parameters = {
+        PM25: { parameter: 'pm25', unit: 'ugm3' },
+        PM10: { parameter: 'pm10', unit: 'ugm3' },
+        O3: { parameter: 'O3', unit: 'ppm' },
+      }
+
     async fetchData() {
       const res = await fetch(this.url!);
+
       const data = await res.json();
       const stations: Air4ThaiStation[] = data.stations;
-      const flattenedStations: Station[] = [];
+      const flattenedStationMeasurements: StationMeasurement[] = [];
 
       stations.forEach((station) => {
+
         const { AQILast, ...locationAttributes } = station;
 
         if (AQILast) {
           const { date, time, ...parameters } = AQILast;
           const parameterKeys: ParameterKeys[] = Object.keys(
-            parameters
-          ) as ParameterKeys[];
+            parameters) as ParameterKeys[] ;
           for (const parameter of parameterKeys) {
             if (parameters.hasOwnProperty(parameter)) {
               const parameterData = parameters[parameter];
-              flattenedStations.push({
+              flattenedStationMeasurements.push({
                 ...locationAttributes,
                 datetime: `${date} ${time}`,
                 value: parameterData.value,
@@ -92,32 +117,25 @@ describe('Simple client example', () => {
             }
           }
         } else {
-          flattenedStations.push(locationAttributes);
+          flattenedStationMeasurements.push(locationAttributes);
         }
       });
-      return { measurements: flattenedStations };
+      return { measurements: flattenedStationMeasurements };
     }
   }
 
-  test('url is updated', async () => {
-    const cln = new Air4ThaiClient({
-      url: 'https://example.com/air4thai',
-      locationIdKey: 'stationID',
-      provider: 'air4thai',
-      locationLabelKey: 'nameTH',
-      xGeometryKey: 'long',
-      yGeometryKey: 'lat',
-      parameterNameKey: 'parameter',
-      parameterValueKey: 'value',
-      datetimeFormat: 'yyyy-MM-dd HH:mm',
-      parameters: {
-        PM25: { parameter: 'pm25', unit: 'ugm3' },
-        PM10: { parameter: 'pm10', unit: 'ugm3' },
-        O3: { parameter: 'O3', unit: 'ppm' },
-      },
-    });
+  test.only('builds correct format', async () => {
+    const cln = new Air4ThaiClient();
+    cln.configure({ url: 'https://example.com/air4thai/02t'});
+    const f = await cln.fetch();
+    expect(f).toBe('');
+  });
+
+  test('handles all the data', async () => {
+    const cln = new Air4ThaiClient();
     expect(cln.url).toBe('https://example.com/air4thai');
     const f = await cln.fetch();
     expect(f).toBe('');
   });
+
 });

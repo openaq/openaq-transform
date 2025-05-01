@@ -1,7 +1,7 @@
 
 
 
-import { cleanKey } from './utils';
+import { cleanKey, readers, parsers } from './utils';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location'
 import { Sensor, Sensors } from './sensor';
@@ -77,13 +77,15 @@ interface LogDefinition {
 
 interface ClientConfigDefinition {
     url?: string;
+    reader?: string;
+    parser?: string;
     provider?: string;
     fetched?: boolean;
     source?: Source;
     timezone?: string;
     longFormat?: boolean
     sourceProjection?: string;
-    datetimeFormat?: string; 
+    datetimeFormat?: string;
 
     locationIdKey?: string | ParseFunction;
     locationLabelKey?: string | ParseFunction;
@@ -113,6 +115,8 @@ export class Client {
 
     // constant across provider
     url?: string;
+    reader: string = 'api';
+    parser: string = 'json';
     provider?: string;
     fetched: boolean = false;
     // source: Source;
@@ -124,7 +128,7 @@ export class Client {
     // mapped data variables
     locationIdKey: string | ParseFunction = 'location';
     locationLabelKey: string | ParseFunction = 'label';
-    parameterNameKey: string | ParseFunction = 'parameter'; 
+    parameterNameKey: string | ParseFunction = 'parameter';
     parameterValueKey: string | ParseFunction = 'value';
     yGeometryKey: string | ParseFunction = 'y';
     xGeometryKey: string | ParseFunction = 'x';
@@ -252,6 +256,7 @@ export class Client {
      * @returns {string} - sensor id key
      */
     getSensorIngestId(row) {
+        console.log(row)
         const location_id = this.getLocationIngestId(row);
         const measurand = row.metric;
         const version = cleanKey(row.version_date);
@@ -339,8 +344,41 @@ export class Client {
         // google://
         // if its binary than it should be an uploaded file
         // if its an object then ...
-        const res = await fetch(this.url)
-        return await res.json()
+        let reader, parser;
+
+        if (typeof this.url === 'string') {
+            const url = this.url;
+            // both reader and parser should only be strings
+            reader = readers[this.reader];
+            parser = parsers[this.parser];
+
+            const res = await reader({ url })
+            return await parser({ res })
+
+        } else {
+            const data = {}
+            for(const [key, url] of Object.entries(this.url)) {
+                // reader could be string or object
+                if (typeof this.reader === 'string') {
+                    reader = readers[this.reader];
+                } else {
+                    // reader is a keyed object
+                    reader = readers[this.reader[key]];
+                }
+                // parser could be string or object
+                if (typeof this.parser === 'string') {
+                    parser = parsers[this.parser];
+                } else {
+                    // parser is a keyed object
+                    parser = parsers[this.parser[key]];
+                }
+
+                const url = this.url[key]
+                const res = await reader({ url })
+                data[key] = await parser({ res })
+            }
+            return data;
+        }
     }
 
     logMessage(type: "warning" | "error", message: string, err: Error | undefined) {
@@ -348,8 +386,14 @@ export class Client {
         // if strict then throw error, otherwise just log for later
         if(!this.log[type]) this.log[type] = [];
         this.log[type].push({ message, err});
-        throw err
         console.debug(`${type}:`, err && err.message);
+        if(type === 'error' && this.strict) {
+            if(err) {
+                throw err;
+            } else {
+                throw new Error(message)
+            }
+        }
     }
 
     /**
@@ -510,8 +554,7 @@ export class Client {
                         metric = this.measurements.metricFromProviderKey(p);
                         value = meas[p];
                     }
-
-                    if (value) {
+                    if (value && metric) {
                         // get the approprate sensor, or create it
                         const sensor = this.getSensor({ ...meas, metric })
                         this.measurements.add(new Measurement({

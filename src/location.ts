@@ -67,7 +67,7 @@ export class Location {
 
   constructor(data: LocationDefinition) {
     console.debug(`New location: ${data.locationId}`)
-    const coordinates = new Coordinates(data.x, data.y, data.projection);
+    const coordinates = new Coordinates(Number(data.x), Number(data.y), data.projection);
     this.locationId = data.locationId;
     this.siteId = data.siteId;
     this.siteName = data.siteName;

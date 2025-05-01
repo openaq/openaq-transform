@@ -6,6 +6,7 @@ export class Coordinates {
   x: number;
   y: number;
   proj: string; // a proj4 string
+  #projected: [number, number];
 
 
   /**
@@ -19,21 +20,21 @@ export class Coordinates {
     this.x = x;
     this.y = y;
     this.proj = proj;
-    this._projected = [this.x, this.y];
+    this.#projected = [this.x, this.y];
 
 
     if (!['EPSG:4326','WGS84'].includes(this.proj)) {
-      this._projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+      this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
     }
 
   }
 
   get latitude() : number {
-    return this._projected[1]
+    return this.#projected[1]
   }
 
   get longitude(): number {
-    return this._projected[0]
+    return this.#projected[0]
   }
 
   json() {
@@ -57,7 +58,6 @@ export function updateBounds(coordinates: Coordinates,  bounds: BBox | null): BB
   if (x > bounds[2]) {
     bounds[2] = x;
   }
-
   if (y > bounds[1]) {
     bounds[1] = y;
   }

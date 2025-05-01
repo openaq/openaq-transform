@@ -43,7 +43,7 @@ describe('Simple client example', () => {
       locationLabelKey: 'STATIONNAME',
       xGeometryKey: 'LONGITUDE',
       yGeometryKey: 'LATITUDE',
-      geometryProjectionKey: () => "EPSG:3857",
+      geometryProjectionKey: (d) => "EPSG:3857",
       parameterNameKey: 'PROPERTY',
       parameterValueKey: 'VALUE_NUMERIC',
       datetimeKey: "DATETIME_END",

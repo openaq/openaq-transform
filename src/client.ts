@@ -118,7 +118,7 @@ export class Client {
     // source: Source;
     timezone: string = 'UTC';
     longFormat: boolean = false;
-    geometryProjectionKey: string = 'projection';
+    geometryProjectionKey: string | ParseFunction = 'projection';
     datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssxxx";
 
     // mapped data variables
@@ -170,7 +170,6 @@ export class Client {
     }
 
     configure(params: ClientConfigDefinition) {
-
         params?.url && (this.url = params.url);
         params?.provider && (this.provider = params.provider);
 
@@ -186,7 +185,7 @@ export class Client {
         params?.parameterValueKey && (this.parameterValueKey = params.parameterValueKey);
         params?.yGeometryKey && (this.yGeometryKey = params.yGeometryKey);
         params?.xGeometryKey && (this.xGeometryKey = params.xGeometryKey);
-        params?.geometryProjectionKey && (this.geometryProjectionKey);
+        params?.geometryProjectionKey && (this.geometryProjectionKey = params.geometryProjectionKey);
         params?.manufacturerKey && (this.manufacturerKey = params.manufacturerKey);
         params?.modelKey && (this.modelKey = params.modelKey);
         params?.ownerKey && (this.ownerKey = params.ownerKey);

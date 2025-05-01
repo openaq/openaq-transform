@@ -85,3 +85,27 @@ export function timestampFactory(
 
     return `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offset}`;
 }
+
+export const parsers = {
+    async json({ res }) {
+        return await res.json();
+    },
+    async csv({ res }) {
+        return parse(await res.text(), {
+            columns: true,
+            skip_empty_lines: true
+        });
+    }
+}
+
+export const readers = {
+    async file({ url }) {
+        const res = await fetch(url);
+        return await res.json();
+    },
+    async api({ url }) {
+        return await fetch(url);
+    },
+    s3({ bucket, key }) { return {} },
+    google({ bucket, key }) { return {} },
+}

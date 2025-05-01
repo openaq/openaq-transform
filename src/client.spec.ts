@@ -12,6 +12,16 @@ const handlers = [
       measurements: [{ station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }]
     });
   }),
+  http.get("https://blah.org/test-provider/stations", async ({ request }) => {
+    return HttpResponse.json([
+        { station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }
+    ]);
+  }),
+  http.get("https://blah.org/test-provider/measurements", async ({ request }) => {
+    return HttpResponse.json([
+        { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }
+    ]);
+  }),
   http.get("https://blah.org/long", async ({ request }) => {
     return HttpResponse.json({
       locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
@@ -149,20 +159,8 @@ describe('Client with data in wide format', () => {
     ownerKey = (d) => 'test_owner';
     isMobileKey = (d) => false;
     parameters = {
-      // which of these do we want?
-      // pm25 is listed in the client data as 'particulate_matter_25` and is in ugm3
-      //pm25: ["particulate_matter_25","ugm3"],
-      //temperature: ["tempf", "f"],
-      //pm25: { parameter: "particulate_matter_25", unit: "ugm3"},
-      //temperature: { parameter: "tempf", unit: "f" },
-      // keyed by the data name
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
-
-      // whereas this reads as
-      // the client data, particulate_matter_25 should be mapped to pm25 and is currently in ugm3
-      // particulate_matter_25: { parameter: "pm25", unit:"ugm3" },
-      // tempf: { parameter: "temperature", unit: "f" },
     };
 
   }
@@ -191,6 +189,42 @@ describe('Client with data in wide format', () => {
 
 })
 
+
+describe('Client with data split between two different urls', () => {
+
+
+  class JsonClient extends Client {
+    url = {
+        // name of the node and then the src url
+        locations: 'https://blah.org/test-provider/stations',
+        measurements: 'https://blah.org/test-provider/measurements',
+    };
+    provider = 'testing';
+    // mapping data
+    xGeometryKey = 'longitude';
+    averagingIntervalKey = 'averaging';
+    sensorStatusKey = (d) => 'asdf'
+    yGeometryKey = 'latitude';
+    locationIdKey = 'station';
+    locationLabelKey = 'site_name';
+    projectionKey = (d) => 'WSG84';
+    ownerKey = (d) => 'test_owner';
+    isMobileKey = (d) => false;
+    parameters = {
+      particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
+      tempf: { parameter: "temperature", unit: "f" },
+    };
+
+  }
+
+  test('outputs correct format', async () => {
+    const cln = new JsonClient()
+    const data = await cln.fetch();
+    expect(data).toStrictEqual(expectedOutput);
+  })
+
+})
+
 describe('Client with data in long format', () => {
 
   class JsonClient extends Client{
@@ -210,8 +244,6 @@ describe('Client with data in long format', () => {
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
-      //pm25: ["particulate_matter_25","ug/m3"],
-      //temperature: ["tempf", "f"],
     }
   }
 
@@ -291,10 +323,6 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
     url = 'https://blah.org/withsensors';
     provider = 'testing';
     longFormat = true;
-    parameters = {
-      particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
-      tempf: { parameter: "temperature", unit: "f" },
-    }
   }
 
 
@@ -303,6 +331,10 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
     // Do some other things for whatever reasone
     // configure by passing a map
     cln.configure({
+        parameters: {
+            particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
+            tempf: { parameter: "temperature", unit: "f" },
+        },
       xGeometryKey: 'longitude',
       yGeometryKey: 'latitude',
       averagingIntervalKey: 'averaging',

@@ -3,39 +3,40 @@ import { fromUnixTime, parse, parseISO, format } from "date-fns";
 
 export class Datetime {
 
-    _input: string | number | Date;
+    #input: string | number | Date;
     format?: string;
     timezone?: string;
+    #date: Date | null;
 
     constructor(input: string | number, format?: string, timezone?: string) {
-        this._input = input;
+        this.#input = input;
         this.format = format;
         this.timezone = timezone;
-        this._date = null;
+        this.#date = null;
 
       // we should parse it here and not defer to later
-      if(!this._input) {
+      if(!this.#input) {
         throw new Exception('Input required');
       }
 
-      if (typeof this._input == 'number') {
-        this._date = fromUnixTime(this._input)
+      if (typeof this.#input == 'number') {
+        this.#date = fromUnixTime(this.#input)
       }
       if (!this.format) {
-        this._date = parseISO(this._input);
+        this.#date = parseISO(this.#input);
       } else {
-        this._date = parse(String(this._input), this.format, new Date())
+        this.#date = parse(String(this.#input), this.format, new Date())
       }
 
     }
 
   toDate() {
-    return this._date;
+    return this.#date;
   }
 
   // this should just be an serializer/formatter
   toString() {
-    return format(this._date, "yyyy-MM-dd'T'HH:mm:ssxxx");//, { in: tz(this.timezone) });
+    return format(this.#date, "yyyy-MM-dd'T'HH:mm:ssxxx");//, { in: tz(this.timezone) });
   }
 
 }

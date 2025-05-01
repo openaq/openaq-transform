@@ -16,17 +16,19 @@ export class Datetime {
 
       // we should parse it here and not defer to later
       if(!this.#input) {
-        throw new Exception('Input required');
+        throw new Error('Input required');
       }
 
       if (typeof this.#input == 'number') {
         this.#date = fromUnixTime(this.#input)
-      }
-      if (!this.format) {
-        this.#date = parseISO(this.#input);
       } else {
-        this.#date = parse(String(this.#input), this.format, new Date())
+        if (!this.format) {
+          this.#date = parseISO(this.#input);
+        } else {
+          this.#date = parse(String(this.#input), this.format, new Date())
+        }
       }
+
 
     }
 

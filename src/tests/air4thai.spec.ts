@@ -68,7 +68,7 @@ interface StationMeasurement {
   parameter?: string;
 }
 
-//type ParameterKeys = 'PM25' | 'PM10' | 'O3' | 'NO2' | 'SO2' | 'AQI';
+type ParameterKeys = 'PM25' | 'PM10' | 'O3' | 'NO2' | 'SO2' | 'AQI';
 
 describe.only('Simple client example', () => {
 
@@ -103,7 +103,9 @@ describe.only('Simple client example', () => {
 
         if (AQILast) {
           const { date, time, ...parameters } = AQILast;
-          for (const parameter of Object.keys(this.parameters)) {
+          const parameterKeys: ParameterKeys[] = Object.keys(
+            parameters) as ParameterKeys[] ;
+          for (const parameter of parameterKeys) {
             if (parameters.hasOwnProperty(parameter)) {
               const parameterData = parameters[parameter];
               flattenedStationMeasurements.push({

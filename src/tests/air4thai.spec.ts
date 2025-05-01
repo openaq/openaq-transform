@@ -70,11 +70,86 @@ interface StationMeasurement {
 
 type ParameterKeys = 'PM25' | 'PM10' | 'O3' | 'NO2' | 'SO2' | 'AQI';
 
-describe.only('Simple client example', () => {
+
+const expectedOutput = {
+  meta: {
+    matching_method: "ingest-id",
+    schema: "v0.1",
+    source: "air4thai",
+  },
+  locations: [
+    {
+      location_id: 'air4thai-02t',
+      site_id: '02t',
+      site_name: 'มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา',
+      coordinates: {
+        latitude: 13.732846,
+        longitude: 100.487662,
+        proj: 'EPSG:4326',
+      },
+      ismobile: false,
+      systems: [
+        {
+          system_id: 'air4thai-02t',
+          manufacturer_name: 'default',
+          model_name: 'default',
+          sensors: [
+            {
+              sensor_id: 'air4thai-02t-pm25',
+              parameter: 'pm25',
+              units: 'ug/m3',
+              averaging_interval_secs: 3600,
+              logging_interval_secs: 3600,
+              flags: [],
+            },
+            {
+              sensor_id: 'air4thai-02t-pm10',
+              parameter: 'pm10',
+              units: 'ug/m3',
+              averaging_interval_secs: 3600,
+              logging_interval_secs: 3600,
+              flags: [],
+            },
+            {
+              sensor_id: 'air4thai-02t-o3',
+              parameter: 'o3',
+              units: 'ppm',
+              averaging_interval_secs: 3600,
+              logging_interval_secs: 3600,
+              flags: [],
+            },
+          ]
+        },
+      ],
+    }
+  ],
+  measurements: [
+    {
+      sensor_id: 'air4thai-02t-pm25',
+      timestamp: '2025-04-30T01:00:00+07:00',
+      value: 22.9,
+    },
+    {
+      sensor_id: 'air4thai-02t-pm10',
+      timestamp: '2025-04-30T01:00:00+07:00',
+      value: -1,
+    },
+    {
+      sensor_id: 'air4thai-02t-o3',
+      timestamp: '2025-04-30T01:00:00+07:00',
+      value: -1,
+    }
+  ]
+};
+
+
+describe('Simple client example', () => {
 
 
   class Air4ThaiClient extends Client {
       url = 'https://example.com/air4thai'
+      averagingIntervalKey = () => 3600;
+      isMobileKey = () => false;
       longFormat = true
       locationIdKey = 'stationID'
       provider = 'air4thai'
@@ -85,9 +160,9 @@ describe.only('Simple client example', () => {
       parameterValueKey = 'value'
       datetimeFormat = 'yyyy-MM-dd HH:mm'
       parameters = {
-        PM25: { parameter: 'pm25', unit: 'ugm3' },
-        PM10: { parameter: 'pm10', unit: 'ugm3' },
-        O3: { parameter: 'O3', unit: 'ppm' },
+        PM25: { parameter: 'pm25', unit: 'ug/m3' },
+        PM10: { parameter: 'pm10', unit: 'ug/m3' },
+        O3: { parameter: 'o3', unit: 'ppm' },
       }
 
     async fetchData() {
@@ -111,7 +186,7 @@ describe.only('Simple client example', () => {
               flattenedStationMeasurements.push({
                 ...locationAttributes,
                 datetime: `${date} ${time}`,
-                value: parameterData.value,
+                value: parameterData.value*1,
                 parameter: parameter,
               });
             }
@@ -124,18 +199,19 @@ describe.only('Simple client example', () => {
     }
   }
 
-  test.only('builds correct format', async () => {
-    const cln = new Air4ThaiClient();
-    cln.configure({ url: 'https://example.com/air4thai/02t'});
-    const f = await cln.fetch();
-    expect(f).toBe('');
-  });
+    test('builds correct format', async () => {
+        const cln = new Air4ThaiClient();
+        cln.configure({ url: 'https://example.com/air4thai/02t'});
+        const data = await cln.fetch();
+        expect(data).toStrictEqual(expectedOutput);
+    });
 
-  test('handles all the data', async () => {
-    const cln = new Air4ThaiClient();
-    expect(cln.url).toBe('https://example.com/air4thai');
-    const f = await cln.fetch();
-    expect(f).toBe('');
-  });
+    test.only('handles all the data', async () => {
+        const cln = new Air4ThaiClient();
+        expect(cln.url).toBe('https://example.com/air4thai');
+        const f = await cln.fetch();
+        expect(f.locations.length).toBe(187)
+        expect(f.measurements.length).toBe(559)
+    });
 
 });

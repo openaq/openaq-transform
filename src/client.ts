@@ -1,7 +1,9 @@
 
 
 
-import { cleanKey, readers, parsers } from './utils';
+import { cleanKey, isFile, getMethod } from './utils';
+import * as readers from './readers'
+import * as parsers from './parsers'
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location'
 import { Sensor, Sensors } from './sensor';
@@ -256,7 +258,6 @@ export class Client {
      * @returns {string} - sensor id key
      */
     getSensorIngestId(row) {
-        console.log(row)
         const location_id = this.getLocationIngestId(row);
         const measurand = row.metric;
         const version = cleanKey(row.version_date);
@@ -332,6 +333,13 @@ export class Client {
     }
 
 
+    get readers() {
+        return readers
+    }
+
+    get parsers() {
+        return parsers
+    }
 
     /**
      * fetches data and convert to json
@@ -344,40 +352,31 @@ export class Client {
         // google://
         // if its binary than it should be an uploaded file
         // if its an object then ...
-        let reader, parser;
 
-        if (typeof this.url === 'string') {
-            const url = this.url;
-            // both reader and parser should only be strings
-            reader = readers[this.reader];
-            parser = parsers[this.parser];
-
-            const res = await reader({ url })
-            return await parser({ res })
-
-        } else {
+        // first we check if url is a keyed object or not
+        if (typeof this.url === 'object' && !isFile(this.url)) {
+            // loop through all those keys to create the data object
             const data = {}
             for(const [key, url] of Object.entries(this.url)) {
-                // reader could be string or object
-                if (typeof this.reader === 'string') {
-                    reader = readers[this.reader];
-                } else {
-                    // reader is a keyed object
-                    reader = readers[this.reader[key]];
-                }
-                // parser could be string or object
-                if (typeof this.parser === 'string') {
-                    parser = parsers[this.parser];
-                } else {
-                    // parser is a keyed object
-                    parser = parsers[this.parser[key]];
-                }
-
-                const url = this.url[key]
-                const res = await reader({ url })
-                data[key] = await parser({ res })
+                const reader = getMethod(key, this.reader, this.readers)
+                const parser = getMethod(key, this.parser, this.parsers)
+                const text = await reader({ url })
+                const d = await parser({ text })
+                // check to make sure the parser did something
+                // need a better check here
+                if(typeof(d)!=='object') throw new Error('Parser did not return an object')
+                data[key] = d
             }
             return data;
+        } else { // assume is should just be passed to the reader method
+            const url = this.url;
+            const reader = getMethod(null, this.reader, this.readers)
+            const parser = getMethod(null, this.parser, this.parsers)
+            // same for the parser
+            const text = await reader({ url })
+            const d = await parser({ text })
+            if(typeof(d)!=='object') throw new Error('Parser did not return an object')
+            return d
         }
     }
 
@@ -404,7 +403,11 @@ export class Client {
 
     async fetch() {
         const data = await this.fetchData();
+        this.process(data)
+        return this.data();
+    }
 
+    process(data) {
         if (!data) {
             throw new Error('No data was returned from file');
         }
@@ -420,7 +423,7 @@ export class Client {
         if (data.flags) {
             this.processFlagsData(data.flags);
         }
-        return this.data();
+
     }
 
 
@@ -547,7 +550,7 @@ export class Client {
                     let metric, value;
                     // for long format data we will need to extract the parameter name from the field
                     if(this.longFormat) {
-                        let metricName = this.getValueFromKey(meas, this.parameterNameKey)
+                        let metricName = this.getValueFromKey(meas, p)
                         metric = this.measurements.metricFromProviderKey(metricName)
                         value = this.getValueFromKey(meas, this.parameterValueKey)
                     } else {

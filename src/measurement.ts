@@ -88,7 +88,10 @@ export class Measurement {
   constructor(params: MeasurementDefinition) {
     this.sensorId = params.sensorId;
     this.timestamp = params.timestamp;
-    this.value = params.value;
+    // the csv parser does not convert values to numbers
+    // should we do something here to do that?
+    // the only issue I see is if we expect a flag here, in which case we could catch an error?
+    this.value = params.value*1;
     //this.units = params.units;
     this.coordinates = params.coordinates;
   }

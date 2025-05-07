@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@types/proj4": "^2.5.6",
+    "happy-dom": "^17.4.6",
     "msw": "^2.7.5",
     "oxlint": "^0.16.8",
     "typescript": "~5.8.3",

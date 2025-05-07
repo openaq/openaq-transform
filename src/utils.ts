@@ -86,26 +86,42 @@ export function timestampFactory(
     return `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offset}`;
 }
 
-export const parsers = {
-    async json({ res }) {
-        return await res.json();
-    },
-    async csv({ res }) {
-        return parse(await res.text(), {
-            columns: true,
-            skip_empty_lines: true
-        });
-    }
+// temporary method
+export function isFile (obj) {
+    return obj.constructor.name === 'File';
 }
 
-export const readers = {
-    async file({ url }) {
-        const res = await fetch(url);
-        return await res.json();
-    },
-    async api({ url }) {
-        return await fetch(url);
-    },
-    s3({ bucket, key }) { return {} },
-    google({ bucket, key }) { return {} },
+/**
+ *  Method to determine which method we want to use to parse/read
+ *
+ */
+export function getMethod(key, method, methods) {
+    console.log('get method', key, method, methods)
+    // key would be passed when we have a keyed url
+    if(key) {
+        if (method && typeof(method) === 'object') {
+            // use the key to extract the name of the reader
+            key = method[key];
+        } else if(method && ['string','function'].includes(typeof(method))) {
+            // does not matter that key was passed, use the reader value
+            key = method;
+        }
+    } else {
+        key = method;
+    }
+    // we could allow the reader to be a string or a function
+    if (typeof key === 'string') {
+        // if its a string we would pull it from our avaiable readers
+        // we would do this if we needed different readers for each node of data (e.g. locations, measurements)
+        if(!methods[key]) {
+            throw new Error(`Could not find a method named '${key}'`)
+        }
+        return methods[key];
+    } else if (typeof key === 'function') {
+        // and then if we only needed one CUSTOM reader, we could set it when we extend the client
+        return key;
+    } else {
+        // just a pass through??
+        return (a) => a;
+    }
 }

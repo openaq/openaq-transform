@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
 import { Client } from './client.ts'
+console.log(process.cwd())
 
 // mock server
 const handlers = [
@@ -49,65 +50,6 @@ const handlers = [
 const server = setupServer(...handlers);
 server.listen()
 
-const expectedOutput = {
-  meta: {
-    matching_method: "ingest-id",
-    schema: "v0.1",
-    source: "testing",
-  },
-  locations: [
-    {
-      location_id: 'testing-ts1',
-      site_id: 'ts1',
-      site_name: 'test site #1',
-      coordinates: {
-        latitude: 45.56665,
-        longitude: -123.12121,
-        proj: 'EPSG:4326',
-      },
-      ismobile: false,
-      systems: [
-        {
-          system_id: 'testing-ts1',
-          manufacturer_name: 'default',
-          model_name: 'default',
-          sensors: [
-            {
-              sensor_id: 'testing-ts1-pm25',
-              parameter: 'pm25',
-              units: 'ug/m3',
-              averaging_interval_secs: 3600,
-              logging_interval_secs: 3600,
-              status: 'asdf',
-              flags: [],
-            },
-            {
-              sensor_id: 'testing-ts1-temperature',
-              parameter: 'temperature',
-              units: 'f',
-              averaging_interval_secs: 3600,
-              logging_interval_secs: 3600,
-              status: 'asdf',
-              flags: [],
-            },
-          ]
-        },
-      ],
-    }
-  ],
-  measurements: [
-    {
-      sensor_id: 'testing-ts1-pm25',
-      timestamp: '2024-01-01T00:00:00-08:00',
-      value: 10,
-    },
-    {
-      sensor_id: 'testing-ts1-temperature',
-      timestamp: '2024-01-01T00:00:00-08:00',
-      value: 80,
-    }
-  ]
-};
 
 describe('Simple client example', () => {
 

@@ -1,6 +1,6 @@
 import { max, min } from 'date-fns';
 import { Datetime } from './datetime';
-import { BBox } from 'geojson';
+import type { BBox } from 'geojson';
 import { Coordinates, updateBounds } from './coordinates';
 import { stripNulls } from './utils';
 import { ParametersDefinition } from './constants';

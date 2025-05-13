@@ -48,7 +48,7 @@ export class Datetime {
           parsedDate = DateTime.fromISO(this.#input);
         } else {
           if (this.timezoneParse) {
-            parsedDate = DateTime.fromFormat(this.#input, this.format, {zone: this.timezoneParse})
+            parsedDate = DateTime.fromFormat(this.#input, this.format, { zone: this.timezoneParse })
           } else {
             parsedDate = DateTime.fromFormat(this.#input, this.format)
           }
@@ -72,9 +72,12 @@ export class Datetime {
   }
 
   readonly isGreaterThan = (date: Datetime): boolean => this.date > date.date
-  
 
   readonly isLessThan = (date: Datetime): boolean => this.date < date.date
+
+  readonly greaterOf = (date: Datetime): Datetime => this.date >= date.date ? this : date
+
+  readonly lesserOf = (date: Datetime): Datetime => this.date <= date.date ? this : date
 
   toString() {
     return this.date.setZone(this.timezoneOut).toISO()

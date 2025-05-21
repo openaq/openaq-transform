@@ -43,12 +43,17 @@ test('isLessThan works', () => {
 test('lesserOf works', () => {
     const datetime1 = new Datetime(1746736701);
     const datetime2 = new Datetime(1746736700);
-
     expect(datetime2.lesserOf(datetime1)).toEqual(datetime2);
 });
 
-test('greaterOf works', () => {
-    const datetime1 = new Datetime(1746736701);
+test('lesserOf works when values equal', () => {
+    const datetime1 = new Datetime(1746736700);
+    const datetime2 = new Datetime(1746736700);
+    expect(datetime2.lesserOf(datetime1)).toEqual(datetime2);
+});
+
+test('greaterOf works when values equal', () => {
+    const datetime1 = new Datetime(1746736700);
     const datetime2 = new Datetime(1746736700);
 
     expect(datetime1.greaterOf(datetime2)).toEqual(datetime1);

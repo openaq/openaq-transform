@@ -9,7 +9,7 @@ interface DatetimeOptionsDefinition {
 }
 
 export class Datetime {
-  #input: string | number | Date;  //'2025-01-01 00:00'
+  #input: string | number | Date | Datetime;  //'2025-01-01 00:00'
   format?: string;   // 'YYYY-mm-dd HH:mm'
   timezoneParse?: string; // 'UTC'
   timezoneOut?: string; // UTC 'America/Denver'
@@ -18,7 +18,7 @@ export class Datetime {
 
 
   constructor(
-    input: string | number | Date,
+    input: string | number | Date | Datetime,
     options?: DatetimeOptionsDefinition
   ) {
     if (
@@ -42,6 +42,8 @@ export class Datetime {
       if (!this.timezoneOut) this.timezoneOut = 'UTC'
     } else if (this.#input instanceof Date) {
       parsedDate = DateTime.fromJSDate(this.#input);
+    }else if (this.#input instanceof Datetime) {
+      parsedDate = this.#input.date;
     } else {
       try {
         if (!this.format) { // defaults to ISO-8601

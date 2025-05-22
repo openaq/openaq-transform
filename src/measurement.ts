@@ -9,8 +9,8 @@ import { ParametersDefinition } from './constants';
 export class Measurements {
   headers: string[];
   _measurements: Map<string, Measurement>;
-  from?: Date;
-  to?: Date;
+  from?: Datetime;
+  to?: Datetime;
   bounds: BBox | null;
   parameters: ParametersDefinition;
 
@@ -38,12 +38,8 @@ export class Measurements {
   add(measurement: Measurement) {
     this.bounds = updateBounds(measurement?.coordinates, this.bounds);
 
-    this.to = this.to
-      ? max([this.to, measurement.timestamp.toDate()])
-      : measurement.timestamp.toDate();
-    this.from = this.from
-      ? min([this.from, measurement.timestamp.toDate()])
-      : measurement.timestamp.toDate();
+    this.to = measurement.greaterOf(this.to)
+    this.from = measurement.lesserOf(this.from)
 
     console.debug(`adding measurement (${measurement.id}) to measurements (total: ${this.length})`)
     this._measurements.set(
@@ -94,6 +90,6 @@ export class Measurement {
   }
 
   get id(): string {
-    return `${this.sensorId}-${this.timestamp}`
+    return `${this.sensorId}-${this.timestamp.toString()}`
   }
 }

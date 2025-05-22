@@ -4,15 +4,17 @@ import { DateTime } from 'luxon';
 
 interface DatetimeOptionsDefinition {
   format?: string,
-  timezoneParse?: string,
-  timezoneOut?: string
+  timezone?: string,
+  locationTimezone?: string
 }
 
+// settled on `timezone` as the variable name of the formated string to match the variable `format`
+// both referring to the string as written in the data
 export class Datetime {
   #input: string | number | Date | Datetime;  //'2025-01-01 00:00'
-  format?: string;   // 'YYYY-mm-dd HH:mm'
-  timezoneParse?: string; // 'UTC'
-  timezoneOut?: string; // UTC 'America/Denver'
+  format?: string;   // 'YYYY-mm-dd HH:mm' Format of the timestamp string
+  timezone?: string; // 'UTC' The timezone of the timestamp string
+  locationTimezone?: string; // UTC 'America/Denver' - the timezone of the measurement location
   readonly date: DateTime;
 
 
@@ -22,12 +24,12 @@ export class Datetime {
     options?: DatetimeOptionsDefinition
   ) {
     if (
-      options?.format?.includes('Z') && options?.timezoneParse
+      options?.format?.includes('Z') && options?.timezone
     ) throw new TypeError()
     this.#input = input;
     this.format = options?.format;
-    this.timezoneParse = options?.timezoneParse;
-    this.timezoneOut = options?.timezoneOut ?? options?.timezoneParse;
+    this.timezone = options?.timezone;
+    this.locationTimezone = options?.locationTimezone ?? options?.timezone;
     this.date = this.parseDate();
   }
 
@@ -39,7 +41,7 @@ export class Datetime {
 
     if (typeof this.#input == 'number') {
       parsedDate = DateTime.fromSeconds(this.#input);
-      if (!this.timezoneOut) this.timezoneOut = 'UTC'
+      if (!this.locationTimezone) this.locationTimezone = 'UTC'
     } else if (this.#input instanceof Date) {
       parsedDate = DateTime.fromJSDate(this.#input);
     }else if (this.#input instanceof Datetime) {
@@ -49,8 +51,8 @@ export class Datetime {
         if (!this.format) { // defaults to ISO-8601
           parsedDate = DateTime.fromISO(this.#input);
         } else {
-          if (this.timezoneParse) {
-            parsedDate = DateTime.fromFormat(this.#input, this.format, { zone: this.timezoneParse })
+          if (this.timezone) {
+            parsedDate = DateTime.fromFormat(this.#input, this.format, { zone: this.timezone })
           } else {
             parsedDate = DateTime.fromFormat(this.#input, this.format)
           }
@@ -77,12 +79,14 @@ export class Datetime {
 
   readonly isLessThan = (date: Datetime): boolean => this.date < date.date
 
-  readonly greaterOf = (date: Datetime): Datetime => this.date >= date.date ? this : date
+    // when a null/undefinded value is passed we will always return this.date
+    // this is valuable when you are updating a value that has not been initialized
+  readonly greaterOf = (date: Datetime): Datetime => this.date >= (date?.date ?? this.date) ? this : date
 
-  readonly lesserOf = (date: Datetime): Datetime => this.date <= date.date ? this : date
+  readonly lesserOf = (date: Datetime): Datetime => this.date <= (date?.date ?? this.date) ? this : date
 
   toString() {
-    return this.date.setZone(this.timezoneOut).toISO()
+    return this.date.setZone(this.locationTimezone).toISO()
   }
 
   toUTC() {

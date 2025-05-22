@@ -11,8 +11,28 @@ test('UTC datetime correctly outputs to different timezone', () => {
     expect(datetime.toString()).toBe('2024-12-31T17:00:00.000-07:00');
 });
 
+test('Datetime correctly outputs to location timezone', () => {
+    const datetime = new Datetime('2025-01-01 00:00', { format: 'yyyy-MM-dd HH:mm', timezoneParse: 'America/Denver', timezoneOut: 'America/Denver' })
+    expect(datetime.toString()).toBe('2025-01-01T00:00:00.000-07:00');
+});
+
+test('Datetime correctly outputs to UTC timezone', () => {
+    const datetime = new Datetime('2025-01-01 00:00', { format: 'yyyy-MM-dd HH:mm', timezoneParse: 'America/Denver', timezoneOut: 'America/Denver' })
+    expect(datetime.toUTC()).toBe('2025-01-01T07:00:00.000Z');
+});
+
+test('Local datetime correctly outputs to local timezone when timezoneOut not included', () => {
+    const datetime = new Datetime('2025-01-01 00:00', { format: 'yyyy-MM-dd HH:mm', timezoneParse: 'America/Denver' })
+    expect(datetime.toString()).toBe('2025-01-01T00:00:00.000-07:00');
+});
+
 test('datetime string with Z correctly throws when timezoneParse is also included', () => {
     expect(() => new Datetime('2025-01-01 00:00Z', { format: 'yyyy-MM-dd HH:mmZ', timezoneParse: 'America/Denver', timezoneOut: 'America/Denver' })).toThrow(TypeError)
+});
+
+test('ISO format parses correctly by default', () => {
+    const datetime = new Datetime('2025-01-01T00:00:00-07:00')
+    expect(datetime.toUTC()).toBe('2025-01-01T07:00:00.000Z');
 });
 
 test('unix timestamp number (seconds) parses correctly', () => {
@@ -24,7 +44,6 @@ test('unix timestamp number (second) parses and is transformed to custom timezon
     const datetime = new Datetime(1746736701, { timezoneOut: 'America/Denver' })
     expect(datetime.toString()).toBe('2025-05-08T14:38:21.000-06:00');
 });
-
 
 test('isGreaterThan works', () => {
     const datetime1 = new Datetime(1746736701)
@@ -59,5 +78,3 @@ test('greaterOf works when values equal', () => {
     expect(datetime1.greaterOf(datetime2)).toEqual(datetime1);
 
 })
-
-

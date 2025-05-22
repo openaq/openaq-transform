@@ -27,7 +27,7 @@ export class Datetime {
     this.#input = input;
     this.format = options?.format;
     this.timezoneParse = options?.timezoneParse;
-    this.timezoneOut = options?.timezoneOut;
+    this.timezoneOut = options?.timezoneOut ?? options?.timezoneParse;
     this.date = this.parseDate();
   }
 
@@ -84,4 +84,13 @@ export class Datetime {
   toString() {
     return this.date.setZone(this.timezoneOut).toISO()
   }
+
+  toUTC() {
+    return this.date.setZone('UTC').toISO()
+  }
+
+  toLocal() {
+    return this.date.setZone().toISO()
+  }
+
 }

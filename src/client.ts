@@ -1,12 +1,19 @@
 
 
 
-import { cleanKey } from './utils';
+import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
+import * as readers from './readers'
+import * as parsers from './parsers'
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location'
 import { Sensor, Sensors } from './sensor';
+import { System } from './system';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 import { Datetime } from './datetime';
+import {
+    MissingValueError,
+    MissingSensorError,
+} from './errors';
 
 export interface MetaDefinition {
     locationIdKey: string;
@@ -25,6 +32,7 @@ export interface MetaDefinition {
     timezone: string;
 }
 
+
 export interface Source {
     meta: MetaDefinition;
     provider: string;
@@ -39,6 +47,10 @@ interface SensorDataDefinition {
     [key: string]: any
 }
 
+interface FetchedDataDefinition {
+    [key: string]: any
+}
+
 
 type ErrorSummaryDefinition = { [key: string]: number; }
 
@@ -50,8 +62,8 @@ interface SummaryDefinition {
     flags: number;
     measures: number;
     errors: ErrorSummaryDefinition;
-    from: string;
-    to: string;
+    from: string | null | undefined;
+    to: string | null | undefined;
 }
 
 
@@ -60,11 +72,11 @@ interface LogEntry {
     err?: Error;
 };
 
-interface LogDefintion {
-    info?: LogEntry[];
-    warning?: LogEntry[];
-    error?: LogEntry[];
-}
+// interface LogDefintion {
+//     info?: LogEntry[];
+//     warning?: LogEntry[];
+//     error?: LogEntry[];
+// }
 
 
 type ParseFunction = (data?: any) => string | number | object | boolean
@@ -73,17 +85,23 @@ interface LogDefinition {
     [key: string]: LogEntry[];
 };
 
+interface IndexedUrlDefinition {
+    [key: string]: string | File;
+};
+
 
 
 interface ClientConfigDefinition {
-    url?: string;
+    url?: string | IndexedUrlDefinition;
+    reader?: string;
+    parser?: string;
     provider?: string;
     fetched?: boolean;
     source?: Source;
     timezone?: string;
     longFormat?: boolean
     sourceProjection?: string;
-    datetimeFormat?: string; 
+    datetimeFormat?: string;
 
     locationIdKey?: string | ParseFunction;
     locationLabelKey?: string | ParseFunction;
@@ -110,21 +128,23 @@ interface ClientConfigDefinition {
 
 export class Client {
     // Q how to handle secrets
-
     // constant across provider
-    url?: string;
-    provider?: string;
+
+    provider!: string;
+    url?: string | IndexedUrlDefinition;
+    reader: string = 'api';
+    parser: string = 'json';
     fetched: boolean = false;
     // source: Source;
-    timezone: string = 'UTC';
+    timezone?: string;
     longFormat: boolean = false;
     geometryProjectionKey: string | ParseFunction = 'projection';
-    datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssxxx";
+    datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 
     // mapped data variables
     locationIdKey: string | ParseFunction = 'location';
     locationLabelKey: string | ParseFunction = 'label';
-    parameterNameKey: string | ParseFunction = 'parameter'; 
+    parameterNameKey: string | ParseFunction = 'parameter';
     parameterValueKey: string | ParseFunction = 'value';
     yGeometryKey: string | ParseFunction = 'y';
     xGeometryKey: string | ParseFunction = 'x';
@@ -151,6 +171,7 @@ export class Client {
     _sensors: Sensors;
     // log object for compiling errors/warnings for later reference
     log: LogDefinition;
+    strict: boolean = true;
 
     constructor(params?: ClientConfigDefinition) {
 
@@ -207,17 +228,6 @@ export class Client {
         return this._measurements
     }
 
-    // needs some guardrails
-    // setKey(key: string, value: any) {
-    //     this[key] = value;
-    // }
-
-
-
-    getValueFromKey(data: any, key: Function | string) {
-        return typeof key === 'function' ? key(data) : data[key];
-    }
-
 
     /**
      * Provide a location based ingest id
@@ -230,14 +240,14 @@ export class Client {
     /**
      * Provide a system based ingest id
      */
-    getSystemId(row) : string {
-        const manufacturer = cleanKey(row[this.manufacturerKey]);
-        const model = cleanKey(row[this.modelKey]);
+    getSystemId(row: any) : string {
+        const manufacturer = cleanKey(getValueFromKey(row, this.manufacturerKey));
+        const model = cleanKey(getValueFromKey(row, this.modelKey));
         const location_id = this.getLocationIngestId(row);
         let key = '';
         if (manufacturer && model) {
             key = `-${manufacturer}:${model}`;
-        } else if (!manufacturer & !model) {
+        } else if (!manufacturer && !model) {
             // key = 'default';
         } else {
             key = `-${manufacturer || model}`;
@@ -251,7 +261,7 @@ export class Client {
      * @param {object} row - data for building key
      * @returns {string} - sensor id key
      */
-    getSensorIngestId(row) {
+    getSensorIngestId(row: any): string {
         const location_id = this.getLocationIngestId(row);
         const measurand = row.metric;
         const version = cleanKey(row.version_date);
@@ -272,8 +282,8 @@ export class Client {
      * @param {(string|object)} key - key or data to build location
      * @returns {object} - location object
      */
-    getLocation(key: LocationDataDefinition) {
-        let loc = null;
+    getLocation(key: LocationDataDefinition | string) {
+        let loc: Location | undefined;
         let data = {};
         if (typeof(key) === 'object') {
             data = { ...key };
@@ -294,15 +304,16 @@ export class Client {
      * @param {(string|object)} key - key or data to build sensor
      * @returns {object} - sensor object
      */
-    getSensor(key: string | object, addIfNotFound: boolean = true) {
-        let sensor = null;
+    getSensor(key: string | object): Sensor | undefined {
+        let sensor: Sensor | undefined;
         let data = {};
         if (typeof(key) === 'object') {
             data = { ...key };
             key = this.getSensorIngestId(data);
         }
-        sensor = this._sensors.get(key);
-        if (!sensor && addIfNotFound) {
+        if (this._sensors.has(key)) {
+            sensor = this._sensors.get(key);
+        } else  {
             sensor = this.addSensor(data);
         }
         return sensor;
@@ -314,19 +325,23 @@ export class Client {
      * @param {*} row - data with fields to create timestamp
      * @returns {string} - formated timestamp string
      */
-    getDatetime(row) {
-        const dt_string = row[this.datetimeKey];
+    getDatetime(row: any) {
+        const dt_string: string = getValueFromKey(row, this.datetimeKey);
         if(!dt_string) {
             throw new Error(`Missing date/time field. Looking in ${this.datetimeKey}`);
         }
-        const dt = new Datetime(dt_string, this.datetimeFormat, this.timezone);
-        //if(!dt.isValid()) {
-        //     throw new Error(`A valid date could not be made from ${dt_string} using ${this.datetimeFormat}`);
-        // }
+        const dt = new Datetime(dt_string, { format: this.datetimeFormat, timezone: this.timezone });
         return dt;
     }
 
 
+    get readers() {
+        return readers
+    }
+
+    get parsers() {
+        return parsers
+    }
 
     /**
      * fetches data and convert to json
@@ -339,17 +354,55 @@ export class Client {
         // google://
         // if its binary than it should be an uploaded file
         // if its an object then ...
-        const res = await fetch(this.url)
-        return await res.json()
+
+        // first we check if url is a keyed object or not
+        if (typeof this.url === 'object' && !isFile(this.url)) {
+            // loop through all those keys to create the data object
+            const data: FetchedDataDefinition = {}
+
+            for(const [key, url] of Object.entries(this.url)) {
+                const reader = getMethod(key, this.reader, this.readers)
+                const parser = getMethod(key, this.parser, this.parsers)
+                const text = await reader({ url })
+                const d = await parser({ text })
+                // check to make sure the parser did something
+                // need a better check here
+                if(typeof(d)!=='object') throw new Error('Parser did not return an object')
+                data[key] = d
+            }
+            return data;
+        } else { // assume is should just be passed to the reader method
+            const url = this.url;
+            const reader = getMethod(null, this.reader, this.readers)
+            const parser = getMethod(null, this.parser, this.parsers)
+            // same for the parser
+            const text = await reader({ url })
+            const d = await parser({ text })
+            if(typeof(d)!=='object') throw new Error('Parser did not return an object')
+            return d
+        }
     }
 
-    logMessage(type: "warning" | "error", message: string, err: Error | undefined) {
+
+    // the error handler should process all errors and do whatever is appropriate based on context
+    // e.g.
+    // fetching in production - log error and move on
+    // fetching in upload tool - throw error if strict is on
+    // developing - throw error
+    errorHandler(err: unknown) {
+        // types: error, warning, info
         // check if warning or error
         // if strict then throw error, otherwise just log for later
-        if(!this.log[type]) this.log[type] = [];
-        this.log[type].push({ message, err});
-        throw err
-        console.debug(`${type}:`, err && err.message);
+        if (err instanceof Error) {
+            const type = err?.name ?? 'UK'
+            const message = err?.message
+            if(!this.log[type]) this.log[type] = [];
+            this.log[type].push({ message, err});
+            console.debug(`${type}:`, message);
+            if(this.strict) {
+                throw err;
+            }
+        }
     }
 
     /**
@@ -360,7 +413,11 @@ export class Client {
 
     async fetch() {
         const data = await this.fetchData();
+        this.process(data)
+        return this.data();
+    }
 
+    process(data: FetchedDataDefinition) {
         if (!data) {
             throw new Error('No data was returned from file');
         }
@@ -376,7 +433,7 @@ export class Client {
         if (data.flags) {
             this.processFlagsData(data.flags);
         }
-        return this.data();
+
     }
 
 
@@ -391,18 +448,18 @@ export class Client {
             // process data through the location map
             const l = new Location({
                 locationId: key,
-                siteId: this.getValueFromKey(data, this.locationIdKey),
-                siteName: this.getValueFromKey(data, this.locationLabelKey),
-                ismobile: this.getValueFromKey(data, this.isMobileKey),
-                x:this.getValueFromKey(data, this.xGeometryKey),
-                y:this.getValueFromKey(data, this.yGeometryKey),
-                projection:this.getValueFromKey(data, this.geometryProjectionKey),
+                siteId: getValueFromKey(data, this.locationIdKey),
+                siteName: getValueFromKey(data, this.locationLabelKey),
+                ismobile: getValueFromKey(data, this.isMobileKey),
+                x:getValueFromKey(data, this.xGeometryKey),
+                y:getValueFromKey(data, this.yGeometryKey),
+                projection:getValueFromKey(data, this.geometryProjectionKey),
                 // the following are for passing along to sensors
-                averagingIntervalSeconds: this.getValueFromKey(data, this.averagingIntervalKey),
-                loggingIntervalSeconds: this.getValueFromKey(data, this.loggingIntervalKey),
-                status: this.getValueFromKey(data, this.sensorStatusKey),
-                owner: this.getValueFromKey(data, this.ownerKey),
-                label: this.getValueFromKey(data, this.locationLabelKey),
+                averagingIntervalSeconds: getValueFromKey(data, this.averagingIntervalKey),
+                loggingIntervalSeconds: getValueFromKey(data, this.loggingIntervalKey),
+                status: getValueFromKey(data, this.sensorStatusKey),
+                owner: getValueFromKey(data, this.ownerKey),
+                label: getValueFromKey(data, this.locationLabelKey),
                 ...data,
             });
             this._locations.add(l)
@@ -419,8 +476,10 @@ export class Client {
         for (const location of locations) {
             try {
                 this.addLocation(location);
-            } catch (e: any) {
-                console.warn(`Error adding location: ${e.message}`);
+            } catch (e: unknown) {
+                if (e instanceof Error) {
+                    console.warn(`Error adding location: ${e.message}`);
+                }
             }
         }
     }
@@ -438,46 +497,35 @@ export class Client {
     }
 
 
-    private addSensor(data: SensorDataDefinition) {
-        try {
-            // check if we already found the right metric
-
-            // if
-            //let { metric } = data
-            if(!data.metric) {
-                let metricName = this.getValueFromKey(data, this.parameterNameKey)
-                data.metric = this.measurements.metricFromProviderKey(metricName)
-            }
-
-            const sensorId = this.getSensorIngestId(data)
-            const systemId = this.getSystemId(data);
-            const location = this.getLocation(data);
-            // check for averaging data but fall back to the location values
-            const averagingIntervalSeconds = this.getValueFromKey(data, this.averagingIntervalKey) ?? location.averagingIntervalSeconds;
-            const loggingIntervalSeconds = this.getValueFromKey(data, this.loggingIntervalKey) ?? location.loggingIntervalSeconds;
-            const status = this.getValueFromKey(data, this.sensorStatusKey) ?? location.status
-            // maintain a way to get the sensor back without traversing everything
-            const sensor = new Sensor(
-                {
-                    sensorId,
-                    systemId,
-                    metric: data.metric,
-                    averagingIntervalSeconds,
-                    loggingIntervalSeconds,
-                    //versionDate,
-                    //instance,
-                    status
-                }
-            );
-            location.add(sensor)
-            this._sensors.add(sensor);
-            return sensor
-        } catch (err:unknown) {
-            if (err instanceof Error) {
-                this.logMessage('error',`Error adding sensor: ${err.message}`, err);
-            }
-            console.debug(sensor, this.parameterNameKey, this.longFormat)
+    private addSensor(data: SensorDataDefinition): Sensor {
+        if(!data.metric) {
+            let metricName = getValueFromKey(data, this.parameterNameKey)
+            data.metric = this.measurements.metricFromProviderKey(metricName)
         }
+
+        const sensorId = this.getSensorIngestId(data)
+        const systemId = this.getSystemId(data);
+        const location = this.getLocation(data);
+        // check for averaging data but fall back to the location values
+        const averagingIntervalSeconds = getValueFromKey(data, this.averagingIntervalKey) ?? location.averagingIntervalSeconds;
+        const loggingIntervalSeconds = getValueFromKey(data, this.loggingIntervalKey) ?? location.loggingIntervalSeconds;
+        const status = getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus
+        // maintain a way to get the sensor back without traversing everything
+        const sensor = new Sensor(
+            {
+                sensorId,
+                systemId,
+                metric: data.metric,
+                averagingIntervalSeconds,
+                loggingIntervalSeconds,
+                //versionDate,
+                //instance,
+                status
+            }
+        );
+        location.add(sensor)
+        this._sensors.add(sensor);
+        return sensor
     }
 
     /**
@@ -485,47 +533,57 @@ export class Client {
      *
      * @param {array} measurements - list of measurement data
      */
-    async processMeasurementsData(measurements) {
+    async processMeasurementsData(measurements: any) {
         console.debug(`Processing ${measurements.length} measurement(s)`);
         // if we provided a parameter column key we use that
         // otherwise we use the list of parameters
         // the end goal is just an array of parameter names to loop through
-        const params = this.longFormat
-            ? [this.parameterNameKey]
+        const params: Array<string> = this.longFormat
+            ? [getValueFromKey(null, this.parameterNameKey)]
             : Object.keys(this.measurements.measurands());
 
-        measurements.map( (meas) => {
+        measurements.map( (meas: any) => {
             try {
                 const datetime = this.getDatetime(meas);
-                const location = this.getLocation(meas);
 
                 params.map((p) => {
-                    let metric, value;
-                    // for long format data we will need to extract the parameter name from the field
+                    let metric, value, metricName, valueName;
                     if(this.longFormat) {
-                        let metricName = this.getValueFromKey(meas, this.parameterNameKey)
-                        metric = this.measurements.metricFromProviderKey(metricName)
-                        value = this.getValueFromKey(meas, this.parameterValueKey)
+                        // for long format data we will need to extract the parameter name from the field
+                        metricName = getValueFromKey(meas, p)
+                        valueName = this.parameterValueKey
                     } else {
-                        metric = this.measurements.metricFromProviderKey(p);
-                        value = meas[p];
+                        // for wide format they are both the same value
+                        metricName = p
+                        valueName = p
                     }
 
-                    if (value) {
-                        // get the approprate sensor, or create it
-                        const sensor = this.getSensor({ ...meas, metric })
+                    metric = this.measurements.metricFromProviderKey(metricName);
+                    value = getValueFromKey(meas, valueName)
+
+                    if (!metric) {
+                        this.errorHandler(new MissingValueError(`Could not find a matching metric for ${metricName}/${p}/${this.parameterNameKey}. Long format: ${this.longFormat}`))
+                    }
+
+                    // get the approprate sensor, or create it
+                    const sensor = this.getSensor({ ...meas, metric })
+                    if (sensor) {
                         this.measurements.add(new Measurement({
                             sensorId: sensor.id,
                             timestamp: datetime,
                             value: value,
-                            units: metric.unit,
+                            //units: metric.unit,
                         }));
                     } else {
-                        this.logMessage('VALUE_NOT_FOUND', 'error');
+                        this.errorHandler(new MissingSensorError(`Could not find a matching sensor for ${meas}`))
                     }
+
                 });
-            } catch (e) {
-                this.logMessage('MEASUREMENT_ERROR', 'error', e);
+            } catch (e: unknown) {
+                this.errorHandler(e)
+                //if( e instanceof Error) {
+                //    this.logMessage(MEASUREMENT_ERROR, 'error', e);
+                //}
             }
         });
     }
@@ -536,14 +594,13 @@ export class Client {
      * @param {*} flags -
      * @returns {*} -
      */
-    async processFlagsData(flags) {
+    async processFlagsData(flags: Array<any>) {
         console.debug(`Processing ${flags.length} flags`);
-        flags.map((d) => {
+        flags.map((d: any) => {
             try {
-
                 const sensor = this.getSensor({
-                    location: d[this.locationIdKey],
-                    metric: d[this.parameterKey],
+                    location: getValueFromKey(d, this.locationIdKey),
+                    metric: getValueFromKey(d, this.parameterNameKey),
                     ...d,
                 });
 
@@ -551,8 +608,10 @@ export class Client {
                     sensor.add(d);
                 }
 
-            } catch (e) {
-                console.warn(`Error adding flag: ${e.message}`);
+            } catch (e: unknown) {
+                if ( e instanceof Error) {
+                    console.warn(`Error adding flag: ${e.message}`);
+                }
             }
         });
     }
@@ -584,14 +643,14 @@ export class Client {
         return {
             source_name: this.provider,
             locations: this._locations.length,
-            systems: Object.values(this._locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
-            sensors: Object.values(this._locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
+            systems: Object.values(this._locations).map((l: Location) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
+            sensors: Object.values(this._locations).map((l: Location) => Object.values(l.systems).map((s: System) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
             // taking advantage of the sensor object list
-            flags: Object.values(this._sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
+            flags: Object.values(this._sensors).map((s: Sensor) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
             measures: this.measurements.length,
             errors: errorSummary,
-            from: this.measurements.from && this.measurements.from.utc().format(),
-            to: this.measurements.to && this.measurements.to.utc().format(),
+            from: this.measurements.from?.toUTC(),
+            to: this.measurements.to?.toUTC()
         };
     }
 }

@@ -7,14 +7,14 @@ import { parse } from 'csv-parse/sync';
 
 
 const handlers = [
-  http.get('https://example.com/eea', async ({ request }) => {
+  http.get('https://example.com/eea', async () => {
     const data = await fs.readFile('src/tests/fixtures/eea.csv');
     return new HttpResponse(data.toString(), {
         status: 200,
         headers: {
            'Content-Type': 'text/csv',
         }
-        
+
       })
   }),
 ];
@@ -43,7 +43,7 @@ describe('Simple client example', () => {
       locationLabelKey: 'STATIONNAME',
       xGeometryKey: 'LONGITUDE',
       yGeometryKey: 'LATITUDE',
-      geometryProjectionKey: (d) => "EPSG:3857",
+      geometryProjectionKey: () => "EPSG:3857",
       parameterNameKey: 'PROPERTY',
       parameterValueKey: 'VALUE_NUMERIC',
       datetimeKey: "DATETIME_END",

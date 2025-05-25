@@ -8,12 +8,12 @@ import data from './fixtures/air4thai.json';
 
 const handlers = [
   // return just the one so we can check result for formating errors
-  http.get('https://example.com/air4thai/02t', async ({ request }) => {
+  http.get('https://example.com/air4thai/02t', async () => {
     const d = { stations: [ data.stations.find(s => s.stationID === '02t')] }
     return HttpResponse.json(d);
   }),
   // return a larger set so we can check summary stats at the end
-  http.get('https://example.com/air4thai', async ({ request }) => {
+  http.get('https://example.com/air4thai', async () => {
     return HttpResponse.json(data);
   }),
 ];

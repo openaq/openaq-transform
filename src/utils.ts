@@ -4,6 +4,8 @@ import {
   LongitudeBoundsError,
 } from './errors';
 
+import { ParserMethodsDefinition } from './parsers';
+import { ReaderMethodsDefinition } from './readers';
 
 export const stripNulls = <T extends object>(
   obj: T
@@ -20,11 +22,11 @@ export const truthy = (value: any): boolean => {
     return [1,true,'TRUE','T','True','t','true'].includes(value);
 };
 
-export const parseData = (data: any, key: Function | string) => {
+export const getValueFromKey = (data: any, key: Function | string) => {
     if(typeof key === 'function') {
         return key(data);
     } else if (typeof key === 'string') {
-        return data[key];
+        return data ? data[key] : key;
     }
 }
 
@@ -67,21 +69,50 @@ export function validateCoordinates(
   }
 }
 
-export function timestampFactory(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minutes: number,
-  seconds: number = 0,
-  offset: string
-): string {
-    const yearStr = year.toString();
-    const monthStr = month.toString().padStart(2, '0');
-    const dayStr = day.toString().padStart(2, '0');
-    const hourStr = hour.toString().padStart(2,'0');
-    const minuteStr = minutes.toString().padStart(2, '0');
-    const secondStr = seconds.toString().padStart(2, '0');
 
-    return `${yearStr}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:${secondStr}${offset}`;
+// temporary method
+export function isFile (obj: object) {
+    return obj.constructor.name === 'File';
+}
+
+
+/**
+ *  Method to determine which method we want to use to parse/read
+ * the return value for this is a function
+ * key (string): an index to get a method from a set of methods
+ * key (function): a function that is ready to be used
+ * method (string)
+ */
+export function getMethod(
+    key: string | Function | null,
+    method: Function | string,
+    methods: ParserMethodsDefinition | ReaderMethodsDefinition
+): Function {
+    // key would be passed when we have a keyed url
+    if(key) {
+        if (method && typeof(method) === 'object' && typeof(key) === 'string') {
+            // use the key to extract the name of the reader
+            key = method![key];
+        } else if(method && ['string','function'].includes(typeof(method))) {
+            // does not matter that key was passed, use the reader value
+            key = method;
+        }
+    } else {
+        key = method;
+    }
+    // we could allow the reader to be a string or a function
+    if (typeof key === 'string') {
+        // if its a string we would pull it from our avaiable readers
+        // we would do this if we needed different readers for each node of data (e.g. locations, measurements)
+        if(!methods[key]) {
+            throw new Error(`Could not find a method named '${key}'`)
+        }
+        return methods[key];
+    } else if (typeof key === 'function') {
+        // and then if we only needed one CUSTOM reader, we could set it when we extend the client
+        return key;
+    } else {
+        // just a pass through??
+        return (a: any) => a;
+    }
 }

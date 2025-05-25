@@ -129,6 +129,7 @@ interface ClientConfigDefinition {
 export class Client {
     // Q how to handle secrets
     // constant across provider
+
     provider!: string;
     url?: string | IndexedUrlDefinition;
     reader: string = 'api';

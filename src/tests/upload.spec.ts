@@ -164,7 +164,6 @@ describe('different files with different custom readers v2', () => {
     let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
 
-    console.log(csvdata.measurements)
     class UploadClient extends CustomClient {
         reader = { locations: read, measurements: read }
         parser = { locations: 'json', measurements: 'csv' }

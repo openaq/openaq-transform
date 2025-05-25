@@ -3,23 +3,36 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { widedata, expectedOutput }  from './tests/fixtures/sampledata.ts';
 import { Client } from './client.ts'
+console.log(process.cwd())
 
 // mock server
 const handlers = [
   http.get("https://blah.org/wide", async () => {
     return HttpResponse.json(widedata);
   }),
+<<<<<<< HEAD
   http.get("https://blah.org/test-provider/stations", async () => {
+=======
+  http.get("https://blah.org/test-provider/stations", async ({ request }) => {
+>>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json([
         { station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }
     ]);
   }),
+<<<<<<< HEAD
   http.get("https://blah.org/test-provider/measurements", async () => {
+=======
+  http.get("https://blah.org/test-provider/measurements", async ({ request }) => {
+>>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json([
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }
     ]);
   }),
+<<<<<<< HEAD
   http.get("https://blah.org/long", async () => {
+=======
+  http.get("https://blah.org/long", async ({ request }) => {
+>>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json({
       locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
       measurements: [

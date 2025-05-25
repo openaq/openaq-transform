@@ -17,3 +17,17 @@ export class InvalidPrecisionError extends Error {
     );
   }
 }
+
+export class MissingValueError extends Error {
+    constructor(message: string) {
+        super('Missing value error: ' + message)
+        this.name = 'MissingValueError';
+    }
+}
+
+export class MissingSensorError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'MissingSensorError';
+    }
+}

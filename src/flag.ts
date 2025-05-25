@@ -27,7 +27,7 @@ export class Flag {
         this.note = data.note;
     }
 
-    static id(data): string {
+    static id(data: FlagDefinition): string {
         const starts = data.starts || 'infinity';
         return `${data.sensorId}-${data.flag}::${starts}`;
     }

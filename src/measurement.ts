@@ -1,9 +1,8 @@
-import { max, min } from 'date-fns';
 import { Datetime } from './datetime';
 import type { BBox } from 'geojson';
 import { Coordinates, updateBounds } from './coordinates';
 import { stripNulls } from './utils';
-import { ParametersDefinition } from './constants';
+import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 
 
 export class Measurements {
@@ -11,7 +10,7 @@ export class Measurements {
   _measurements: Map<string, Measurement>;
   from?: Datetime;
   to?: Datetime;
-  bounds: BBox | null;
+  bounds?: BBox | null;
   parameters: ParametersDefinition;
 
   constructor(parameters?: ParametersDefinition) {
@@ -23,8 +22,9 @@ export class Measurements {
       'longitude',
       'latitude',
     ];
-    this.bounds = null;
-    !!parameters && (this.parameters = parameters)
+      //this.bounds = null;
+      this.parameters = parameters ?? PARAMETER_DEFAULTS;
+
   }
 
   measurands() {
@@ -36,10 +36,21 @@ export class Measurements {
   }
 
   add(measurement: Measurement) {
-    this.bounds = updateBounds(measurement?.coordinates, this.bounds);
 
-    this.to = measurement.greaterOf(this.to)
-    this.from = measurement.lesserOf(this.from)
+    if(measurement.coordinates) {
+      this.bounds = updateBounds(measurement.coordinates, this.bounds);
+    }
+
+    if(this.to) {
+      this.to = measurement.timestamp.greaterOf(this.to)
+    } else {
+      this.to = measurement.timestamp;
+    }
+    if(this.from) {
+      this.from = measurement.timestamp.lesserOf(this.from)
+    } else {
+      this.from = measurement.timestamp
+    }
 
     console.debug(`adding measurement (${measurement.id}) to measurements (total: ${this.length})`)
     this._measurements.set(
@@ -70,16 +81,16 @@ interface MeasurementDefinition {
   sensorId: string;
   timestamp: Datetime;
   value: number;
+  coordinates?: Coordinates;
   //units: string;
-  coordinates: Coordinates;
 }
 
 export class Measurement {
   sensorId: string; // revisit for possible rename to 'key'
   timestamp: Datetime;
   value: number;
+  coordinates?: Coordinates;
   //units: string;
-  coordinates: Coordinates;
 
   constructor(params: MeasurementDefinition) {
     this.sensorId = params.sensorId;
@@ -89,7 +100,9 @@ export class Measurement {
     // the only issue I see is if we expect a flag here, in which case we could catch an error?
     this.value = params.value*1;
     //this.units = params.units;
-    this.coordinates = params.coordinates;
+    if (params.coordinates) {
+      this.coordinates = params.coordinates;
+    }
   }
 
   get id(): string {

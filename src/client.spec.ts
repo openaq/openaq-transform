@@ -1,29 +1,25 @@
 import { describe, test, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-
+import { widedata, expectedOutput }  from './tests/fixtures/sampledata.ts';
 import { Client } from './client.ts'
-console.log(process.cwd())
 
 // mock server
 const handlers = [
-  http.get("https://blah.org/wide", async ({ request }) => {
-    return HttpResponse.json({
-      locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
-      measurements: [{ station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }]
-    });
+  http.get("https://blah.org/wide", async () => {
+    return HttpResponse.json(widedata);
   }),
-  http.get("https://blah.org/test-provider/stations", async ({ request }) => {
+  http.get("https://blah.org/test-provider/stations", async () => {
     return HttpResponse.json([
         { station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }
     ]);
   }),
-  http.get("https://blah.org/test-provider/measurements", async ({ request }) => {
+  http.get("https://blah.org/test-provider/measurements", async () => {
     return HttpResponse.json([
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }
     ]);
   }),
-  http.get("https://blah.org/long", async ({ request }) => {
+  http.get("https://blah.org/long", async () => {
     return HttpResponse.json({
       locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
       measurements: [
@@ -32,7 +28,7 @@ const handlers = [
       ]
     });
   }),
-  http.get("https://blah.org/withsensors", async ({ request }) => {
+  http.get("https://blah.org/withsensors", async () => {
     return HttpResponse.json({
       locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
       sensors: [
@@ -64,7 +60,7 @@ describe('Simple client example', () => {
 
   test('abstract defaults persist', () => {
     const cln = new FakeClient()
-    expect(cln.timezone).toBe('UTC');
+    expect(cln.reader).toBe('api');
   });
 
   test('passed provider overrides default', () => {
@@ -93,13 +89,13 @@ describe('Client with data in wide format', () => {
     // mapping data
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
-    sensorStatusKey = (d) => 'asdf'
+    sensorStatusKey = () => 'asdf'
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = (d) => 'WSG84';
-    ownerKey = (d) => 'test_owner';
-    isMobileKey = (d) => false;
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
@@ -145,13 +141,13 @@ describe('Client with data split between two different urls', () => {
     // mapping data
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
-    sensorStatusKey = (d) => 'asdf'
+    sensorStatusKey = () => 'asdf'
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = (d) => 'WSG84';
-    ownerKey = (d) => 'test_owner';
-    isMobileKey = (d) => false;
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
@@ -177,12 +173,12 @@ describe('Client with data in long format', () => {
     xGeometryKey = 'longitude';
     yGeometryKey = 'latitude';
     averagingIntervalKey = 'averaging';
-    sensorStatusKey = (d) => 'asdf'
+    sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = (d) => 'WSG84';
-    ownerKey = (d) => 'test_owner';
-    isMobileKey = (d) => false;
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
@@ -208,12 +204,12 @@ describe('Provider that passes sensor data', () => {
     xGeometryKey = 'longitude';
     yGeometryKey = 'latitude';
     averagingIntervalKey = 'averaging';
-    sensorStatusKey = (d) => 'asdf'
+    sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = (d) => 'WSG84';
-    ownerKey = (d) => 'test_owner';
-    isMobileKey = (d) => false;
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
@@ -246,12 +242,12 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
       xGeometryKey: 'longitude',
       yGeometryKey: 'latitude',
       averagingIntervalKey: 'averaging',
-      sensorStatusKey: (d) => 'asdf',
+      sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      projectionKey: (d) => 'WSG84',
-      ownerKey: (d) => 'test_owner',
-      isMobileKey: (d) => false,
+      projectionKey: () => 'WSG84',
+      ownerKey: () => 'test_owner',
+      isMobileKey: () => false,
     })
     const data = await cln.fetch();
     expect(data).toStrictEqual(expectedOutput);
@@ -280,12 +276,12 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
       xGeometryKey: 'longitude',
       yGeometryKey: 'latitude',
       averagingIntervalKey: 'averaging',
-      sensorStatusKey: (d) => 'asdf',
+      sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      projectionKey: (d) => 'WSG84',
-      ownerKey: (d) => 'test_owner',
-      isMobileKey: (d) => false,
+      projectionKey: () => 'WSG84',
+      ownerKey: () => 'test_owner',
+      isMobileKey: () => false,
     })
 
     const data = await cln.fetch();

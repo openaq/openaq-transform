@@ -1,7 +1,7 @@
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
 import { System, SystemDefinition } from './system';
-import { Sensor, SensorDefinition } from './sensor';
+import { Sensor } from './sensor';
 import { Coordinates, updateBounds } from './coordinates';
 
 interface LocationDefinition {
@@ -29,15 +29,17 @@ export class Locations {
   }
 
   add(location: Location) {
-    this.bounds = updateBounds(location?.coordinates, this.bounds);
+    if (location.coordinates) {
+      this.bounds = updateBounds(location.coordinates, this.bounds);
+    }
     this._locations.set(location.locationId, location);
   }
 
-  get(locationId: string) {
+  get(locationId: string): Location | undefined {
     return this._locations.get(locationId);
   }
 
-  get length() {
+  get length(): number {
     return this._locations.size;
   }
 
@@ -100,18 +102,25 @@ export class Location {
    * @param {(string|object)} data - object with data or key value
    * @returns {*} - system object
    */
-  getSystem(data: SystemDefinition | string): System {
-    let key;
-    if (typeof data === 'string') {
-      key = data;
-      data = { systemId: Number(key) }; // this needs better type coercion
-    } else {
-      key = data.systemId;
+  getSystem(data: SystemDefinition | Sensor ): System {
+    if (!this._systems.has(data.systemId)) {
+      console.log('**** GET SYSTEM ******', data, this.locationId)
+      // We are not runing into this anywhere in our tests
+      // so we either need to think of a reason to keep it or
+      // we should probably remove it
+      this.addSystem(new System({
+        systemId: data.systemId,
+        locationId: this.locationId,
+        modelName: "modelName" in data ? data.modelName : 'default',
+        manufacturerName: "manufacturerName" in data ? data.manufacturerName : 'default',
+      }));
     }
-    if (!this._systems.has(key)) {
-      this.addSystem(new System(data));
-    }
-    return this._systems.get(key);
+    const sys = this._systems.get(data.systemId);
+    if (
+      !sys
+    ) throw new TypeError('Could not get system')
+
+    return sys
   }
 
   /**

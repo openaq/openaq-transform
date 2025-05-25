@@ -26,7 +26,7 @@ export class Systems {
 
 export class System {
   systemId: string;
-  locationsId: string;
+  locationId: string;
   manufacturerName: string;
   modelName: string;
   metadata: { [key: string]: any };
@@ -34,7 +34,7 @@ export class System {
 
   constructor(data: SystemDefinition) {
     this.systemId = data.systemId;
-    this.locationsId = data.locationId;
+    this.locationId = data.locationId;
     this.manufacturerName = data.manufacturerName ?? 'default';
     this.modelName = data.modelName ?? 'default';
     this._sensors = new Map<string, Sensor>();
@@ -43,6 +43,10 @@ export class System {
 
   get id() {
     return this.systemId;
+  }
+
+  get sensors() {
+    return this._sensors;
   }
 
   add(sensor: Sensor): Sensor {

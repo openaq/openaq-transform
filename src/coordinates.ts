@@ -47,8 +47,7 @@ export class Coordinates {
 
 }
 
-export function updateBounds(coordinates: Coordinates,  bounds: BBox | null): BBox {
-  if(!coordinates) return bounds;
+export function updateBounds(coordinates: Coordinates,  bounds: BBox | null | undefined): BBox {
   const { x, y } = coordinates
   console.debug('updating boundary', x, y)
   if(!bounds) return [x, y, x, y]

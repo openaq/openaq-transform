@@ -25,7 +25,7 @@ export class Datetime {
   ) {
     if (
       options?.format?.includes('Z') && options?.timezone
-    ) throw new TypeError()
+    ) throw new TypeError(`You cannot include both the Z option in your format (${options.format}) and a timezone (${options.timezone})`)
     this.#input = input;
     this.format = options?.format;
     this.timezone = options?.timezone;
@@ -79,22 +79,20 @@ export class Datetime {
 
   readonly isLessThan = (date: Datetime): boolean => this.date < date.date
 
-    // when a null/undefinded value is passed we will always return this.date
-    // this is valuable when you are updating a value that has not been initialized
-  readonly greaterOf = (date: Datetime): Datetime => this.date >= (date?.date ?? this.date) ? this : date
+  readonly greaterOf = (date: Datetime): Datetime => this.date >= date.date ? this : date
 
-  readonly lesserOf = (date: Datetime): Datetime => this.date <= (date?.date ?? this.date) ? this : date
+  readonly lesserOf = (date: Datetime): Datetime => this.date <= date.date ? this : date
 
   toString() {
-    return this.date.setZone(this.locationTimezone).toISO()
+    return this.date.setZone(this.locationTimezone).toISO({ suppressMilliseconds: true })
   }
 
   toUTC() {
-    return this.date.setZone('UTC').toISO()
+    return this.date.setZone('UTC').toISO({ suppressMilliseconds: true })
   }
 
   toLocal() {
-    return this.date.setZone().toISO()
+    return this.date.setZone().toISO({ suppressMilliseconds: true })
   }
 
 }

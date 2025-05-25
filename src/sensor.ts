@@ -11,9 +11,9 @@ export interface SensorDefinition {
     metric: Metric;
     averagingIntervalSeconds: number;
     loggingIntervalSeconds: number;
-    versionDate: string;
-    instance: string;
     status: string;
+    versionDate?: string;
+    instance?: string;
 }
 
 
@@ -29,11 +29,15 @@ export class Sensors {
         this._sensors.set(sensor.id, sensor);
     }
 
-    get(sensorId: string) {
+    get(sensorId: string): Sensor | undefined {
         return this._sensors.get(sensorId);
     }
 
-    length() {
+    has(sensorId: string): boolean {
+        return this._sensors.has(sensorId);
+    }
+
+    length(): number {
         return this._sensors.size;
     }
 }

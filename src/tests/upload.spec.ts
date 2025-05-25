@@ -15,13 +15,13 @@ class CustomClient extends Client {
     provider = 'testing';
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
-    sensorStatusKey = (d) => 'asdf'
+    sensorStatusKey = () => 'asdf'
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = (d) => 'WSG84';
-    ownerKey = (d) => 'test_owner';
-    isMobileKey = (d) => false;
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
     parameters = {
         particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
         tempf: { parameter: "temperature", unit: "f" },
@@ -164,6 +164,7 @@ describe('different files with different custom readers v2', () => {
     let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
 
+    console.log(csvdata.measurements)
     class UploadClient extends CustomClient {
         reader = { locations: read, measurements: read }
         parser = { locations: 'json', measurements: 'csv' }

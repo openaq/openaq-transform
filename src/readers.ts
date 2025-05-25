@@ -1,6 +1,28 @@
 
+
+
+//export interface ReaderDefinition {}
+export interface ReaderParamsDefinition {
+   url: string,
+   as: ReadAs
+}
+
+export type ReaderDefinition = (params: ReaderParamsDefinition) => object
+
+export interface ReaderMethodsDefinition {
+    [key: string]: ReaderDefinition
+}
+
+enum ReadAs {
+    json = "json",
+    text = "text",
+    blob = "blob",
+    response = "response",
+}
+
+
 // as json, text, blob, response
-export const api = async ({ url, as }) => {
+export const api = async ({ url, as }: ReaderParamsDefinition) => {
     const res = await fetch(url);
     if(as === 'json') {
         return res.json();
@@ -15,5 +37,8 @@ export const api = async ({ url, as }) => {
     }
 };
 
-export const s3 = ({ uri, bucket, key }) => {}
-export const google = ({ uri, bucket, key }) => {}
+export const s3 = (args: ReaderParamsDefinition) => {
+    return args}
+export const google = (args: ReaderParamsDefinition) => {
+    return args
+}

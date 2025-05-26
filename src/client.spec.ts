@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { widedata, expectedOutput }  from './tests/fixtures/sampledata.ts';
+import { widedata, expectedOutput, measurementErrors }  from './tests/fixtures/sampledata.ts';
 import { Client } from './client.ts'
 console.log(process.cwd())
 
@@ -10,29 +10,20 @@ const handlers = [
   http.get("https://blah.org/wide", async () => {
     return HttpResponse.json(widedata);
   }),
-<<<<<<< HEAD
+  http.get("https://blah.org/wideerrors", async () => {
+    return HttpResponse.json(measurementErrors);
+  }),
   http.get("https://blah.org/test-provider/stations", async () => {
-=======
-  http.get("https://blah.org/test-provider/stations", async ({ request }) => {
->>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json([
         { station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }
     ]);
   }),
-<<<<<<< HEAD
   http.get("https://blah.org/test-provider/measurements", async () => {
-=======
-  http.get("https://blah.org/test-provider/measurements", async ({ request }) => {
->>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json([
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }
     ]);
   }),
-<<<<<<< HEAD
   http.get("https://blah.org/long", async () => {
-=======
-  http.get("https://blah.org/long", async ({ request }) => {
->>>>>>> e1278b7d7464726e766b6bb6ab086d7148ea15c6
     return HttpResponse.json({
       locations: [{ station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }],
       measurements: [
@@ -302,6 +293,43 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
   })
 
 });
+
+describe.only('Client with measurement errors', () => {
+
+
+  class JsonClient extends Client {
+    url = 'https://blah.org/wideerrors';
+    provider = 'testing';
+    // mapping data
+    xGeometryKey = 'longitude';
+    averagingIntervalKey = 'averaging';
+    sensorStatusKey = () => 'asdf'
+    yGeometryKey = 'latitude';
+    locationIdKey = 'station';
+    locationLabelKey = 'site_name';
+    projectionKey = () => 'WSG84';
+    ownerKey = () => 'test_owner';
+    isMobileKey = () => false;
+    parameters = {
+      particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
+      tempf: { parameter: "temperature", unit: "f" },
+    };
+
+  }
+
+  test('parameter check', () => {
+    const cln = new JsonClient()
+    expect(Object.keys(cln.parameters)).toStrictEqual(['particulate_matter_25','tempf']);
+  });
+
+  test('outputs correct format', async () => {
+    const cln = new JsonClient()
+    const data = await cln.fetch();
+    expect(data).toStrictEqual(expectedOutput);
+  })
+
+
+})
 
 
 // describe.todo('Adapter that requires custom fetch data method');

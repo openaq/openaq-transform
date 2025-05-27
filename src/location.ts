@@ -104,7 +104,6 @@ export class Location {
    */
   getSystem(data: SystemDefinition | Sensor ): System {
     if (!this._systems.has(data.systemId)) {
-      console.log('**** GET SYSTEM ******', data, this.locationId)
       // We are not runing into this anywhere in our tests
       // so we either need to think of a reason to keep it or
       // we should probably remove it

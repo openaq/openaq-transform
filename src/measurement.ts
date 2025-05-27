@@ -52,7 +52,7 @@ export class Measurements {
       this.from = measurement.timestamp
     }
 
-    console.debug(`adding measurement (${measurement.id}) to measurements (total: ${this.length})`)
+    console.debug(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
     this._measurements.set(
       measurement.id,
       measurement
@@ -72,6 +72,7 @@ export class Measurements {
         value: m.value,
         //units: m.units,
         coordinates: m.coordinates?.json(),
+        flags: m.flags,
       });
     });
   }
@@ -90,6 +91,7 @@ export class Measurement {
   timestamp: Datetime;
   value: number;
   coordinates?: Coordinates;
+  flags?: Array<string>
   //units: string;
 
   constructor(params: MeasurementDefinition) {
@@ -98,7 +100,16 @@ export class Measurement {
     // the csv parser does not convert values to numbers
     // should we do something here to do that?
     // the only issue I see is if we expect a flag here, in which case we could catch an error?
-    this.value = params.value*1;
+    // at this stage we only want to get everything organized
+    // if we are sure that a flag was passed as a value we make it null
+    // and then add a flag
+    const v = +params.value
+    if (Number.isFinite(v) && !([-99].includes(v))) {
+      this.value = v;
+    } else {
+      this.flags = [String(params.value)];
+      this.value = null;
+    }
     //this.units = params.units;
     if (params.coordinates) {
       this.coordinates = params.coordinates;

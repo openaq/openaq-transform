@@ -1,7 +1,6 @@
 import { Datetime } from './datetime';
 import type { BBox } from 'geojson';
-import { Coordinates, updateBounds } from './coordinates';
-import { stripNulls } from './utils';
+import { Coordinates, updateBounds, CoordinatesJsonDefinition } from './coordinates';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 
 
@@ -52,7 +51,7 @@ export class Measurements {
       this.from = measurement.timestamp
     }
 
-    console.debug(`adding measurement (${measurement.id}) to measurements (total: ${this.length})`)
+    console.debug(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
     this._measurements.set(
       measurement.id,
       measurement
@@ -66,13 +65,14 @@ export class Measurements {
 
   json() {
     return Array.from(this._measurements.values(), (m) => {
-      return stripNulls({
+      const meas: MeasurementJsonDefinition = {
         sensor_id: m.sensorId,
         timestamp: m.timestamp.toString(),
         value: m.value,
-        //units: m.units,
-        coordinates: m.coordinates?.json(),
-      });
+      }
+      if (m.flags) meas.flags = m.flags
+      if (m.coordinates) meas['coordinates'] = m.coordinates.json()
+      return meas
     });
   }
 }
@@ -80,16 +80,26 @@ export class Measurements {
 interface MeasurementDefinition {
   sensorId: string;
   timestamp: Datetime;
-  value: number;
+  value: number | null;
   coordinates?: Coordinates;
+  flags?: Array<string>
   //units: string;
+}
+
+interface MeasurementJsonDefinition {
+  sensor_id: string;
+  timestamp: string | null; // this is just temp to solve a typing issue
+  value: number | null;
+  coordinates?: CoordinatesJsonDefinition;
+  flags?: Array<string>
 }
 
 export class Measurement {
   sensorId: string; // revisit for possible rename to 'key'
   timestamp: Datetime;
-  value: number;
+  value: number | null;
   coordinates?: Coordinates;
+  flags?: Array<string>
   //units: string;
 
   constructor(params: MeasurementDefinition) {
@@ -98,7 +108,21 @@ export class Measurement {
     // the csv parser does not convert values to numbers
     // should we do something here to do that?
     // the only issue I see is if we expect a flag here, in which case we could catch an error?
-    this.value = params.value*1;
+    // at this stage we only want to get everything organized
+    // if we are sure that a flag was passed as a value we make it null
+    // and then add a flag
+    if (params.value) {
+      const v = +params.value
+      if (Number.isFinite(v) && !([-99].includes(v))) {
+        this.value = v;
+      } else {
+        this.flags = [String(params.value)];
+        this.value = null;
+      }
+    } else {
+      // missing value but no flag
+      this.value = null;
+    }
     //this.units = params.units;
     if (params.coordinates) {
       this.coordinates = params.coordinates;

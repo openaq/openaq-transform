@@ -296,11 +296,93 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
 
 describe.only('Client with measurement errors', () => {
 
+  const rawdata = {
+      locations: [
+        { station: 'ts1', site_name: 'test site #1', latitude: 45.56665, longitude: -123.12121, averaging: 3600 }
+      ],
+      measurements: [
+        {
+          station: 'ts1',
+          datetime: '2024-01-01T00:00:00-08:00',
+          parameter: 'particulate_matter_25',
+          value: 10
+        },
+        {
+          station: 'ts1',
+          datetime: '2024-01-01T00:00:00-08:00',
+          parameter: 'tempf',
+          value: 80
+        },
+        {
+          station: "ts1",
+          datetime: "2024-01-01T01:00:00-08:00",
+          parameter: 'tempf',
+          value: null, // missing value
+        },
+        {
+          station: "ts1",
+          datetime: "2024-01-01T03:00:00-08:00",
+          parameter: 'tempf',
+          value: -99, // numeric error code
+        },
+        {
+          station: "ts1",
+          datetime: "2024-01-01T04:00:00-08:00",
+          parameter: 'tempf',
+          value: 'TOO_HIGH', // string error code
+        },
+        {
+          station: "ts1",
+          datetime: "2024-01-01T05:00:00-08:00",
+          parameter: 'tempf',
+          value: '65', // number as string
+        },
+        {
+          station: "ts1",
+          datetime: "2024-01-01T06:00:00-08:00",
+          parameter: 'tempc', // unsupported parameter
+          value: '22',
+        },
+      ]
+  }
+
+
+  const expected = {
+    meta: expectedOutput.meta,
+    locations: expectedOutput.locations,
+    measurements: [
+      ...expectedOutput.measurements,
+      {
+        sensor_id: "testing-ts1-temperature",
+        timestamp: "2024-01-01T01:00:00-08:00",
+        value: null, // missing value
+      },
+      {
+        sensor_id: "testing-ts1-temperature",
+        timestamp: "2024-01-01T03:00:00-08:00",
+        value: null, // numeric error code
+        flags: ['-99']
+      },
+      {
+        sensor_id: "testing-ts1-temperature",
+        timestamp: "2024-01-01T04:00:00-08:00",
+        value: null, // string error code
+        flags: ['TOO_HIGH']
+      },
+      {
+        sensor_id: "testing-ts1-temperature",
+        timestamp: "2024-01-01T05:00:00-08:00",
+        value: 65, // number as string
+      },
+    ]
+  };
+
 
   class JsonClient extends Client {
     url = 'https://blah.org/wideerrors';
     provider = 'testing';
-    // mapping data
+    strict = false;
+    longFormat = true;
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
     sensorStatusKey = () => 'asdf'
@@ -324,9 +406,22 @@ describe.only('Client with measurement errors', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    const data = await cln.fetch();
-    expect(data).toStrictEqual(expectedOutput);
+    cln.process(rawdata);
+    const data = cln.data();
+    const errors = cln.log.get('MissingValueError')
+    // currently we are adding
+    expect(data.measurements.length).toBe(6)
+    expect(errors.length).toBe(1)
+
+    console.log(cln.log)
+    //expect(data.flags.length).toBe(2)
+
+    console.log(data.measurements)
+    expect(data).toStrictEqual(expected);
   })
+
+  test.todo('Bad coordinates error, out of bounds')
+  test.todo('Timestamps that are in the future')
 
 
 })

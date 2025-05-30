@@ -19,6 +19,33 @@ export const widedata = {
   ]
 }
 
+export const measurementErrors = {
+    locations: widedata.locations,
+    measurements: [
+        ...widedata.measurements,
+        {
+            station: "ts1",
+            datetime: "2024-01-01T01:00:00-08:00",
+            tempf: null, // missing value
+        },
+        {
+            station: "ts1",
+            datetime: "2024-01-01T03:00:00-08:00",
+            tempf: -99, // numeric error code
+        },
+        {
+            station: "ts1",
+            datetime: "2024-01-01T04:00:00-08:00",
+            tempf: 'TOO_HIGH', // string error code
+        },
+        {
+            station: "ts1",
+            datetime: "2024-01-01T05:00:00-08:00",
+            tempf: '22', // number as string
+        },
+    ]
+}
+
 export const csvdata = {
     locations: "station,site_name,latitude,longitude,averaging\n\"ts1\",\"test site #1\",45.56665, -123.12121, 3600",
     measurements: "station,datetime,particulate_matter_25,tempf\n\"ts1\",\"2024-01-01T00:00:00-08:00\",10,80",

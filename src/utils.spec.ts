@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { cleanKey, validateCoordinates } from './utils.ts';
+import { cleanKey, validateCoordinates, getValueFromKey } from './utils.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -19,6 +19,14 @@ test('cleanKey removes non-word characters', () => {
 
 test('cleanKey changes string to lowercase', () => {
   expect(cleanKey('FOOBAR')).toBe('foobar');
+});
+
+test('getValueFromKey returns undefined when key does not exist', () => {
+  expect(getValueFromKey({}, 'undefined_key')).toBe(undefined)
+});
+
+test('getValueFromKey returns value when key exists', () => {
+  expect(getValueFromKey({ pm25: null }, 'pm25')).toBe(null)
 });
 
 

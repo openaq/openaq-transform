@@ -72,18 +72,9 @@ interface LogEntry {
     err?: Error;
 };
 
-// interface LogDefintion {
-//     info?: LogEntry[];
-//     warning?: LogEntry[];
-//     error?: LogEntry[];
-// }
-
 
 type ParseFunction = (data?: any) => string | number | object | boolean
 
-interface LogDefinition {
-    [key: string]: LogEntry[];
-};
 
 interface IndexedUrlDefinition {
     [key: string]: string | File;
@@ -170,7 +161,7 @@ export class Client {
     _locations: Locations;
     _sensors: Sensors;
     // log object for compiling errors/warnings for later reference
-    log: LogDefinition;
+    log: Map<string, Array<LogEntry>>;
     strict: boolean = true;
 
     constructor(params?: ClientConfigDefinition) {
@@ -185,7 +176,7 @@ export class Client {
         //this._measurements = new Measurements(this.parameters);
         this._locations = new Locations();
         this._sensors = new Sensors();
-        this.log = {};
+        this.log = new Map();
 
         //return this
     }
@@ -393,12 +384,15 @@ export class Client {
         // types: error, warning, info
         // check if warning or error
         // if strict then throw error, otherwise just log for later
+        console.log('error thrown')
         if (err instanceof Error) {
-            const type = err?.name ?? 'UK'
-            const message = err?.message
-            if(!this.log[type]) this.log[type] = [];
-            this.log[type].push({ message, err});
-            console.debug(`${type}:`, message);
+
+            const type = err.name ?? 'UK'
+            const message = err.message
+
+            if(!this.log.has(type)) this.log.set(type, []);
+            this.log.get(type)!.push({ message, err}); // line above means type will always existx
+            console.debug(`***** ERROR (${type}):`, message);
             if(this.strict) {
                 throw err;
             }
@@ -542,12 +536,13 @@ export class Client {
             ? [getValueFromKey(null, this.parameterNameKey)]
             : Object.keys(this.measurements.measurands());
 
-        measurements.map( (meas: any) => {
+        measurements.forEach( (meas: any) => {
             try {
                 const datetime = this.getDatetime(meas);
 
                 params.map((p) => {
                     let metric, value, metricName, valueName;
+
                     if(this.longFormat) {
                         // for long format data we will need to extract the parameter name from the field
                         metricName = getValueFromKey(meas, p)
@@ -558,24 +553,32 @@ export class Client {
                         valueName = p
                     }
 
-                    metric = this.measurements.metricFromProviderKey(metricName);
                     value = getValueFromKey(meas, valueName)
 
-                    if (!metric) {
-                        this.errorHandler(new MissingValueError(`Could not find a matching metric for ${metricName}/${p}/${this.parameterNameKey}. Long format: ${this.longFormat}`))
-                    }
+                    if (value !== undefined) {
+                        metric = this.measurements.metricFromProviderKey(metricName);
 
-                    // get the approprate sensor, or create it
-                    const sensor = this.getSensor({ ...meas, metric })
-                    if (sensor) {
+                        if (!metric) {
+                            this.errorHandler(new MissingValueError(
+                                `Could not find a matching metric for ${metricName}/${p}/${this.parameterNameKey}`
+                            ))
+                            return;
+                        }
+                        // get the approprate sensor, or create it
+                        const sensor = this.getSensor({ ...meas, metric })
+                        if (!sensor) {
+                            this.errorHandler(new MissingSensorError(
+                                `Could not find a matching sensor for ${meas}`
+                            ))
+                            return;
+                        }
+
                         this.measurements.add(new Measurement({
                             sensorId: sensor.id,
                             timestamp: datetime,
                             value: value,
                             //units: metric.unit,
                         }));
-                    } else {
-                        this.errorHandler(new MissingSensorError(`Could not find a matching sensor for ${meas}`))
                     }
 
                 });
@@ -639,7 +642,9 @@ export class Client {
      */
     summary(): SummaryDefinition {
         const errorSummary: ErrorSummaryDefinition = {} ;
-        Object.keys(this.log).map((k) => errorSummary[k] = this.log[k].length);
+        this.log.forEach((v, k) => {
+            errorSummary[k] = v.length
+        })
         return {
             source_name: this.provider,
             locations: this._locations.length,

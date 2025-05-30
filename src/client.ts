@@ -72,18 +72,9 @@ interface LogEntry {
     err?: Error;
 };
 
-// interface LogDefintion {
-//     info?: LogEntry[];
-//     warning?: LogEntry[];
-//     error?: LogEntry[];
-// }
-
 
 type ParseFunction = (data?: any) => string | number | object | boolean
 
-interface LogDefinition {
-    [key: string]: LogEntry[];
-};
 
 interface IndexedUrlDefinition {
     [key: string]: string | File;
@@ -170,7 +161,7 @@ export class Client {
     _locations: Locations;
     _sensors: Sensors;
     // log object for compiling errors/warnings for later reference
-    log: LogDefinition;
+    log: Map<string, Array<LogEntry>>;
     strict: boolean = true;
 
     constructor(params?: ClientConfigDefinition) {
@@ -396,11 +387,11 @@ export class Client {
         console.log('error thrown')
         if (err instanceof Error) {
 
-            const type = err?.name ?? 'UK'
-            const message = err?.message
+            const type = err.name ?? 'UK'
+            const message = err.message
 
             if(!this.log.has(type)) this.log.set(type, []);
-            this.log.get(type).push({ message, err});
+            this.log.get(type)!.push({ message, err}); // line above means type will always existx
             console.debug(`***** ERROR (${type}):`, message);
             if(this.strict) {
                 throw err;
@@ -651,7 +642,9 @@ export class Client {
      */
     summary(): SummaryDefinition {
         const errorSummary: ErrorSummaryDefinition = {} ;
-        Object.keys(this.log).map((k) => errorSummary[k] = this.log[k].length);
+        this.log.forEach((v, k) => {
+            errorSummary[k] = v.length
+        })
         return {
             source_name: this.provider,
             locations: this._locations.length,

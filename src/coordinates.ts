@@ -2,12 +2,17 @@ import proj4 from 'proj4';
 import { BBox } from 'geojson';
 
 /* Class representing geographic coordinates */
+export interface CoordinatesJsonDefinition {
+  latitude: number,
+  longitude: number,
+  proj: string,
+}
+
 export class Coordinates {
   x: number;
   y: number;
   proj: string; // a proj4 string
   #projected: [number, number];
-
 
   /**
    * Creates new coordinates instance

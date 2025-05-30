@@ -420,6 +420,9 @@ describe.only('Client with measurement errors', () => {
     expect(data).toStrictEqual(expected);
   })
 
+  test.todo('Bad coordinates error, out of bounds')
+  test.todo('Timestamps that are in the future')
+
 
 })
 

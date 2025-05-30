@@ -1,7 +1,6 @@
 import { Datetime } from './datetime';
 import type { BBox } from 'geojson';
-import { Coordinates, updateBounds } from './coordinates';
-import { stripNulls } from './utils';
+import { Coordinates, updateBounds, CoordinatesJsonDefinition } from './coordinates';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 
 
@@ -66,14 +65,14 @@ export class Measurements {
 
   json() {
     return Array.from(this._measurements.values(), (m) => {
-      return stripNulls({
+      const meas: MeasurementJsonDefinition = {
         sensor_id: m.sensorId,
         timestamp: m.timestamp.toString(),
         value: m.value,
-        //units: m.units,
-        coordinates: m.coordinates?.json(),
-        flags: m.flags,
-      });
+      }
+      if (m.flags) meas.flags = m.flags
+      if (m.coordinates) meas['coordinates'] = m.coordinates.json()
+      return meas
     });
   }
 }
@@ -81,15 +80,24 @@ export class Measurements {
 interface MeasurementDefinition {
   sensorId: string;
   timestamp: Datetime;
-  value: number;
+  value: number | null;
   coordinates?: Coordinates;
+  flags?: Array<string>
   //units: string;
+}
+
+interface MeasurementJsonDefinition {
+  sensor_id: string;
+  timestamp: string | null; // this is just temp to solve a typing issue
+  value: number | null;
+  coordinates?: CoordinatesJsonDefinition;
+  flags?: Array<string>
 }
 
 export class Measurement {
   sensorId: string; // revisit for possible rename to 'key'
   timestamp: Datetime;
-  value: number;
+  value: number | null;
   coordinates?: Coordinates;
   flags?: Array<string>
   //units: string;
@@ -103,11 +111,16 @@ export class Measurement {
     // at this stage we only want to get everything organized
     // if we are sure that a flag was passed as a value we make it null
     // and then add a flag
-    const v = +params.value
-    if (Number.isFinite(v) && !([-99].includes(v))) {
-      this.value = v;
+    if (params.value) {
+      const v = +params.value
+      if (Number.isFinite(v) && !([-99].includes(v))) {
+        this.value = v;
+      } else {
+        this.flags = [String(params.value)];
+        this.value = null;
+      }
     } else {
-      this.flags = [String(params.value)];
+      // missing value but no flag
       this.value = null;
     }
     //this.units = params.units;

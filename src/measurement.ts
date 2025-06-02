@@ -86,7 +86,7 @@ interface MeasurementDefinition {
   //units: string;
 }
 
-interface MeasurementJsonDefinition {
+export interface MeasurementJsonDefinition {
   sensor_id: string;
   timestamp: string | null; // this is just temp to solve a typing issue
   value: number | null;

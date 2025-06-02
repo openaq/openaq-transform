@@ -12,7 +12,7 @@ export interface ParametersTransformDefinition {
     [parameter: string]: UnitTransformationDefinition
 }
 
-interface ParameterUnitDefinition {
+export interface ParameterUnitDefinition {
     parameter: string;
     unit: string
 }

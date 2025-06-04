@@ -97,7 +97,7 @@ describe('Client with data in wide format', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WSG84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -149,7 +149,7 @@ describe('Client with data split between two different urls', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WSG84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -180,7 +180,7 @@ describe('Client with data in long format', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WSG84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -211,7 +211,7 @@ describe('Provider that passes sensor data', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WSG84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -249,7 +249,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      projectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WSG84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -283,7 +283,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      projectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WSG84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -389,7 +389,7 @@ describe.only('Client with measurement errors', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    projectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WSG84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {

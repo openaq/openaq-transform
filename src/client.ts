@@ -152,6 +152,9 @@ export class Client {
     datasources: object = {};
     missingDatasources: string[] = [];
 
+
+    // TODO _secrets = {}
+
     // this should be the list of parameters in the data and how to extract them
     // transforming could be later
     parameters: ParametersDefinition = PARAMETER_DEFAULTS;
@@ -288,6 +291,10 @@ export class Client {
         return loc;
     }
 
+
+    // getSecret() {
+           
+    // }
 
     /**
      * Get sensor by key or by data needed to build a key

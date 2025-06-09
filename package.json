@@ -8,6 +8,13 @@
   "files": [
     "dist"
   ],
+  "exports" : {
+    "." : {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "watch:build": "tsc --watch",

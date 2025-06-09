@@ -2,7 +2,12 @@
   "name": "openaq-transform",
   "version": "0.0.1",
   "type": "module",
-  "packageManager":"pnpm@10.12.1",
+  "packageManager": "pnpm@10.12.1",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "watch:build": "tsc --watch",

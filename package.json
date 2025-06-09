@@ -1,0 +1,28 @@
+{
+  "name": "openaq-transform-core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "watch:build": "tsc --watch",
+    "test": "vitest --typecheck",
+    "oxlint": "oxlint src"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/luxon": "^3.6.2",
+    "@types/proj4": "^2.5.6",
+    "happy-dom": "^17.4.6",
+    "msw": "^2.7.5",
+    "oxlint": "^0.16.8",
+    "tsup": "^8.5.0",
+    "typescript": "~5.8.3",
+    "vitest": "^3.1.2"
+  },
+  "dependencies": {
+    "csv-parse": "^5.6.0",
+    "luxon": "^3.6.1",
+    "proj4": "^2.15.0"
+  }
+}

@@ -1,7 +1,8 @@
 import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
 import type { ReaderDefinition, ReaderMethodsDefinition } from './readers';
 import { apiReader, fileReader, fileSystemReader } from './readers';
-import { json, csv, tsv, ParserDefinition, ParserMethodsDefinition } from './parsers';
+import type { ParserMethodsDefinition } from './parsers';
+import { json, csv, tsv } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';

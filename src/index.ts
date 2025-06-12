@@ -1,5 +1,5 @@
 export { Client } from "./client"; 
-export { api, s3, google } from './readers';
+export { apiReader, fileReader, fileSystemReader } from './readers';
 export { json, csv } from './parsers';
 
 export type { ParserDefinition } from './parsers';

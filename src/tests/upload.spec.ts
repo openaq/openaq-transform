@@ -4,7 +4,7 @@ import { expect, test, describe } from 'vitest';
 import { Client } from '../client.ts';
 import { csv } from '../parsers.ts';
 import { widedata as data, csvdata, expectedOutput }  from './fixtures/sampledata.ts';
-
+import { ReaderDefinition } from '../readers.ts';
 
 test('test environment', () => {
  expect(typeof window).not.toBe('undefined')
@@ -29,11 +29,11 @@ class CustomClient extends Client {
 }
 
 // a simple file reader to read in the file data
-const read = async ({ url }) => {
+const read = async ({ url })=> {
     return await new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = (e) => {
-            resolve(e.target.result)
+            resolve(e.target!.result)
         }
         reader.onerror = (e) => {
             reject(e)
@@ -53,7 +53,7 @@ describe('reading one json file', () => {
     class UploadClient extends CustomClient {
         reader = 'file'
         readers = {
-            file: read
+            file: read as ReaderDefinition
         }
     }
 
@@ -95,9 +95,6 @@ describe('different files with the same parser', () => {
     class UploadClient extends CustomClient {
         reader = 'file'
         parser = 'json'
-        readers = {
-            file: read
-        }
     }
 
     test('parses file data', async () => {
@@ -118,9 +115,6 @@ describe('different files with different parsers', () => {
     class UploadClient extends CustomClient {
         reader = 'file'
         parser = { locations: 'json', measurements: 'csv' }
-        readers = {
-            file: read
-        }
     }
 
     test('parses file data', async () => {
@@ -224,6 +218,5 @@ describe('different files with custom parser and library parser v2', () => {
         const data = await client.fetch();
         expect(data).toStrictEqual(expectedOutput);
     })
-
 
  })

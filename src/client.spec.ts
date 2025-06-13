@@ -411,7 +411,7 @@ describe.only('Client with measurement errors', () => {
     const errors = cln.log.get('MissingValueError')
     // currently we are adding
     expect(data.measurements.length).toBe(6)
-    expect(errors.length).toBe(1)
+    expect(errors!.length).toBe(1)
 
     console.log(cln.log)
     //expect(data.flags.length).toBe(2)

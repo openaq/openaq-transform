@@ -6,6 +6,11 @@ export interface ParserParamsDefinition {
 
 export type ParserDefinition = (params: ParserParamsDefinition) => object
 
+export interface ParserObjectDefinition {
+  measurements: string;
+  locations: string;
+}
+
 
 export interface ParserMethodsDefinition {
     [key: string]: ParserDefinition
@@ -29,3 +34,16 @@ export const csv = async ({ text }: ParserParamsDefinition) => {
         return text;
     }
 };
+
+export const tsv = async ({ text }: ParserParamsDefinition) => {
+    if(typeof(text) === 'string') {
+        return parse(text, {
+            delimiter: '\t',
+            columns: true,
+            skip_empty_lines: true
+        });
+    } else {
+        return text;
+    }
+};
+

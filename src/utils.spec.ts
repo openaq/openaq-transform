@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { cleanKey, validateCoordinates, getValueFromKey } from './utils.ts';
+import { cleanKey, validateCoordinates, getValueFromKey, getMethod } from './utils.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -46,4 +46,55 @@ test('validateCoordinates catches coordinate precision default ', () => {
 
 test('validateCoordinates catches coordinate precision custom value ', () => {
   expect(() => validateCoordinates(85.123,172.123, 4)).toThrowError('Latitude and longitude must be precise to 4 decimal places.');
+});
+
+
+test('getMethod returns method by key', () => {
+  const jsonParserFunction = ({text}) => text
+  const csvParserFunction = ({text}) => text
+  const f = getMethod(
+    'locations', { locations: 'json', measurements: 'csv' }, 
+    {'json': jsonParserFunction, 'csv': csvParserFunction}
+  )
+  expect(f).toBe(jsonParserFunction)
+});
+
+test('getMethod returns method by key', () => {
+  const jsonParserFunction = ({text}) => text
+  const csvParserFunction = ({text}) => text
+  const f = getMethod(
+    'measurements', { locations: 'json', measurements: 'csv' }, 
+    {'json': jsonParserFunction, 'csv': csvParserFunction}
+  )
+  expect(f).toBe(csvParserFunction)
+});
+
+test('getMethod returns function when key is function', () => {
+  const jsonParserFunction = ({text}) => text
+  const csvParserFunction = ({text}) => text
+  const f = getMethod(
+    jsonParserFunction, { locations: 'json', measurements: 'csv' }, 
+    {'json': jsonParserFunction, 'csv': csvParserFunction}
+  )
+  expect(f).toBe(jsonParserFunction)
+});
+
+test('getMethod returns method when function is passed', () => {
+  const jsonParserFunction = ({text}) => text
+  const csvParserFunction = ({text}) => text
+  const f = getMethod(
+    null, csvParserFunction, 
+    {'json': jsonParserFunction, 'csv': csvParserFunction}
+  )
+  expect(f).toBe(csvParserFunction)
+});
+
+test('getMethod returns method when function is passed', () => {
+  const jsonParserFunction = ({text}) => text
+  const csvParserFunction = ({text}) => text
+  const f = getMethod(
+    null, csvParserFunction, 
+    {'json': jsonParserFunction, 'csv': csvParserFunction}
+  )
+  expect(f).toBe(csvParserFunction)
 });

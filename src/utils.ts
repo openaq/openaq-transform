@@ -4,7 +4,10 @@ import {
   LongitudeBoundsError,
 } from './errors';
 
-import { ParserMethodsDefinition } from './parsers';
+import {
+  ParserObjectDefinition,
+  ParserMethodsDefinition,
+} from './parsers';
 import { ReaderMethodsDefinition } from './readers';
 
 export const stripNulls = <T extends object>(
@@ -19,16 +22,16 @@ export const stripNulls = <T extends object>(
 };
 
 export const truthy = (value: any): boolean => {
-    return [1,true,'TRUE','T','True','t','true'].includes(value);
+  return [1, true, 'TRUE', 'T', 'True', 't', 'true'].includes(value);
 };
 
 export const getValueFromKey = (data: any, key: Function | string) => {
-    if(typeof key === 'function') {
-        return key(data);
-    } else if (typeof key === 'string') {
-        return data ? data[key] : key;
-    }
-}
+  if (typeof key === 'function') {
+    return key(data);
+  } else if (typeof key === 'string') {
+    return data ? data[key] : key;
+  }
+};
 
 export const cleanKey = (value: string): string => {
   return (
@@ -46,8 +49,8 @@ export const stripWhitespace = (value: string): string => {
 };
 
 function countDecimals(value: number) {
-    if(Math.floor(value.valueOf()) === value.valueOf()) return 0;
-    return value.toString().split(".")[1].length || 0;
+  if (Math.floor(value.valueOf()) === value.valueOf()) return 0;
+  return value.toString().split('.')[1].length || 0;
 }
 
 export function validateCoordinates(
@@ -69,12 +72,10 @@ export function validateCoordinates(
   }
 }
 
-
 // temporary method
-export function isFile (obj: object) {
-    return obj.constructor.name === 'File';
+export function isFile(obj: object) {
+  return obj.constructor.name === 'File';
 }
-
 
 /**
  *  Method to determine which method we want to use to parse/read
@@ -84,35 +85,47 @@ export function isFile (obj: object) {
  * method (string)
  */
 export function getMethod(
-    key: string | Function | null,
-    method: Function | string,
-    methods: ParserMethodsDefinition | ReaderMethodsDefinition
+  key: 'measurements' | 'locations' | Function | null,
+  method: Function | string | ParserObjectDefinition,
+  methods: ParserMethodsDefinition | ReaderMethodsDefinition
 ): Function {
-    // key would be passed when we have a keyed url
-    if(key) {
-        if (method && typeof(method) === 'object' && typeof(key) === 'string') {
-            // use the key to extract the name of the reader
-            key = method![key];
-        } else if(method && ['string','function'].includes(typeof(method))) {
-            // does not matter that key was passed, use the reader value
-            key = method;
-        }
+  let methodKeyOrFunction: string | Function;
+
+  if (typeof key === 'function') {
+    methodKeyOrFunction = key;
+  }
+  if (key !== null) {
+    if (
+      typeof method === 'object' &&
+      'measurements' in method &&
+      'locations' in method &&
+      typeof key === 'string' &&
+      ['measurements', 'locations'].includes(key)
+    ) {
+      methodKeyOrFunction = method[key as keyof ParserObjectDefinition];
+    } else if (typeof method === 'string' || typeof method === 'function') {
+      methodKeyOrFunction = method;
     } else {
-        key = method;
+      methodKeyOrFunction = key;
     }
-    // we could allow the reader to be a string or a function
-    if (typeof key === 'string') {
-        // if its a string we would pull it from our avaiable readers
-        // we would do this if we needed different readers for each node of data (e.g. locations, measurements)
-        if(!methods[key]) {
-            throw new Error(`Could not find a method named '${key}'`)
-        }
-        return methods[key];
-    } else if (typeof key === 'function') {
-        // and then if we only needed one CUSTOM reader, we could set it when we extend the client
-        return key;
+  } else {
+  if (typeof method === 'string' || typeof method === 'function') {
+      methodKeyOrFunction = method;
     } else {
-        // just a pass through??
-        return (a: any) => a;
+      throw new TypeError(
+        "Invalid 'method' type provided when 'key' is null. Expected string, function, or ClientParserObjectDefinition."
+      );
     }
+  }
+
+  if (typeof methodKeyOrFunction === 'string') {
+    if (!methods[methodKeyOrFunction]) {
+      throw new Error(
+        `Could not find a method named '${methodKeyOrFunction}' in available methods.`
+      );
+    }
+    return methods[methodKeyOrFunction];
+  } else {
+    return methodKeyOrFunction;
+  }
 }

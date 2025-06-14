@@ -15,6 +15,6 @@ export const fileReader = async ({
     reader.onerror = (e: ProgressEvent<FileReader>) => {
       reject(reader.error || e);
     };
-    reader.readAsDataURL(blob);
+    reader.readAsText(blob);
   });
 };

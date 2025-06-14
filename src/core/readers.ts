@@ -6,7 +6,7 @@ interface UrlReaderParamsDefinition {
 }
 
 export interface BlobReaderParamsDefinition {
-  blob: Blob;
+  url: Blob;
 }
 
 export interface FileSystemReaderParamsDefinition {

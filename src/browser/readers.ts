@@ -1,9 +1,10 @@
 import { BlobReaderParamsDefinition } from "../core/readers";
 
 export const fileReader = async ({
-  blob,
+  url,
 }: BlobReaderParamsDefinition): Promise<string> => {
   return await new Promise((resolve, reject) => {
+    console.log("url reader", url)
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       if (typeof e?.target?.result === 'string') {
@@ -15,6 +16,6 @@ export const fileReader = async ({
     reader.onerror = (e: ProgressEvent<FileReader>) => {
       reject(reader.error || e);
     };
-    reader.readAsText(blob);
+    reader.readAsText(url);
   });
 };

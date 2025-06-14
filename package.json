@@ -3,16 +3,22 @@
   "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+   "./browser": {
+      "browser": {
+        "types": "./src/browser/index.d.ts",
+        "default": "./src/browser/index.ts"
+      },
+      "node": null
+    },
+    "./node": {
+      "browser": null,
+      "node": {
+        "types": "./src/node/index.d.ts",
+        "default": "./src/node/index.ts"
       }
     }
   },

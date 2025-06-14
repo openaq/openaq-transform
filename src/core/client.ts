@@ -1,8 +1,6 @@
 import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
-import type { ReaderDefinition, ReaderMethodsDefinition } from './readers';
-import { apiReader, fileReader, fileSystemReader } from './readers';
+import type { ReaderMethodsDefinition } from './readers';
 import type { ParserMethodsDefinition } from './parsers';
-import { json, csv, tsv } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
@@ -107,18 +105,7 @@ interface ClientConfigDefinition {
   parameters?: ParametersDefinition;
 }
 
-const readers: ReaderMethodsDefinition = {
-  api: apiReader as ReaderDefinition,
-  file: fileReader as ReaderDefinition,
-  fileSystem: fileSystemReader as ReaderDefinition,
-};
 
-
-const parsers: ParserMethodsDefinition = {
-    json: json,
-    csv: csv,
-    tsv: tsv 
-};
 
 type ClientParserDefinition = string | Function | ParserObjectDefinition;
 
@@ -129,16 +116,13 @@ interface ClientReaderObjectDefinition {
 
 type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 
-export class Client {
-  // Q how to handle secrets
-  // constant across provider
-
+export abstract class Client {
   provider!: string;
   url?: string | File | IndexedUrlDefinition;
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
-  readers: ReaderMethodsDefinition = readers;
-  parsers: ParserMethodsDefinition = parsers;
+  abstract readers: ReaderMethodsDefinition;
+  abstract parsers: ParserMethodsDefinition;
   fetched: boolean = false;
   // source: Source;
   timezone?: string;

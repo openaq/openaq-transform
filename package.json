@@ -9,16 +9,16 @@
   "exports": {
    "./browser": {
       "browser": {
-        "types": "./src/browser/index.d.ts",
-        "default": "./src/browser/index.ts"
+        "types": "./dist/browser/index.d.ts",
+        "default": "./dist/browser/index.ts"
       },
       "node": null
     },
     "./node": {
       "browser": null,
       "node": {
-        "types": "./src/node/index.d.ts",
-        "default": "./src/node/index.ts"
+        "types": "./dist/node/index.d.ts",
+        "default": "./dist/node/index.ts"
       }
     }
   },

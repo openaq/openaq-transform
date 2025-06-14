@@ -1,8 +1,6 @@
 import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
-import type { ReaderDefinition, ReaderMethodsDefinition } from './readers';
-import { apiReader, fileReader, fileSystemReader } from './readers';
+import type { ReaderMethodsDefinition } from './readers';
 import type { ParserMethodsDefinition } from './parsers';
-import { json, csv, tsv } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
@@ -107,18 +105,7 @@ interface ClientConfigDefinition {
   parameters?: ParametersDefinition;
 }
 
-const readers: ReaderMethodsDefinition = {
-  api: apiReader as ReaderDefinition,
-  file: fileReader as ReaderDefinition,
-  fileSystem: fileSystemReader as ReaderDefinition,
-};
 
-
-const parsers: ParserMethodsDefinition = {
-    json: json,
-    csv: csv,
-    tsv: tsv 
-};
 
 type ClientParserDefinition = string | Function | ParserObjectDefinition;
 
@@ -129,16 +116,13 @@ interface ClientReaderObjectDefinition {
 
 type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 
-export class Client {
-  // Q how to handle secrets
-  // constant across provider
-
+export abstract class Client {
   provider!: string;
   url?: string | File | IndexedUrlDefinition;
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
-  readers: ReaderMethodsDefinition = readers;
-  parsers: ParserMethodsDefinition = parsers;
+  abstract readers: ReaderMethodsDefinition;
+  abstract parsers: ParserMethodsDefinition;
   fetched: boolean = false;
   // source: Source;
   timezone?: string;
@@ -202,6 +186,10 @@ export class Client {
     params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
     params?.timezone && (this.timezone = params.timezone);
     params?.longFormat && (this.longFormat = params.longFormat);
+
+    params?.reader && (this.reader = params.reader);
+    params?.parser && (this.parser = params.parser);
+
 
     // mapped data variables
     params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
@@ -387,6 +375,7 @@ export class Client {
       const reader = getMethod(null, this.reader, this.readers);
       const parser = getMethod(null, this.parser, this.parsers);
       // same for the parser
+      console.log("READER", reader)
       const text = await reader({ url });
       const d = await parser({ text });
       if (typeof d !== 'object')

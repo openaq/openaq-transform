@@ -12,7 +12,7 @@ import { ParserMethodsDefinition } from '../core/parsers';
 
 const readers: ReaderMethodsDefinition = {
   api: apiReader as ReaderDefinition,
-  fileSystem: fileSystemReader as ReaderDefinition,
+  file: fileSystemReader as ReaderDefinition,
 };
 
 const parsers: ParserMethodsDefinition = {

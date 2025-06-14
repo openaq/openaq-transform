@@ -10,7 +10,7 @@ import type {
 
 const readers: ReaderMethodsDefinition = {
   api: apiReader as ReaderDefinition,
-  fileReader: fileReader as ReaderDefinition,
+  file: fileReader as ReaderDefinition,
 };
 
 const parsers: ParserMethodsDefinition = {

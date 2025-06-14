@@ -10,6 +10,7 @@
    "./browser": {
       "browser": {
         "types": "./dist/browser/index.d.ts",
+         "browser": "./dist/browser/index.js", 
         "default": "./dist/browser/index.js"
       },
       "node": null
@@ -18,6 +19,8 @@
       "browser": null,
       "node": {
         "types": "./dist/node/index.d.ts",
+                 "node": "./dist/node/index.js", 
+
         "default": "./dist/node/index.js"
       }
     }

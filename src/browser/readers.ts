@@ -4,7 +4,6 @@ export const fileReader = async ({
   url,
 }: BlobReaderParamsDefinition): Promise<string> => {
   return await new Promise((resolve, reject) => {
-    console.log("url reader", url)
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {
       if (typeof e?.target?.result === 'string') {

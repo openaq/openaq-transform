@@ -187,6 +187,10 @@ export abstract class Client {
     params?.timezone && (this.timezone = params.timezone);
     params?.longFormat && (this.longFormat = params.longFormat);
 
+    params?.reader && (this.reader = params.reader);
+    params?.parser && (this.parser = params.parser);
+
+
     // mapped data variables
     params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
     params?.locationLabelKey &&
@@ -371,6 +375,7 @@ export abstract class Client {
       const reader = getMethod(null, this.reader, this.readers);
       const parser = getMethod(null, this.parser, this.parsers);
       // same for the parser
+      console.log("READER", reader)
       const text = await reader({ url });
       const d = await parser({ text });
       if (typeof d !== 'object')

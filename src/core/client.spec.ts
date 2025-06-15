@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { widedata, expectedOutput, measurementErrors }  from './tests/fixtures/sampledata.ts';
+import { widedata, expectedOutput, measurementErrors }  from '../tests/fixtures/sampledata.ts';
 import { Client } from './client.ts'
 console.log(process.cwd())
 

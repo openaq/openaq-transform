@@ -1,0 +1,1 @@
+export { BrowserClient } from './client';

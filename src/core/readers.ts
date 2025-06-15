@@ -1,5 +1,3 @@
-import { readFile } from 'fs/promises';
-
 type ReadAs = 'json' | 'text' | 'blob' | 'response';
 
 interface UrlReaderParamsDefinition {
@@ -7,11 +5,11 @@ interface UrlReaderParamsDefinition {
   readAs: ReadAs;
 }
 
-interface BlobReaderParamsDefinition {
-  blob: Blob;
+export interface BlobReaderParamsDefinition {
+  url: Blob;
 }
 
-interface FileSystemReaderParamsDefinition {
+export interface FileSystemReaderParamsDefinition {
   path: string;
   encoding?: 'utf8' | 'utf16le' | 'latin1'; // supported Node encodings
 }
@@ -52,29 +50,3 @@ export const apiReader = async ({
 //   return args;
 // };
 
-export const fileReader = async ({
-  blob,
-}: BlobReaderParamsDefinition): Promise<string> => {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      if (typeof e?.target?.result === 'string') {
-        resolve(e.target.result);
-      } else {
-        reject(new Error('FileReader did not return a string result.'));
-      }
-    };
-    reader.onerror = (e: ProgressEvent<FileReader>) => {
-      reject(reader.error || e);
-    };
-    reader.readAsDataURL(blob);
-  });
-};
-
-export const fileSystemReader = async ({
-  path,
-  encoding,
-}: FileSystemReaderParamsDefinition): Promise<string> => {
-  const data = await readFile(path, { encoding: encoding ?? 'utf8' });
-  return data;
-};

@@ -375,7 +375,6 @@ export abstract class Client {
       const reader = getMethod(null, this.reader, this.readers);
       const parser = getMethod(null, this.parser, this.parsers);
       // same for the parser
-      console.log("READER", reader)
       const text = await reader({ url });
       const d = await parser({ text });
       if (typeof d !== 'object')
@@ -415,6 +414,7 @@ export abstract class Client {
 
   async fetch() {
     const data = await this.fetchData();
+    console.log("FETCH", data)
     this.process(data);
     return this.data();
   }

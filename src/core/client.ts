@@ -68,7 +68,7 @@ type ParseFunction = (data?: any) => string | number | object | boolean;
 
 interface IndexedUrlDefinition {
   measurements: string | File;
-  locations: string | File; 
+  locations?: string | File;
 }
 
 interface ClientConfigDefinition {
@@ -105,13 +105,11 @@ interface ClientConfigDefinition {
   parameters?: ParametersDefinition;
 }
 
-
-
 type ClientParserDefinition = string | Function | ParserObjectDefinition;
 
 interface ClientReaderObjectDefinition {
   measurements: string;
-  locations: string;
+  locations?: string;
 }
 
 type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
@@ -189,7 +187,6 @@ export abstract class Client {
 
     params?.reader && (this.reader = params.reader);
     params?.parser && (this.parser = params.parser);
-
 
     // mapped data variables
     params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
@@ -358,8 +355,16 @@ export abstract class Client {
       const data: FetchedDataDefinition = {};
 
       for (const [key, url] of Object.entries(this.url)) {
-        const reader = getMethod(key as keyof IndexedUrlDefinition, this.reader, this.readers);
-        const parser = getMethod(key as keyof IndexedUrlDefinition, this.parser, this.parsers);
+        const reader = getMethod(
+          key as keyof IndexedUrlDefinition,
+          this.reader,
+          this.readers
+        );
+        const parser = getMethod(
+          key as keyof IndexedUrlDefinition,
+          this.parser,
+          this.parsers
+        );
         const text = await reader({ url });
         const d = await parser({ text });
         // check to make sure the parser did something
@@ -371,10 +376,20 @@ export abstract class Client {
       return data;
     } else {
       // assume is should just be passed to the reader method
-      const url = this.url;
-      const reader = getMethod(null, this.reader, this.readers);
-      const parser = getMethod(null, this.parser, this.parsers);
-      // same for the parser
+      let reader;
+      let parser;
+      let url;
+      if (typeof this.url === 'object' && isFile(this.url)) {
+        url = {
+          measurements: this.url,
+        };
+        reader = getMethod('measurements', this.reader, this.readers);
+        parser = getMethod('measurements', this.parser, this.parsers);
+      } else {
+        url = this.url;
+        reader = getMethod(null, this.reader, this.readers);
+        parser = getMethod(null, this.parser, this.parsers);
+      }
       const text = await reader({ url });
       const d = await parser({ text });
       if (typeof d !== 'object')
@@ -414,7 +429,7 @@ export abstract class Client {
 
   async fetch() {
     const data = await this.fetchData();
-    console.log("FETCH", data)
+    console.log('FETCH', data);
     this.process(data);
     return this.data();
   }

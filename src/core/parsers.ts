@@ -1,4 +1,3 @@
-
 import type { Options as CsvParseOptions } from 'csv-parse';
 
 type CsvParseFunction = (
@@ -41,7 +40,7 @@ export type ParserDefinition = (params: ParserParamsDefinition) => object
 
 export interface ParserObjectDefinition {
   measurements: string;
-  locations: string;
+  locations?: string;
 }
 
 

@@ -324,13 +324,13 @@ export abstract class Client {
    * @returns {string} - formated timestamp string
    */
   getDatetime(row: any) {
-    const dt_string: string = getValueFromKey(row, this.datetimeKey);
-    if (!dt_string) {
+    const dtString: string = getValueFromKey(row, this.datetimeKey);
+    if (!dtString) {
       throw new Error(
         `Missing date/time field. Looking in ${this.datetimeKey}`
       );
     }
-    const dt = new Datetime(dt_string, {
+    const dt = new Datetime(dtString, {
       format: this.datetimeFormat,
       timezone: this.timezone,
     });
@@ -431,7 +431,7 @@ export abstract class Client {
   async fetch() {
     const data = await this.fetchData();
     this.process(data);
-    return this.data();
+    return this;
   }
 
   process(data: FetchedDataDefinition) {
@@ -601,7 +601,6 @@ export abstract class Client {
               );
               return;
             }
-
             this.measurements.add(
               new Measurement({
                 sensorId: sensor.id,

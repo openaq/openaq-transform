@@ -13,6 +13,7 @@ interface DatetimeOptionsDefinition {
 export class Datetime {
   #input: string | number | Date | Datetime;  //'2025-01-01 00:00'
   format?: string;   // 'YYYY-mm-dd HH:mm' Format of the timestamp string
+  private _offset?: string;
   timezone?: string; // 'UTC' The timezone of the timestamp string
   locationTimezone?: string; // UTC 'America/Denver' - the timezone of the measurement location
   readonly date: DateTime;
@@ -92,7 +93,8 @@ export class Datetime {
   }
 
   toLocal() {
-    return this.date.setZone().toISO({ suppressMilliseconds: true })
+          return this.date.setZone().toISO({ suppressMilliseconds: true })
+
   }
 
 }

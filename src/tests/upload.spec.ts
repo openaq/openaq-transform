@@ -2,7 +2,7 @@
 
 import { expect, test, describe } from 'vitest';
 import { Client } from '../core/client.ts';
-import { csv } from '../core/parsers.ts';
+import { csv } from '../browser/parsers.ts';
 import { widedata as data, csvdata, expectedOutput }  from './fixtures/sampledata.ts';
 import { ReaderDefinition } from '../core/readers.ts';
 

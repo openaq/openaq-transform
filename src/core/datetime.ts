@@ -92,7 +92,8 @@ export class Datetime {
   }
 
   toLocal() {
-    return this.date.setZone().toISO({ suppressMilliseconds: true })
+          return this.date.setZone().toISO({ suppressMilliseconds: true })
+
   }
 
 }

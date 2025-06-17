@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 
 import { expect, test, describe } from 'vitest';
-import { Client } from '../client.ts';
-import { csv } from '../parsers.ts';
+import { Client } from '../core/client.ts';
+import { csv } from '../browser/parsers.ts';
 import { widedata as data, csvdata, expectedOutput }  from './fixtures/sampledata.ts';
-import { ReaderDefinition } from '../readers.ts';
+import { ReaderDefinition } from '../core/readers.ts';
 
 test('test environment', () => {
  expect(typeof window).not.toBe('undefined')

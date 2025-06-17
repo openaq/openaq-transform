@@ -35,6 +35,7 @@ export class Measurements {
   }
 
   add(measurement: Measurement) {
+    console.log("MEASUREMENt ADD,", measurement)
 
     if(measurement.coordinates) {
       this.bounds = updateBounds(measurement.coordinates, this.bounds);
@@ -50,7 +51,6 @@ export class Measurements {
     } else {
       this.from = measurement.timestamp
     }
-
     console.debug(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
     this._measurements.set(
       measurement.id,

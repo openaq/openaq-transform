@@ -354,6 +354,7 @@ export abstract class Client {
       // loop through all those keys to create the data object
       const data: FetchedDataDefinition = {};
 
+
       for (const [key, url] of Object.entries(this.url)) {
         const reader = getMethod(
           key as keyof IndexedUrlDefinition,
@@ -429,7 +430,6 @@ export abstract class Client {
 
   async fetch() {
     const data = await this.fetchData();
-    console.log('FETCH', data);
     this.process(data);
     return this.data();
   }

@@ -8,10 +8,11 @@ type CsvParseFunction = (
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
     const csv = async ({ text }: ParserParamsDefinition) => {
         if (typeof (text) === 'string') {
-            return parse(text, {
+            const data = parse(text, {
                 columns: true,
                 skip_empty_lines: true
             });
+            return data
         } else {
             return text;
         }
@@ -19,7 +20,7 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 
     const tsv = async ({ text }: ParserParamsDefinition) => {
         if (typeof (text) === 'string') {
-            return parse(text, {
+            return await parse(text, {
                 delimiter: '\t',
                 columns: true,
                 skip_empty_lines: true

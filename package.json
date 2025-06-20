@@ -13,13 +13,21 @@
         "browser": "./dist/browser/index.js",
         "default": "./dist/browser/index.js"
       },
-      "node": null
+      "node": null,
+      "default": {
+        "types": "./dist/browser/index.d.ts",
+        "default": "./dist/browser/index.js"
+      }
     },
     "./node": {
       "browser": null,
       "node": {
         "types": "./dist/node/index.d.ts",
         "node": "./dist/node/index.js",
+        "default": "./dist/node/index.js"
+      },
+      "default": {
+        "types": "./dist/node/index.d.ts",
         "default": "./dist/node/index.js"
       }
     }

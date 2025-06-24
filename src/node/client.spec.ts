@@ -1,9 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { widedata, expectedOutput, measurementErrors }  from '../tests/fixtures/sampledata.ts';
-import { Client } from './client.ts'
-console.log(process.cwd())
+import { widedata, expectedOutput, measurementErrors }  from '../../tests/fixtures/sampledata.ts';
+import { NodeClient as Client } from './client.ts'
 
 // mock server
 const handlers = [
@@ -81,7 +80,6 @@ describe('Simple client example', () => {
     expect(cln.provider).toBe(provider);
   });
 
-
 })
 
 describe('Client with data in wide format', () => {
@@ -97,7 +95,7 @@ describe('Client with data in wide format', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -125,10 +123,6 @@ describe('Client with data in wide format', () => {
     expect(data).toStrictEqual(expectedOutput);
   })
 
-  test.todo('missing averaging interval throws error')
-  test.todo('parameter mismatch throws error')
-  test.todo('status mismatch throws error')
-
 })
 
 
@@ -149,7 +143,7 @@ describe('Client with data split between two different urls', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -180,7 +174,7 @@ describe('Client with data in long format', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -211,7 +205,7 @@ describe('Provider that passes sensor data', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -249,7 +243,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      geometryProjectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WGS84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -283,7 +277,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      geometryProjectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WGS84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -294,7 +288,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
 
 });
 
-describe.only('Client with measurement errors', () => {
+describe('Client with measurement errors', () => {
 
   const rawdata = {
       locations: [
@@ -389,7 +383,7 @@ describe.only('Client with measurement errors', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -407,16 +401,12 @@ describe.only('Client with measurement errors', () => {
   test('outputs correct format', async () => {
     const cln = new JsonClient()
     cln.process(rawdata);
+
     const data = cln.data();
     const errors = cln.log.get('MissingValueError')
     // currently we are adding
     expect(data.measurements.length).toBe(6)
     expect(errors!.length).toBe(1)
-
-    console.log(cln.log)
-    //expect(data.flags.length).toBe(2)
-
-    console.log(data.measurements)
     expect(data).toStrictEqual(expected);
   })
 

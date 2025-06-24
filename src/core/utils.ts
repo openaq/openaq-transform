@@ -25,22 +25,30 @@ export const truthy = (value: any): boolean => {
   return [1, true, 'TRUE', 'T', 'True', 't', 'true'].includes(value);
 };
 
-export const getValueFromKey = (data: any, key: Function | string) => {
+
+export const getValueFromKey = (data: any, key: Function | string, asNumber: boolean = false) => {
+  let value = null
   if (typeof key === 'function') {
-    return key(data);
+    value = key(data);
   } else if (typeof key === 'string') {
-    return data ? data[key] : key;
+    value = data ? data[key] : key;
   }
+  // the csv method reads everything in as strings
+  // null values should remain null and not be converted to 0
+  if(value && asNumber && typeof(value) !== 'number') {
+    value = Number(value)
+  }
+  return value;
 };
 
 export const cleanKey = (value: string): string => {
   return (
     value &&
-    value
-      .replace(/^\s+|\s+$/g, '')
-      .replace(/\s+/g, '_')
-      .replace(/[^\w]/g, '')
-      .toLowerCase()
+      value
+        .replace(/^\s+|\s+$/g, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^\w]/g, '')
+        .toLowerCase()
   );
 };
 
@@ -66,7 +74,7 @@ export function validateCoordinates(
   }
   if (
     countDecimals(latitude) < precision ||
-    countDecimals(longitude) < precision
+      countDecimals(longitude) < precision
   ) {
     throw new InvalidPrecisionError(precision);
   }
@@ -97,10 +105,10 @@ export function getMethod(
   if (key !== null) {
     if (
       typeof method === 'object' &&
-      'measurements' in method &&
-      'locations' in method &&
-      typeof key === 'string' &&
-      ['measurements', 'locations'].includes(key)
+        'measurements' in method &&
+        'locations' in method &&
+        typeof key === 'string' &&
+        ['measurements', 'locations'].includes(key)
     ) {
       methodKeyOrFunction = method[key as keyof ParserObjectDefinition] as string;
     } else if (typeof method === 'string' || typeof method === 'function') {
@@ -109,7 +117,7 @@ export function getMethod(
       methodKeyOrFunction = key;
     }
   } else {
-  if (typeof method === 'string' || typeof method === 'function') {
+    if (typeof method === 'string' || typeof method === 'function') {
       methodKeyOrFunction = method;
     } else {
       throw new TypeError(
@@ -119,13 +127,19 @@ export function getMethod(
   }
 
   if (typeof methodKeyOrFunction === 'string') {
+    if (!methods) {
+      throw new Error(
+        `No methods available`
+      );
+    }
     if (!methods[methodKeyOrFunction]) {
       throw new Error(
-        `Could not find a method named '${methodKeyOrFunction}' in available methods.`
+        `Could not find a method named '${methodKeyOrFunction}' in available methods: ${Object.keys(methods)}. `
       );
     }
     return methods[methodKeyOrFunction];
   } else {
     return methodKeyOrFunction;
   }
+
 }

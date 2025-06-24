@@ -8,7 +8,7 @@ import { BBox } from 'geojson';
 export interface CoordinatesJsonDefinition {
     /**
    * The latitude coordinate in degrees.
-   * @example 36.035513 
+   * @example 36.035513
    */
   latitude: number,
   /**
@@ -39,7 +39,7 @@ export class Coordinates {
   /**
    * The proj4 string representing the coordinate system (e.g., 'EPSG:4326', 'EPSG:3857').
    */
-  proj: string; 
+  proj: string;
   /**
    * @private
    * Stores the projected coordinates in 'EPSG:4326' format: [longitude, latitude].
@@ -67,7 +67,12 @@ export class Coordinates {
 
     // If the projection is not already WGS84, project it.
     if (!['EPSG:4326','WGS84'].includes(this.proj)) {
-      this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+      try {
+        this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+      } catch (e: unknown) {
+        // proj4 throws a string as an error
+        throw new Error(`PROJ4 ERROR: ${e}`);
+      }
     }
 
   }
@@ -132,7 +137,7 @@ export class Coordinates {
  * @returns The updated or newly created GeoJSON BBox array.
  * @example
  * let bounds: BBox | null = null;
- * const coords = new Coordinates(10, 20); 
+ * const coords = new Coordinates(10, 20);
  * bounds = updateBounds(coords, bounds);
  * console.log(bounds); // [10, 20, 10, 20]
  *
@@ -146,7 +151,6 @@ export class Coordinates {
  */
 export function updateBounds(coordinates: Coordinates,  bounds: BBox | null | undefined): BBox {
   const { x, y } = coordinates
-  console.debug('updating boundary', x, y)
   let newBounds: BBox;
   if (!bounds) {
     newBounds = [x, y, x, y];

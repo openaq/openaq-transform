@@ -49,6 +49,7 @@ export const measurementErrors = {
 export const csvdata = {
     locations: "station,site_name,latitude,longitude,averaging\n\"ts1\",\"test site #1\",45.56665, -123.12121, 3600",
     measurements: "station,datetime,particulate_matter_25,tempf\n\"ts1\",\"2024-01-01T00:00:00-08:00\",10,80",
+    all: "station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,tempf\n\"ts1\",\"test site #1\",45.56665,-123.12121,3600,\"2024-01-01T00:00:00-08:00\",10,80"
 }
 
 export const expectedOutput = {

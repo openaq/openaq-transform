@@ -21,9 +21,9 @@ test('Date input outputs correctly to set timezone', () => {
 })
 
 test('ISO format parses correctly by default', () => {
-    const datetime = new Datetime('2025-01-01T00:00:00-07:00')
-    expect(datetime.toUTC()).toBe('2025-01-01T07:00:00Z');
-    expect(datetime.toLocal()).toBe('2025-01-01T00:00:00-07:00');
+    const datetime = new Datetime('2025-01-01T00:00:00-05:00')
+    expect(datetime.toUTC()).toBe('2025-01-01T05:00:00Z');
+    expect(datetime.toLocal()).toBe('2025-01-01T00:00:00-05:00');
 });
 
 test('datetime string, with no timezone parse correctly from UTC to UTC equivalent tiemzone', () => {

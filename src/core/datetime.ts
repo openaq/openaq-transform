@@ -106,7 +106,11 @@ export class Datetime {
     } else {
       try {
         if (!this.format) { // defaults to ISO-8601
-          parsedDate = DateTime.fromISO(this.#input);
+          // the setZone option will ensure that it sets the zone to the string offset and not the local zone
+          parsedDate = DateTime.fromISO(this.#input, { setZone: true });
+          if(!this.locationTimezone) {
+            this.locationTimezone = parsedDate.zoneName
+          }
         } else {
           if (this.timezone) {
             parsedDate = DateTime.fromFormat(this.#input, this.format, { zone: this.timezone })

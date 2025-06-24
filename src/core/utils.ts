@@ -110,7 +110,7 @@ export function getMethod(
         typeof key === 'string' &&
         ['measurements', 'locations'].includes(key)
     ) {
-      methodKeyOrFunction = method[key as keyof ParserObjectDefinition];
+      methodKeyOrFunction = method[key as keyof ParserObjectDefinition] as string;
     } else if (typeof method === 'string' || typeof method === 'function') {
       methodKeyOrFunction = method;
     } else {

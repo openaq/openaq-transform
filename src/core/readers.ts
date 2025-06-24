@@ -1,5 +1,9 @@
 type ReadAs = 'json' | 'text' | 'blob' | 'response';
 
+interface TextReaderParamsDefinition {
+  text: string
+}
+
 interface UrlReaderParamsDefinition {
   url: string;
   readAs: ReadAs;
@@ -19,6 +23,7 @@ export type ReaderDefinition = (
     | UrlReaderParamsDefinition
     | BlobReaderParamsDefinition
     | FileSystemReaderParamsDefinition
+    | TextReaderParamsDefinition
 ) => Promise<Blob | string | Response>;
 
 export interface ReaderMethodsDefinition {
@@ -41,6 +46,12 @@ export const apiReader = async ({
     return res.json();
   }
 };
+
+export const textReader = ({text}: TextReaderParamsDefinition) : Promise<string> => {
+  return new Promise((resolve, _) => {
+    resolve(text)
+  })
+}
 
 // export const s3 = (args: ReaderParamsDefinition) => {
 //   return args;

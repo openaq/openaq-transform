@@ -418,13 +418,13 @@ export abstract class Client {
   // fetching in production - log error and move on
   // fetching in upload tool - throw error if strict is on
   // developing - throw error
-  errorHandler(err: unknown) {
+  errorHandler(err: string | unknown) {
     // types: error, warning, info
     // check if warning or error
     // if strict then throw error, otherwise just log for later
 
-    let type = 'UknownError';
-    let message = null;
+    let type: string = 'UknownError';
+    let message: string = 'unknown error message';
 
     // everything should throw an error that we handle here
     // but until that is the case we will convert the strings
@@ -434,10 +434,14 @@ export abstract class Client {
     } else if (err instanceof Error) {
       type = err.name ?? 'UK';
       message = err.message;
+    } else {
+      err = new Error('Original error was neither a string or an error')
     }
 
-    if (!this.log.has(type)) this.log.set(type, []);
-    this.log.get(type)!.push({ message, err }); // line above means type will always existx
+    if (err instanceof Error) {
+      if (!this.log.has(type)) this.log.set(type, []);
+      this.log.get(type)!.push({ message, err }); // line above means type will always exist
+    }
 
     console.error(`** ERROR (${type}):`, message);
 

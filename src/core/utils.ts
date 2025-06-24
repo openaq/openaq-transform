@@ -26,7 +26,7 @@ export const truthy = (value: any): boolean => {
 };
 
 
-export const getValueFromKey = (data: any, key: Function | string, asNumber: bool = false) => {
+export const getValueFromKey = (data: any, key: Function | string, asNumber: boolean = false) => {
   let value = null
   if (typeof key === 'function') {
     value = key(data);
@@ -44,11 +44,11 @@ export const getValueFromKey = (data: any, key: Function | string, asNumber: boo
 export const cleanKey = (value: string): string => {
   return (
     value &&
-    value
-      .replace(/^\s+|\s+$/g, '')
-      .replace(/\s+/g, '_')
-      .replace(/[^\w]/g, '')
-      .toLowerCase()
+      value
+        .replace(/^\s+|\s+$/g, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^\w]/g, '')
+        .toLowerCase()
   );
 };
 
@@ -74,7 +74,7 @@ export function validateCoordinates(
   }
   if (
     countDecimals(latitude) < precision ||
-    countDecimals(longitude) < precision
+      countDecimals(longitude) < precision
   ) {
     throw new InvalidPrecisionError(precision);
   }
@@ -105,10 +105,10 @@ export function getMethod(
   if (key !== null) {
     if (
       typeof method === 'object' &&
-      'measurements' in method &&
-      'locations' in method &&
-      typeof key === 'string' &&
-      ['measurements', 'locations'].includes(key)
+        'measurements' in method &&
+        'locations' in method &&
+        typeof key === 'string' &&
+        ['measurements', 'locations'].includes(key)
     ) {
       methodKeyOrFunction = method[key as keyof ParserObjectDefinition];
     } else if (typeof method === 'string' || typeof method === 'function') {

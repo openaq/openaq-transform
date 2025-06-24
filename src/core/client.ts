@@ -349,11 +349,11 @@ export abstract class Client {
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
-    // first we check if url is a keyed object or not
+
+
     if (typeof this.url === 'object' && !isFile(this.url)) {
       // loop through all those keys to create the data object
       const data: FetchedDataDefinition = {};
-
 
       for (const [key, url] of Object.entries(this.url)) {
         const reader = getMethod(
@@ -366,6 +366,7 @@ export abstract class Client {
           this.parser,
           this.parsers
         );
+
         const text = await reader({ url });
         const d = await parser({ text });
         // check to make sure the parser did something
@@ -375,15 +376,13 @@ export abstract class Client {
         data[key] = d;
       }
       return data;
+
     } else {
       // assume is should just be passed to the reader method
       let reader;
       let parser;
-      let url;
+      let url = this.url;
       if (typeof this.url === 'object' && isFile(this.url)) {
-        url = {
-          measurements: this.url,
-        };
         reader = getMethod('measurements', this.reader, this.readers);
         parser = getMethod('measurements', this.parser, this.parsers);
       } else {
@@ -393,9 +392,24 @@ export abstract class Client {
       }
       const text = await reader({ url });
       const d = await parser({ text });
+
       if (typeof d !== 'object')
         throw new Error('Parser did not return an object');
-      return d;
+
+      // at this point its possible that we dont have data in the format
+      //  {
+      //   measurements: ...,
+      //   locations: ...,
+      //   ...
+      //  }
+      const acceptedKeys = new Set(['locations', 'sensors', 'measurements', 'flags'])
+      if (!Object.keys(d).every(key => acceptedKeys.has(key))) {
+        // assume that we have data in wide format that is not properly keyed
+        return { measurements: d }
+      } else {
+        return d;
+      }
+
     }
   }
 
@@ -408,18 +422,29 @@ export abstract class Client {
     // types: error, warning, info
     // check if warning or error
     // if strict then throw error, otherwise just log for later
-    console.log('error thrown');
-    if (err instanceof Error) {
-      const type = err.name ?? 'UK';
-      const message = err.message;
 
-      if (!this.log.has(type)) this.log.set(type, []);
-      this.log.get(type)!.push({ message, err }); // line above means type will always existx
-      console.debug(`***** ERROR (${type}):`, message);
-      if (this.strict) {
-        throw err;
-      }
+    let type = 'UknownError';
+    let message = null;
+
+    // everything should throw an error that we handle here
+    // but until that is the case we will convert the strings
+    if (typeof err === 'string') {
+      message = err;
+      err = new Error(message)
+    } else if (err instanceof Error) {
+      type = err.name ?? 'UK';
+      message = err.message;
     }
+
+    if (!this.log.has(type)) this.log.set(type, []);
+    this.log.get(type)!.push({ message, err }); // line above means type will always existx
+
+    console.error(`** ERROR (${type}):`, message);
+
+    if (this.strict) {
+      throw err;
+    }
+
   }
 
   /**
@@ -431,7 +456,7 @@ export abstract class Client {
   async fetch() {
     const data = await this.fetchData();
     this.process(data);
-    return this;
+    return this.data();
   }
 
   process(data: FetchedDataDefinition) {
@@ -458,6 +483,7 @@ export abstract class Client {
   addLocation(data: LocationDataDefinition) {
     const key = this.getLocationIngestId(data);
     const location = this._locations.get(key);
+
     if (!location) {
       // process data through the location map
       const l = new Location({
@@ -471,9 +497,10 @@ export abstract class Client {
         // the following are for passing along to sensors
         averagingIntervalSeconds: getValueFromKey(
           data,
-          this.averagingIntervalKey
+          this.averagingIntervalKey,
+          true,
         ),
-        loggingIntervalSeconds: getValueFromKey(data, this.loggingIntervalKey),
+        loggingIntervalSeconds: getValueFromKey(data, this.loggingIntervalKey, true),
         status: getValueFromKey(data, this.sensorStatusKey),
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
@@ -524,10 +551,10 @@ export abstract class Client {
     const location = this.getLocation(data);
     // check for averaging data but fall back to the location values
     const averagingIntervalSeconds =
-      getValueFromKey(data, this.averagingIntervalKey) ??
+      getValueFromKey(data, this.averagingIntervalKey, true) ??
       location.averagingIntervalSeconds;
     const loggingIntervalSeconds =
-      getValueFromKey(data, this.loggingIntervalKey) ??
+      getValueFromKey(data, this.loggingIntervalKey, true) ??
       location.loggingIntervalSeconds;
     const status =
       getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
@@ -593,6 +620,7 @@ export abstract class Client {
             }
             // get the approprate sensor, or create it
             const sensor = this.getSensor({ ...meas, metric });
+
             if (!sensor) {
               this.errorHandler(
                 new MissingSensorError(

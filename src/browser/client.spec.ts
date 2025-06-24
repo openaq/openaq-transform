@@ -2,17 +2,32 @@
 
 import { expect, test, describe } from 'vitest';
 import { Client } from '../core/client.ts';
-import { csv } from '../browser/parsers.ts';
-import { widedata as data, csvdata, expectedOutput }  from './fixtures/sampledata.ts';
-import { ReaderDefinition } from '../core/readers.ts';
+
+import { widedata, csvdata, expectedOutput }  from '../../tests/fixtures/sampledata.ts';
+
+import { csv, tsv, json, ParserMethodsDefinition } from './parsers'
+import { apiReader, ReaderMethodsDefinition, ReaderDefinition } from './readers'
 
 test('test environment', () => {
  expect(typeof window).not.toBe('undefined')
 })
 
+const readers: ReaderMethodsDefinition = {
+  api: apiReader as ReaderDefinition,
+};
+
+
+const parsers: ParserMethodsDefinition = {
+  json,
+  csv,
+  tsv,
+};
+
 // this is what is needed to parse the provided data correctly
 class CustomClient extends Client {
     provider = 'testing';
+    readers = readers;
+    parsers = parsers;
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
     sensorStatusKey = () => 'asdf'
@@ -30,39 +45,62 @@ class CustomClient extends Client {
 
 // a simple file reader to read in the file data
 const read = async ({ url })=> {
-    return await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            resolve(e.target!.result)
-        }
-        reader.onerror = (e) => {
-            reject(e)
-        }
-        reader.readAsText(url)
-    })
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      resolve(e.target!.result)
+    }
+    reader.onerror = (e) => {
+      reject(e)
+    }
+    reader.readAsText(url)
+  })
 }
 
 
 // all the rest of these are just testing the different ways to provide
 // the right read and parse methods
-
 describe('reading one json file', () => {
 
-    let file = new File([JSON.stringify(data)], "data.json", { type: "application/json"});
+  const file = new File([JSON.stringify(widedata)], "data.json", { type: "application/json"});
 
-    class UploadClient extends CustomClient {
-        reader = 'file'
-        readers = {
-            file: read as ReaderDefinition
-        }
+  class UploadClient extends CustomClient {
+    reader = 'file'
+    readers = {
+      file: read as ReaderDefinition
     }
+  }
 
-    test('parses file data', async () => {
-        const client = new UploadClient()
-        client.configure({ url: file })
-        const data = await client.fetch();
-        expect(data).toStrictEqual(expectedOutput);
-    })
+  test('parses file data', async () => {
+    const client = new UploadClient()
+    client.configure({ url: file })
+    const data = await client.fetch();
+    expect(data).toStrictEqual(expectedOutput);
+  })
+
+
+ })
+
+
+describe('reading one csv file', () => {
+
+  const file = new File([csvdata.all], "data.csv", { type: "text/csv"});
+
+  class UploadClient extends CustomClient {
+    reader = 'file'
+    parser = 'csv'
+    readers = {
+      file: read as ReaderDefinition,
+      csv: csv as ReaderDefinition
+    }
+  }
+
+  test.only('parses file data', async () => {
+    const client = new UploadClient()
+    client.configure({ url: file })
+    const data = await client.fetch();
+    expect(data).toStrictEqual(expectedOutput);
+  })
 
 
  })
@@ -70,7 +108,8 @@ describe('reading one json file', () => {
 
 describe('reading one json file v2', () => {
 
-    let file = new File([JSON.stringify(data)], "data.json", { type: "application/json"});
+  const jsonBlob = new Blob([JSON.stringify(widedata)], { type: "application/json"});
+  const file = new File([jsonBlob], "data.json", { type: "application/json"});
 
     class UploadClient extends CustomClient {
         reader = read
@@ -89,8 +128,8 @@ describe('reading one json file v2', () => {
 
 describe('different files with the same parser', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
-    let measurements = new File([JSON.stringify(data.measurements)], "measurements.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
+    let measurements = new File([JSON.stringify(widedata.measurements)], "measurements.json", { type: "application/json"});
 
     class UploadClient extends CustomClient {
         reader = 'file'
@@ -109,7 +148,7 @@ describe('different files with the same parser', () => {
 
 describe('different files with different parsers', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
 
     class UploadClient extends CustomClient {
@@ -130,7 +169,7 @@ describe('different files with different parsers', () => {
 
 describe('different files with different custom readers', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
 
     class UploadClient extends CustomClient {
@@ -155,7 +194,7 @@ describe('different files with different custom readers', () => {
 
 describe('different files with different custom readers v2', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
 
     class UploadClient extends CustomClient {
@@ -174,7 +213,7 @@ describe('different files with different custom readers v2', () => {
 
 describe('different files with custom parser and library parser', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
     let json2 = ({ text }) => {
         return JSON.parse(text);
@@ -198,7 +237,7 @@ describe('different files with custom parser and library parser', () => {
 
 describe('different files with custom parser and library parser v2', () => {
 
-    let locations = new File([JSON.stringify(data.locations)], "locations.json", { type: "application/json"});
+    let locations = new File([JSON.stringify(widedata.locations)], "locations.json", { type: "application/json"});
     let measurements = new File([csvdata.measurements], "measurements.csv", { type: "text/csv"});
     let json2 = ({ text }) => {
         return JSON.parse(text);

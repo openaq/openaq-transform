@@ -27,9 +27,13 @@ export class Coordinates {
     this.proj = proj;
     this.#projected = [this.x, this.y];
 
-
     if (!['EPSG:4326','WGS84'].includes(this.proj)) {
-      this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+      try {
+        this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
+      } catch (e: unknown) {
+        // proj4 throws a string as an error
+        throw new Error(`PROJ4 ERROR: ${e}`);
+      }
     }
 
   }

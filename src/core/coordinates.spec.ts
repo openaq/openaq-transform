@@ -2,8 +2,14 @@ import { expect, test } from 'vitest';
 import { Coordinates } from './coordinates';
 import proj4 from 'proj4';
 
-test('Coordinates latitude and longitude return unchanged value for WGS84', () => {
+test('Coordinates latitude and longitude return unchanged value for EPSG:4326', () => {
   const coordinates = new Coordinates(32, 42);
+  expect(coordinates.longitude).toBe(32);
+  expect(coordinates.latitude).toBe(42);
+});
+
+test('Coordinates latitude and longitude return unchanged value for WGS84', () => {
+  const coordinates = new Coordinates(32, 42, 'WGS84');
   expect(coordinates.longitude).toBe(32);
   expect(coordinates.latitude).toBe(42);
 });

@@ -1,4 +1,6 @@
 import { parse } from 'csv-parse/browser/esm/sync'
-import { createDelimitedParsers } from '../core/parsers'
+import { createDelimitedParsers, json } from '../core/parsers'
 
-export const { csv, tsv } = createDelimitedParsers(parse);
+const { csv, tsv } = createDelimitedParsers(parse);
+
+export { csv, tsv, json }

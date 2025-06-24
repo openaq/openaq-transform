@@ -35,7 +35,6 @@ export class Measurements {
   }
 
   add(measurement: Measurement) {
-    console.log("MEASUREMENt ADD,", measurement)
 
     if(measurement.coordinates) {
       this.bounds = updateBounds(measurement.coordinates, this.bounds);

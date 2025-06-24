@@ -1,9 +1,11 @@
 import { describe, test, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { widedata, expectedOutput, measurementErrors }  from '../tests/fixtures/sampledata.ts';
+import { widedata, expectedOutput, measurementErrors }  from '../../tests/fixtures/sampledata.ts';
 import { Client } from './client.ts'
-console.log(process.cwd())
+import { csv, tsv, json, ParserMethodsDefinition } from './parsers'
+import { apiReader, ReaderMethodsDefinition } from './readers'
+
 
 // mock server
 const handlers = [
@@ -51,6 +53,16 @@ const server = setupServer(...handlers);
 server.listen()
 
 
+const readers: ReaderMethodsDefinition = {
+  api: apiReader as ReaderDefinition,
+};
+
+const parsers: ParserMethodsDefinition = {
+  json,
+  csv,
+  tsv,
+};
+
 describe('Simple client example', () => {
 
   class FakeClient extends Client {
@@ -81,7 +93,6 @@ describe('Simple client example', () => {
     expect(cln.provider).toBe(provider);
   });
 
-
 })
 
 describe('Client with data in wide format', () => {
@@ -90,6 +101,8 @@ describe('Client with data in wide format', () => {
   class JsonClient extends Client {
     url = 'https://blah.org/wide';
     provider = 'testing';
+    readers = readers;
+    parsers = parsers;
     // mapping data
     xGeometryKey = 'longitude';
     averagingIntervalKey = 'averaging';
@@ -97,7 +110,7 @@ describe('Client with data in wide format', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -141,6 +154,8 @@ describe('Client with data split between two different urls', () => {
         locations: 'https://blah.org/test-provider/stations',
         measurements: 'https://blah.org/test-provider/measurements',
     };
+    readers = readers;
+    parsers = parsers;
     provider = 'testing';
     // mapping data
     xGeometryKey = 'longitude';
@@ -149,7 +164,7 @@ describe('Client with data split between two different urls', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -173,6 +188,8 @@ describe('Client with data in long format', () => {
     url = 'https://blah.org/long';
     provider = 'testing';
     // mapping data
+    readers = readers;
+    parsers = parsers;
     longFormat = true;
     xGeometryKey = 'longitude';
     yGeometryKey = 'latitude';
@@ -180,7 +197,7 @@ describe('Client with data in long format', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -204,6 +221,8 @@ describe('Provider that passes sensor data', () => {
     url = 'https://blah.org/withsensors';
     provider = 'testing';
     // mapping data
+    readers = readers;
+    parsers = parsers;
     longFormat = true;
     xGeometryKey = 'longitude';
     yGeometryKey = 'latitude';
@@ -211,7 +230,7 @@ describe('Provider that passes sensor data', () => {
     sensorStatusKey = () => 'asdf'
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -233,6 +252,8 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
   class JsonClient extends Client{
     url = 'https://blah.org/withsensors';
     provider = 'testing';
+    readers = readers;
+    parsers = parsers;
     longFormat = true;
     parameters = {
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
@@ -249,7 +270,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      geometryProjectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WGS84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -264,6 +285,8 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
   class JsonClient extends Client{
     url = 'https://blah.org/withsensors';
     provider = 'testing';
+    readers = readers;
+    parsers = parsers;
     longFormat = true;
   }
 
@@ -283,7 +306,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
       sensorStatusKey: () => 'asdf',
       locationIdKey: 'station',
       locationLabelKey: 'site_name',
-      geometryProjectionKey: () => 'WSG84',
+      geometryProjectionKey: () => 'WGS84',
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
@@ -294,7 +317,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
 
 });
 
-describe.only('Client with measurement errors', () => {
+describe('Client with measurement errors', () => {
 
   const rawdata = {
       locations: [
@@ -389,7 +412,7 @@ describe.only('Client with measurement errors', () => {
     yGeometryKey = 'latitude';
     locationIdKey = 'station';
     locationLabelKey = 'site_name';
-    geometryProjectionKey = () => 'WSG84';
+    geometryProjectionKey = () => 'WGS84';
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
@@ -407,16 +430,12 @@ describe.only('Client with measurement errors', () => {
   test('outputs correct format', async () => {
     const cln = new JsonClient()
     cln.process(rawdata);
+
     const data = cln.data();
     const errors = cln.log.get('MissingValueError')
     // currently we are adding
     expect(data.measurements.length).toBe(6)
     expect(errors!.length).toBe(1)
-
-    console.log(cln.log)
-    //expect(data.flags.length).toBe(2)
-
-    console.log(data.measurements)
     expect(data).toStrictEqual(expected);
   })
 

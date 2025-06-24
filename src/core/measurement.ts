@@ -86,7 +86,7 @@ interface MeasurementDefinition {
 
 export interface MeasurementJsonDefinition {
   sensor_id: string;
-  timestamp: string | null; // this is just temp to solve a typing issue
+  timestamp: string | undefined; // this is just temp to solve a typing issue
   value: number | null;
   coordinates?: CoordinatesJsonDefinition;
   flags?: Array<string>

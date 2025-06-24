@@ -151,7 +151,6 @@ export class Coordinates {
  */
 export function updateBounds(coordinates: Coordinates,  bounds: BBox | null | undefined): BBox {
   const { x, y } = coordinates
-  console.debug('updating boundary', x, y)
   let newBounds: BBox;
   if (!bounds) {
     newBounds = [x, y, x, y];

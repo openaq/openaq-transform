@@ -55,6 +55,13 @@ test('datetime string with Z correctly throws when timezone is also included', (
     expect(() => new Datetime('2025-01-01 00:00Z', { format: 'yyyy-MM-dd HH:mmZ', timezone: 'America/Denver', locationTimezone: 'America/Denver' })).toThrow(TypeError)
 });
 
+test('Datetime string with Z correctly parses and adds timezone offset when format is provided', () => {
+    const datetime = new Datetime('2025-01-01T00:00:00-05:00', { format: "yyyy-MM-dd'T'HH:mm:ssZZ" })
+    expect(datetime.toUTC()).toBe('2025-01-01T05:00:00Z');
+    expect(datetime.toLocal()).toBe('2025-01-01T00:00:00-05:00');
+});
+
+
 test('unix timestamp number (seconds) parses correctly', () => {
     const datetime = new Datetime(1746736701)
     expect(datetime.toUTC()).toBe('2025-05-08T20:38:21Z');

@@ -123,10 +123,6 @@ describe('Client with data in wide format', () => {
     expect(data).toStrictEqual(expectedOutput);
   })
 
-  test.todo('missing averaging interval throws error')
-  test.todo('parameter mismatch throws error')
-  test.todo('status mismatch throws error')
-
 })
 
 

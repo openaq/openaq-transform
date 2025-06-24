@@ -198,4 +198,14 @@ export class Datetime {
     }
   }
 
+  /**
+   * Serialize the datetime object to a string
+   *
+   * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
+   * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
+   */
+  toString(): string | undefined {
+    return this.toLocal()
+  }
+
 }

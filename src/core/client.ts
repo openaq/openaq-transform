@@ -349,8 +349,6 @@ export abstract class Client {
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
-
-
     if (typeof this.url === 'object' && !isFile(this.url)) {
       // loop through all those keys to create the data object
       const data: FetchedDataDefinition = {};

@@ -9,6 +9,7 @@ import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 import { Datetime } from './datetime';
 import { MissingValueError, MissingSensorError } from './errors';
 import { ParserObjectDefinition } from './parsers';
+import type { BBox } from 'geojson';
 
 export interface MetaDefinition {
   locationIdKey: string;
@@ -47,16 +48,26 @@ interface FetchedDataDefinition {
 
 type ErrorSummaryDefinition = { [key: string]: number };
 
+interface LocationsSummary {
+  count: number;
+  bounds: BBox | null;
+}
+
+interface MeasurementsSummary {
+  count: number;
+  from: string | null | undefined;
+  to: string | null | undefined;
+}
+
 interface SummaryDefinition {
-  source_name: string;
-  locations: number;
+  sourceName: string;
+  locations: LocationsSummary;
   systems: number;
   sensors: number;
   flags: number;
   measures: number;
   errors: ErrorSummaryDefinition;
-  from: string | null | undefined;
-  to: string | null | undefined;
+  measurements: MeasurementsSummary;
 }
 
 interface LogEntry {
@@ -374,7 +385,6 @@ export abstract class Client {
         data[key] = d;
       }
       return data;
-
     } else {
       // assume is should just be passed to the reader method
       let reader;
@@ -400,14 +410,18 @@ export abstract class Client {
       //   locations: ...,
       //   ...
       //  }
-      const acceptedKeys = new Set(['locations', 'sensors', 'measurements', 'flags'])
-      if (!Object.keys(d).every(key => acceptedKeys.has(key))) {
+      const acceptedKeys = new Set([
+        'locations',
+        'sensors',
+        'measurements',
+        'flags',
+      ]);
+      if (!Object.keys(d).every((key) => acceptedKeys.has(key))) {
         // assume that we have data in wide format that is not properly keyed
-        return { measurements: d }
+        return { measurements: d };
       } else {
         return d;
       }
-
     }
   }
 
@@ -428,12 +442,12 @@ export abstract class Client {
     // but until that is the case we will convert the strings
     if (typeof err === 'string') {
       message = err;
-      err = new Error(message)
+      err = new Error(message);
     } else if (err instanceof Error) {
       type = err.name ?? 'UK';
       message = err.message;
     } else {
-      err = new Error('Original error was neither a string or an error')
+      err = new Error('Original error was neither a string or an error');
     }
 
     if (err instanceof Error) {
@@ -446,7 +460,6 @@ export abstract class Client {
     if (this.strict) {
       throw err;
     }
-
   }
 
   /**
@@ -500,9 +513,13 @@ export abstract class Client {
         averagingIntervalSeconds: getValueFromKey(
           data,
           this.averagingIntervalKey,
-          true,
+          true
         ),
-        loggingIntervalSeconds: getValueFromKey(data, this.loggingIntervalKey, true),
+        loggingIntervalSeconds: getValueFromKey(
+          data,
+          this.loggingIntervalKey,
+          true
+        ),
         status: getValueFromKey(data, this.sensorStatusKey),
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
@@ -703,8 +720,11 @@ export abstract class Client {
       errorSummary[k] = v.length;
     });
     return {
-      source_name: this.provider,
-      locations: this._locations.length,
+      sourceName: this.provider,
+      locations: {
+        count: this._locations.length,
+        bounds: this._locations.bounds,
+      },
       systems: Object.values(this._locations)
         .map((l: Location) => Object.values(l.systems).length)
         .flat()
@@ -724,8 +744,11 @@ export abstract class Client {
         .reduce((d, i) => d + i),
       measures: this.measurements.length,
       errors: errorSummary,
-      from: this.measurements.from?.toUTC(),
-      to: this.measurements.to?.toUTC(),
+      measurements: {
+        count: this.measurements.length,
+        from: this.measurements.from?.toString(),
+        to: this.measurements.to?.toString(),
+      },
     };
   }
 }

@@ -1,5 +1,13 @@
 import proj4 from 'proj4';
 import { BBox } from 'geojson';
+import {
+  InvalidPrecisionError,
+  LatitudeBoundsError,
+  LongitudeBoundsError,
+  LocationError,
+} from './errors';
+
+import { countDecimals } from './utils';
 
 /**
  * Interface representing a JSON definition for geographic coordinates,
@@ -59,11 +67,18 @@ export class Coordinates {
    * const coords = new Coordinates(106.82293,-6.22383,'EPSG:4326');
    * console.log(coords.latitude, coords.longitude); // -6.22383, 106.82293
    */
-  constructor(x: number, y: number, proj: string = 'EPSG:4326') {
+  constructor(x: number, y: number, proj: string = 'EPSG:4326', precision: number = 0) {
     this.x = x;
     this.y = y;
     this.proj = proj;
-    this.#projected = [this.x, this.y];
+    this.precision = precision;
+
+    if (!this.x) {
+      throw new LongitudeBoundsError(this.x)
+    }
+    if (!this.y) {
+      throw new LatitudeBoundsError(this.y)
+    }
 
     // If the projection is not already WGS84, project it.
     if (!['EPSG:4326','WGS84'].includes(this.proj)) {
@@ -71,9 +86,32 @@ export class Coordinates {
         this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
       } catch (e: unknown) {
         // proj4 throws a string as an error
-        throw new Error(`PROJ4 ERROR: ${e}`);
+        throw new LocationError(`PROJ4 ERROR: ${e}`);
       }
+    } else {
+
+      if (this.precision) {
+        const x_prec = countDecimals(this.x)
+        if(x_prec < precision) {
+          throw new InvalidPrecisionError(x_prec, precision)
+        }
+
+        const y_prec = countDecimals(this.y)
+        if(y_prec < precision) {
+          throw new InvalidPrecisionError(y_prec, precision)
+        }
+      }
+
+      this.#projected = [this.x, this.y];
     }
+
+    if (this.#projected[1] < -90 || this.#projected[1] > 90) {
+      throw new LatitudeBoundsError(this.#projected[1]);
+    }
+    if (this.#projected[0] < -180 || this.#projected[0] > 180) {
+      throw new LongitudeBoundsError(this.#projected[0]);
+    }
+
 
   }
 
@@ -118,7 +156,6 @@ export class Coordinates {
   }
 
 }
-
 
 /**
  * Calculates a new bounding box array (BBox) that includes the given coordinates,

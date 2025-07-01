@@ -56,11 +56,6 @@ export const stripWhitespace = (value: string): string => {
   return value.replace(/^[ ]+|[ ]+$/, '');
 };
 
-function countDecimals(value: number) {
-  if (Math.floor(value.valueOf()) === value.valueOf()) return 0;
-  return value.toString().split('.')[1].length || 0;
-}
-
 export function validateCoordinates(
   latitude: number,
   longitude: number,
@@ -79,6 +74,15 @@ export function validateCoordinates(
     throw new InvalidPrecisionError(precision);
   }
 }
+/**
+ * Count the number of decimal places in value
+ * @returns number
+ */
+export function countDecimals(value: number) {
+  if (Math.floor(value.valueOf()) === value.valueOf()) return 0;
+  return value.toString().split('.')[1].length || 0;
+}
+
 
 // temporary method
 export function isFile(obj: object) {

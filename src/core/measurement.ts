@@ -1,7 +1,12 @@
 import { Datetime } from './datetime';
+import { Sensor } from './sensor'
 import type { BBox } from 'geojson';
 import { Coordinates, updateBounds, CoordinatesJsonDefinition } from './coordinates';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
+
+import {
+  MissingAttributeError,
+} from './errors';
 
 
 export class Measurements {
@@ -49,6 +54,7 @@ export class Measurements {
     } else {
       this.from = measurement.timestamp
     }
+
     console.debug(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
     this._measurements.set(
       measurement.id,
@@ -64,7 +70,7 @@ export class Measurements {
   json() {
     return Array.from(this._measurements.values(), (m) => {
       const meas: MeasurementJsonDefinition = {
-        sensor_id: m.sensorId,
+        sensor_id: m.sensor?.id,
         timestamp: m.timestamp.toString(),
         value: m.value,
       }
@@ -93,7 +99,8 @@ export interface MeasurementJsonDefinition {
 }
 
 export class Measurement {
-  sensorId: string; // revisit for possible rename to 'key'
+  //sensorId: string; // revisit for possible rename to 'key'
+  sensor: Sensor
   timestamp: Datetime;
   value: number | null;
   coordinates?: Coordinates;
@@ -101,7 +108,12 @@ export class Measurement {
   //units: string;
 
   constructor(params: MeasurementDefinition) {
-    this.sensorId = params.sensorId;
+
+    if (!params.sensor) throw new MissingAttributeError('sensor');
+    if (!params.timestamp) throw new MissingAttributeError('timestamp');
+
+    this.sensor = params.sensor;
+    //this.sensorId = params.sensorId;
     this.timestamp = params.timestamp;
     // the csv parser does not convert values to numbers
     // should we do something here to do that?
@@ -109,18 +121,42 @@ export class Measurement {
     // at this stage we only want to get everything organized
     // if we are sure that a flag was passed as a value we make it null
     // and then add a flag
-    if (params.value) {
-      const v = +params.value
-      if (Number.isFinite(v) && !([-99].includes(v))) {
-        this.value = v;
-      } else {
-        this.flags = [String(params.value)];
-        this.value = null;
+
+    let v;
+    try {
+
+      this.value = this.sensor?.metric.process(params.value)
+
+    } catch (e) {
+      // check if we should fail completely or just flag the value
+      console.log('we have a measurement error', params.value, e)
+      if (e.flag) {
+        this.flags = [String(e.flag)]
       }
-    } else {
-      // missing value but no flag
-      this.value = null;
+      this.value = e.value
     }
+
+    // if (params.value) {
+
+    //   // I think we should use the prepare method and throw errors
+    //   // and add flags
+
+    //   const v = [null, undefined, 'undefined', '-99', -99].includes(params.value)
+    //     ? +params.value
+    //     : this.sensor?.metric.process(params.value)
+
+    //   if (Number.isFinite(v) && !([-99].includes(v))) {
+    //     this.value = v;
+    //   } else {
+    //     console.log('adding flag', params.value, typeof(params.value))
+    //     this.flags = [String(params.value)];
+    //     this.value = null;
+    //   }
+    // } else {
+    //   // missing value but no flag
+    //   this.value = null;
+    // }
+
     //this.units = params.units;
     if (params.coordinates) {
       this.coordinates = params.coordinates;
@@ -128,6 +164,6 @@ export class Measurement {
   }
 
   get id(): string {
-    return `${this.sensorId}-${this.timestamp.toString()}`
+    return `${this.sensor.id}-${this.timestamp.toString()}`
   }
 }

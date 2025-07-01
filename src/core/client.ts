@@ -7,7 +7,7 @@ import { Sensor, Sensors } from './sensor';
 import { System } from './system';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 import { Datetime } from './datetime';
-import { MissingValueError, MissingSensorError } from './errors';
+import { UnsupportedParameterError, MissingAttributeError } from './errors';
 import { ParserObjectDefinition } from './parsers';
 
 export interface MetaDefinition {
@@ -591,7 +591,9 @@ export abstract class Client {
       : Object.keys(this.measurements.measurands());
 
     measurements.forEach((meas: any) => {
+
       try {
+
         const datetime = this.getDatetime(meas);
 
         params.map((p) => {
@@ -610,29 +612,29 @@ export abstract class Client {
           value = getValueFromKey(meas, valueName);
 
           if (value !== undefined) {
+
             metric = this.measurements.metricFromProviderKey(metricName);
 
             if (!metric) {
               this.errorHandler(
-                new MissingValueError(
-                  `Could not find a matching metric for ${metricName}/${p}/${this.parameterNameKey}`
-                )
+                // unsupporteparameter errors should happen in the constructor
+                // when we are setting up the client and providing the known parameters
+                //new MissingAttributeError('metric')
+                new UnsupportedParameterError(metricName)
               );
               return;
             }
             // get the approprate sensor, or create it
             const sensor = this.getSensor({ ...meas, metric });
-
             if (!sensor) {
               this.errorHandler(
-                new MissingSensorError(
-                  `Could not find a matching sensor for ${meas}`
-                )
+                new MissingAttributeError('sensor')
               );
               return;
             }
             this.measurements.add(
               new Measurement({
+                sensor: sensor,
                 sensorId: sensor.id,
                 timestamp: datetime,
                 value: value,
@@ -641,6 +643,7 @@ export abstract class Client {
             );
           }
         });
+
       } catch (e: unknown) {
         this.errorHandler(e);
         //if( e instanceof Error) {

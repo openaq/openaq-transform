@@ -49,6 +49,10 @@ export class Coordinates {
    */
   proj: string;
   /**
+   * The minimum number of places after the decimal point required
+   */
+  precision: number;
+  /**
    * @private
    * Stores the projected coordinates in 'EPSG:4326' format: [longitude, latitude].
    */
@@ -71,7 +75,7 @@ export class Coordinates {
     this.x = x;
     this.y = y;
     this.proj = proj;
-    this.precision = precision;
+    this.precision = Math.round(precision);
 
     if (!this.x) {
       throw new LongitudeBoundsError(this.x)
@@ -86,7 +90,7 @@ export class Coordinates {
         this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
       } catch (e: unknown) {
         // proj4 throws a string as an error
-        throw new LocationError(`PROJ4 ERROR: ${e}`);
+        throw new LocationError(`PROJ4 ERROR: ${e}`, { proj });
       }
     } else {
 

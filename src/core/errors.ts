@@ -1,30 +1,32 @@
 
 
+export const TRANSFORM_ERROR = Symbol('Transform error');
+
 export const READ_ERROR = Symbol('Read error');
 export const PARSE_ERROR = Symbol('Parse error');
 export const MEASUREMENT_ERROR = Symbol('Measurement error');
 export const LOCATION_ERROR = Symbol('Location error');
 export const ADAPTER_ERROR = Symbol('Adapter error');
 export const FETCHER_ERROR = Symbol('Fetcher error');
-export const TRANSFORM_ERROR = Symbol('Transform error');
 
 
 export class TransformError extends RangeError {
-  constructor(message, value) {
+  name: string
+  type: Symbol
+  value?: any
+  flag?: string
+
+  constructor(message: string, value: any) {
     super(`${message} '${value}' was provided.`);
     this.name = this.constructor.name;
     this.type = TRANSFORM_ERROR
     this.value = value
   }
 
-  toString() {
-    return `${this.type.description}: ${this.message} ${this.cause}`
-  }
-
 }
 
 export class LocationError extends TransformError {
-  constructor(message: string, value: number) {
+  constructor(message: string, value: any) {
     super(message, value);
     this.type = LOCATION_ERROR;
   }
@@ -52,23 +54,22 @@ export class InvalidPrecisionError extends LocationError {
 
 
 export class MeasurementError extends TransformError {
-  constructor(message: string, value: number) {
+  constructor(message: string, value: any) {
     super(message, value)
     this.type = MEASUREMENT_ERROR;
-    this.flag = null;
   }
 }
 
 export class MissingAttributeError extends MeasurementError {
-  constructor(attribute: string) {
-    super(`Missing '${attribute}' attribute.`)
+  constructor(attribute: string, value: any) {
+    super(`Missing '${attribute}' attribute.`, value)
   }
 }
 
 // provide the parameter
 // return the parameters that we do support
 export class UnsupportedParameterError extends MeasurementError {
-  constructor(parameter) {
+  constructor(parameter: string) {
     super(`Parameter currently unsupported`, parameter)
   }
 }
@@ -76,7 +77,7 @@ export class UnsupportedParameterError extends MeasurementError {
 // provide the units and the parameter
 // return what units we support in that parameter
 export class UnsupportedUnitsError extends MeasurementError {
-  constructor(parameter, units) {
+  constructor(parameter: string, units: string) {
     super(`Unsupported units for '${parameter}'.`, units)
   }
 }

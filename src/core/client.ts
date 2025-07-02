@@ -7,7 +7,7 @@ import { Sensor, Sensors } from './sensor';
 import { System } from './system';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 import { Datetime } from './datetime';
-import { UnsupportedParameterError, MissingAttributeError } from './errors';
+import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { ParserObjectDefinition } from './parsers';
 import type { BBox } from 'geojson';
 
@@ -608,9 +608,7 @@ export abstract class Client {
       : Object.keys(this.measurements.measurands());
 
     measurements.forEach((meas: any) => {
-
       try {
-
         const datetime = this.getDatetime(meas);
 
         params.map((p) => {
@@ -629,38 +627,32 @@ export abstract class Client {
           value = getValueFromKey(meas, valueName);
 
           if (value !== undefined) {
-
             metric = this.measurements.metricFromProviderKey(metricName);
 
             if (!metric) {
               this.errorHandler(
-                // unsupporteparameter errors should happen in the constructor
-                // when we are setting up the client and providing the known parameters
-                //new MissingAttributeError('metric')
                 new UnsupportedParameterError(metricName)
               );
               return;
             }
             // get the approprate sensor, or create it
             const sensor = this.getSensor({ ...meas, metric });
+
             if (!sensor) {
               this.errorHandler(
-                new MissingAttributeError('sensor')
+                new MissingAttributeError('sensor', { ...meas, metric })
               );
               return;
             }
             this.measurements.add(
               new Measurement({
                 sensor: sensor,
-                sensorId: sensor.id,
                 timestamp: datetime,
                 value: value,
-                //units: metric.unit,
               })
             );
           }
         });
-
       } catch (e: unknown) {
         this.errorHandler(e);
         //if( e instanceof Error) {

@@ -1,5 +1,5 @@
 import { Flag, FlagDefinition } from "./flag";
-import { Metric } from "./metric";
+import { Metric, MetricDefinition } from "./metric";
 import { stripNulls } from "./utils";
 
 
@@ -8,7 +8,7 @@ import { stripNulls } from "./utils";
 export interface SensorDefinition {
   sensorId: string;
   systemId: string;
-  metric: Metric;
+  metric: Metric | MetricDefinition;
   averagingIntervalSeconds: number;
   loggingIntervalSeconds: number;
   status: string;
@@ -60,7 +60,11 @@ export class Sensor {
     this.sensorId = data.sensorId;
     this.systemId = data.systemId;
     //this.metric = data.metric;
-    this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
+    if (data.metric instanceof Metric) {
+      this.metric = data.metric;
+    } else {
+      this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
+    }
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
     this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
     this.versionDate = data.versionDate;

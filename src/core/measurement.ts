@@ -5,6 +5,7 @@ import { Coordinates, updateBounds, CoordinatesJsonDefinition } from './coordina
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 
 import {
+  TransformError,
   MissingAttributeError,
 } from './errors';
 
@@ -82,7 +83,7 @@ export class Measurements {
 }
 
 interface MeasurementDefinition {
-  sensorId: string;
+  sensor: Sensor;
   timestamp: Datetime;
   value: number | null;
   coordinates?: Coordinates;
@@ -109,9 +110,10 @@ export class Measurement {
 
   constructor(params: MeasurementDefinition) {
 
-    if (!params.sensor) throw new MissingAttributeError('sensor');
-    if (!params.timestamp) throw new MissingAttributeError('timestamp');
+    if (!params.sensor) throw new MissingAttributeError('sensor', params);
+    if (!params.timestamp) throw new MissingAttributeError('timestamp', params);
 
+    this.value = null;
     this.sensor = params.sensor;
     //this.sensorId = params.sensorId;
     this.timestamp = params.timestamp;
@@ -122,42 +124,20 @@ export class Measurement {
     // if we are sure that a flag was passed as a value we make it null
     // and then add a flag
 
-    let v;
     try {
 
       this.value = this.sensor?.metric.process(params.value)
 
-    } catch (e) {
-      // check if we should fail completely or just flag the value
-      console.log('we have a measurement error', params.value, e)
-      if (e.flag) {
-        this.flags = [String(e.flag)]
+    } catch (e: unknown) {
+      // if the error includes a flag value we
+      if (e instanceof TransformError) {
+        if (e?.flag) {
+          this.flags = [String(e.flag)]
+        }
+        this.value = e.value
       }
-      this.value = e.value
     }
 
-    // if (params.value) {
-
-    //   // I think we should use the prepare method and throw errors
-    //   // and add flags
-
-    //   const v = [null, undefined, 'undefined', '-99', -99].includes(params.value)
-    //     ? +params.value
-    //     : this.sensor?.metric.process(params.value)
-
-    //   if (Number.isFinite(v) && !([-99].includes(v))) {
-    //     this.value = v;
-    //   } else {
-    //     console.log('adding flag', params.value, typeof(params.value))
-    //     this.flags = [String(params.value)];
-    //     this.value = null;
-    //   }
-    // } else {
-    //   // missing value but no flag
-    //   this.value = null;
-    // }
-
-    //this.units = params.units;
     if (params.coordinates) {
       this.coordinates = params.coordinates;
     }

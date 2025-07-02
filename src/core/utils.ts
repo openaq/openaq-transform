@@ -62,16 +62,16 @@ export function validateCoordinates(
   precision: number = 3
 ): void {
   if (latitude < -90 || latitude > 90) {
-    throw new LatitudeBoundsError();
+    throw new LatitudeBoundsError(latitude);
   }
   if (longitude < -180 || longitude > 180) {
-    throw new LongitudeBoundsError();
+    throw new LongitudeBoundsError(longitude);
   }
-  if (
-    countDecimals(latitude) < precision ||
-      countDecimals(longitude) < precision
-  ) {
-    throw new InvalidPrecisionError(precision);
+  if (countDecimals(latitude) < precision) {
+    throw new InvalidPrecisionError(latitude, precision);
+  }
+  if (countDecimals(longitude) < precision) {
+    throw new InvalidPrecisionError(longitude, precision);
   }
 }
 /**

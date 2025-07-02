@@ -7,10 +7,30 @@ import {
   LowValueError,
 } from './errors';
 
+
+
+export interface ConverterMapDefinition {
+  [key: string]: (v: any) => any;
+};
+
+
+export interface ParameterDefinition {
+  numeric: boolean;
+  units?: string;
+  converters: ConverterMapDefinition;
+  range?: [number, number];
+  precision?: number
+}
+
+export interface ParameterMapDefinition {
+  [key: string]: ParameterDefinition;
+};
+
+
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
-export const PARAMETERS: ParametersTransformDefinition = {
+export const PARAMETERS: ParameterMapDefinition = {
   'pm25': {
     numeric: true,
     units: 'ug/m3',
@@ -37,15 +57,21 @@ export const PARAMETERS: ParametersTransformDefinition = {
   }
 }
 
-export const PROVIDER_VALUE_FLAGS = [-99, -999, '-99', '-999'];
+export const PROVIDER_VALUE_FLAGS: Array<any> = [-99, -999, '-99', '-999'];
+
+export interface MetricDefinition {
+  parameter: string;
+  unit: string;
+}
 
 export class Metric {
   key: string
-  parameter: Object;
+  parameter: ParameterDefinition;
   unit: string;
-  range: Array<number>;
-  converters: Object<string>
   numeric: Boolean = true;
+  precision?: number;
+  converter: Function
+
 
   constructor(parameter: string, unit: string) {
     this.key = parameter
@@ -58,13 +84,18 @@ export class Metric {
     if (!this.parameter?.converters[this.unit]) {
       throw new UnsupportedUnitsError(parameter, unit);
     }
-    this.transfer_function = this.parameter?.converters[this.unit]
-    this.precision = this.parameter?.precision
+    this.converter = this.parameter?.converters[this.unit]
+
+    if (this.parameter?.precision) {
+      this.precision = Math.round(this.parameter.precision)
+    }
+
     this.numeric = this.parameter?.numeric;
   }
 
 
-  process(v) {
+  process(v: any) {
+
     const range = this.parameter?.range
     let nv = null;
 
@@ -83,7 +114,7 @@ export class Metric {
       throw new ProviderValueError(v)
     }
 
-    nv = this.transfer_function(v);
+    nv = this.converter(v);
 
     // adjust the precision if needed
     if (this.precision) {
@@ -94,10 +125,10 @@ export class Metric {
     // check for issues and throw an error
     if (range && range.length === 2) {
       if(nv < range[0]) {
-        throw new LowValueError(nv)
+        throw new LowValueError(nv, range[0])
       }
       if(nv > range[1]) {
-        throw new HighValueError(nv)
+        throw new HighValueError(nv, range[1])
       }
     }
     return nv

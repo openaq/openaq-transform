@@ -3,6 +3,8 @@ import { Coordinates, updateBounds } from './coordinates';
 import proj4 from 'proj4';
 import { type BBox } from 'geojson';
 
+import { LatitudeBoundsError } from './errors'
+
 test('Coordinates latitude and longitude return unchanged value for EPSG:4326', () => {
   const coordinates = new Coordinates(32, 42);
   expect(coordinates.longitude).toBe(32);
@@ -50,6 +52,30 @@ test('Coordinates json() method returns correct structure and values for project
   expect(jsonOutput.proj).toBe('EPSG:4326');
 });
 
+test('Coordinates fail when latitude is null', () => {
+  expect(() => new Coordinates(20, null)).toThrowError(/Latitude/);
+});
+
+test('Coordinates fail when longitude is null', () => {
+  expect(() => new Coordinates(null, 20)).toThrowError(/Longitude/);
+});
+
+test('Coordinates fail when projection is invalid', () => {
+  expect(() => new Coordinates(20, 20, 'WSG84')).toThrowError(/PROJ4/);
+});
+
+test('Coordinates throws longitude out of bounds', () => {
+  expect(() => new Coordinates(200, 20)).toThrowError(/Longitude/);
+});
+
+test('Coordinates throws latitude out of bounds', () => {
+  expect(() => new Coordinates(20, 200)).toThrowError(/Latitude/);
+});
+
+test('Coordinates throws precision default error', () => {
+  expect(() => new Coordinates(172.12, 85.12, 'EPSG:4326', 3)).toThrowError(/precise/);
+});
+
 
 test('updateBounds initializes bounds correctly when null', () => {
   const coords = new Coordinates(10, 20);
@@ -69,75 +95,75 @@ test('updateBounds expands bounds in all directions', () => {
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([-5, 0, 10, 15]);
 
-  const coords2 = new Coordinates(15, -5); 
+  const coords2 = new Coordinates(15, -5);
   const newBounds2 = updateBounds(coords2, newBounds);
   expect(newBounds2).toEqual([-5, -5, 15, 15]);
 });
 
 test('updateBounds does not mutate the original bounds array', () => {
   const initialBounds: BBox = [0, 0, 10, 10];
-  const originalBoundsCopy = [...initialBounds]; 
-  const coords = new Coordinates(5, 5); 
-  updateBounds(coords, initialBounds); 
+  const originalBoundsCopy = [...initialBounds];
+  const coords = new Coordinates(5, 5);
+  updateBounds(coords, initialBounds);
 
-  expect(initialBounds).toEqual(originalBoundsCopy); 
+  expect(initialBounds).toEqual(originalBoundsCopy);
 });
 
 test('updateBounds returns a new array instance', () => {
   const initialBounds: BBox = [0, 0, 10, 10];
   const coords = new Coordinates(5, 5);
   const newBounds = updateBounds(coords, initialBounds);
-  expect(newBounds).not.toBe(initialBounds); 
+  expect(newBounds).not.toBe(initialBounds);
 });
 
 test('updateBounds does not change bounds if coordinate is within existing bounds', () => {
   const initialBounds: BBox = [0, 0, 10, 10];
-  const coords = new Coordinates(5, 5); 
+  const coords = new Coordinates(5, 5);
   const newBounds = updateBounds(coords, initialBounds);
-  expect(newBounds).toEqual(initialBounds); 
+  expect(newBounds).toEqual(initialBounds);
 });
 
 test('updateBounds expands only minX', () => {
   const initialBounds: BBox = [5, 5, 10, 10];
-  const coords = new Coordinates(2, 7); 
+  const coords = new Coordinates(2, 7);
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([2, 5, 10, 10]);
 });
 
 test('updateBounds expands only maxX', () => {
   const initialBounds: BBox = [0, 0, 5, 5];
-  const coords = new Coordinates(7, 2); 
+  const coords = new Coordinates(7, 2);
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([0, 0, 7, 5]);
 });
 
 test('updateBounds expands only minY', () => {
   const initialBounds: BBox = [0, 5, 10, 10];
-  const coords = new Coordinates(5, 2); 
+  const coords = new Coordinates(5, 2);
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([0, 2, 10, 10]);
 });
 
 test('updateBounds expands only maxY', () => {
   const initialBounds: BBox = [0, 0, 10, 5];
-  const coords = new Coordinates(5, 7); 
+  const coords = new Coordinates(5, 7);
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([0, 0, 10, 7]);
 });
 
 test('updateBounds correctly copies existing bounds when provided', () => {
   const existingBounds: BBox = [10, 20, 30, 40];
-  const coord = new Coordinates(15, 25); 
+  const coord = new Coordinates(15, 25);
   const newBounds = updateBounds(coord, existingBounds);
 
   expect(newBounds).not.toBe(existingBounds);
-  
+
   expect(newBounds).toEqual(existingBounds);
-  const coords = new Coordinates(5, 45); 
+  const coords = new Coordinates(5, 45);
   const expandedBounds = updateBounds(coords, existingBounds);
-  expect(expandedBounds).not.toBe(existingBounds); 
-  expect(existingBounds).toEqual([10, 20, 30, 40]); 
-  expect(expandedBounds).toEqual([5, 20, 30, 45]); 
+  expect(expandedBounds).not.toBe(existingBounds);
+  expect(existingBounds).toEqual([10, 20, 30, 40]);
+  expect(expandedBounds).toEqual([5, 20, 30, 45]);
 });
 
 
@@ -145,7 +171,7 @@ test('updateBounds copies existing bounds array when provided (branch coverage f
   const initialBounds: BBox = [1, 2, 3, 4];
   const coords = new Coordinates(2, 3);
   const newBounds = updateBounds(coords, initialBounds);
-  expect(newBounds).not.toBe(initialBounds);  
+  expect(newBounds).not.toBe(initialBounds);
   expect(newBounds).toEqual(initialBounds);
   expect(initialBounds).toEqual([1, 2, 3, 4]);
 });

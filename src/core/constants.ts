@@ -25,13 +25,14 @@ export interface ParametersDefinition {
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParametersTransformDefinition = {
-    'pm25': {
-        'ugm3': (d: number) => d
-    },
-    'o3': {
-        'ppm': (d: number) => d,
-        'ppb': (d: number) => d
-    }
+  'pm25': {
+    'ugm3': (d: number) => d
+  },
+  'o3': {
+    'ppm': (d: number) => d,
+    'ppb': (d: number) => d
+  },
+  'temp': {}
 }
 
 // and this will be a default set of parameters to use

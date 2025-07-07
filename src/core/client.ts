@@ -185,7 +185,6 @@ export abstract class Client {
     this._sensors = new Sensors();
     this.log = new Map();
 
-    //return this
   }
 
   configure(params: ClientConfigDefinition) {
@@ -224,6 +223,7 @@ export abstract class Client {
       (this.averagingIntervalKey = params.averagingIntervalKey);
     params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
     params?.parameters && (this.parameters = params.parameters);
+
   }
 
   get measurements() {

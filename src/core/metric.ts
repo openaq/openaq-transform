@@ -35,14 +35,14 @@ export const PARAMETERS: ParameterMapDefinition = {
     numeric: true,
     units: 'ug/m3',
     converters: {
-      'ug/m3': (d: number) => +d
+      'ug/m3': (d: number | string) => +d
     }
   },
   'o3': {
     numeric: true,
     converters: {
-      'ppm': (d: number) => +d,
-      'ppb': (d: number) => +d
+      'ppm': (d: number | string) => +d,
+      'ppb': (d: number | string) => +d
     }
   },
   'temperature': {
@@ -51,8 +51,8 @@ export const PARAMETERS: ParameterMapDefinition = {
     precision: 1,
     range: [-50, 50],
     converters: {
-      'f': (d: number) => (+d-32) * 5/9,
-      'c': (d: number) => +d
+      'f': (d: number | string) => (+d-32) * 5/9,
+      'c': (d: number| string) => +d
     },
   }
 }

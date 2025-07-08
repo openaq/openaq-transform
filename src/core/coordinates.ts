@@ -95,14 +95,14 @@ export class Coordinates {
     } else {
 
       if (this.precision) {
-        const x_prec = countDecimals(this.x)
-        if(x_prec < precision) {
-          throw new InvalidPrecisionError(x_prec, precision)
+        const xPrecision = countDecimals(this.x)
+        if(xPrecision < precision) {
+          throw new InvalidPrecisionError(xPrecision, precision)
         }
 
-        const y_prec = countDecimals(this.y)
-        if(y_prec < precision) {
-          throw new InvalidPrecisionError(y_prec, precision)
+        const yPrecision = countDecimals(this.y)
+        if(yPrecision < precision) {
+          throw new InvalidPrecisionError(yPrecision, precision)
         }
       }
 

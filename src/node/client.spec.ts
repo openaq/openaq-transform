@@ -4,6 +4,7 @@ import { setupServer } from 'msw/node';
 import { widedata, expectedOutput, measurementErrors }  from '../../tests/fixtures/sampledata.ts';
 import { NodeClient as Client } from './client.ts'
 
+
 // mock server
 const handlers = [
   http.get("https://blah.org/wide", async () => {
@@ -99,6 +100,7 @@ describe('Client with data in wide format', () => {
     ownerKey = () => 'test_owner';
     isMobileKey = () => false;
     parameters = {
+      // provider_parameter_name: { parameter: 'openaq_name', unit: 'provider_units' }
       particulate_matter_25: { parameter: "pm25", unit: "ug/m3"},
       tempf: { parameter: "temperature", unit: "f" },
     };
@@ -328,7 +330,7 @@ describe('Client with measurement errors', () => {
         {
           station: "ts1",
           datetime: "2024-01-01T05:00:00-08:00",
-          parameter: 'tempf',
+          parameter: 'particulate_matter_25',
           value: '65', // number as string
         },
         {
@@ -345,7 +347,7 @@ describe('Client with measurement errors', () => {
     meta: expectedOutput.meta,
     locations: expectedOutput.locations,
     measurements: [
-      ...expectedOutput.measurements,
+     ...expectedOutput.measurements,
       {
         sensor_id: "testing-ts1-temperature",
         timestamp: "2024-01-01T01:00:00-08:00",
@@ -364,7 +366,7 @@ describe('Client with measurement errors', () => {
         flags: ['TOO_HIGH']
       },
       {
-        sensor_id: "testing-ts1-temperature",
+        sensor_id: "testing-ts1-pm25",
         timestamp: "2024-01-01T05:00:00-08:00",
         value: 65, // number as string
       },
@@ -403,7 +405,7 @@ describe('Client with measurement errors', () => {
     cln.process(rawdata);
 
     const data = cln.data();
-    const errors = cln.log.get('MissingValueError')
+    const errors = cln.log.get('UnsupportedParameterError')
     // currently we are adding
     expect(data.measurements.length).toBe(6)
     expect(errors!.length).toBe(1)

@@ -7,7 +7,7 @@ import { Sensor, Sensors } from './sensor';
 import { System } from './system';
 import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
 import { Datetime } from './datetime';
-import { MissingValueError, MissingSensorError } from './errors';
+import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { ParserObjectDefinition } from './parsers';
 import type { BBox } from 'geojson';
 
@@ -185,7 +185,6 @@ export abstract class Client {
     this._sensors = new Sensors();
     this.log = new Map();
 
-    //return this
   }
 
   configure(params: ClientConfigDefinition) {
@@ -224,6 +223,7 @@ export abstract class Client {
       (this.averagingIntervalKey = params.averagingIntervalKey);
     params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
     params?.parameters && (this.parameters = params.parameters);
+
   }
 
   get measurements() {
@@ -631,9 +631,7 @@ export abstract class Client {
 
             if (!metric) {
               this.errorHandler(
-                new MissingValueError(
-                  `Could not find a matching metric for ${metricName}/${p}/${this.parameterNameKey}`
-                )
+                new UnsupportedParameterError(metricName)
               );
               return;
             }
@@ -642,18 +640,15 @@ export abstract class Client {
 
             if (!sensor) {
               this.errorHandler(
-                new MissingSensorError(
-                  `Could not find a matching sensor for ${meas}`
-                )
+                new MissingAttributeError('sensor', { ...meas, metric })
               );
               return;
             }
             this.measurements.add(
               new Measurement({
-                sensorId: sensor.id,
+                sensor: sensor,
                 timestamp: datetime,
                 value: value,
-                //units: metric.unit,
               })
             );
           }

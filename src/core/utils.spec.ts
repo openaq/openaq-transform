@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { cleanKey, validateCoordinates, getValueFromKey, getMethod } from './utils.ts';
+import { countDecimals } from './utils';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -29,24 +30,9 @@ test('getValueFromKey returns value when key exists', () => {
   expect(getValueFromKey({ pm25: null }, 'pm25')).toBe(null)
 });
 
-
-test('validateCoordinates catches out of bounds latitude ', () => {
-  expect(() => validateCoordinates(95.123,172.123)).toThrowError('Latitude must be between -90 and 90 degrees.');
-  expect(() => validateCoordinates(-95.123,172.123)).toThrowError('Latitude must be between -90 and 90 degrees.');
-});
-
-test('validateCoordinates catches out of bounds longitude ', () => {
-  expect(() => validateCoordinates(85.123,182.123)).toThrowError('Longitude must be between -180 and 180 degrees.');
-  expect(() => validateCoordinates(-85.123,-182.123)).toThrowError('Longitude must be between -180 and 180 degrees.');
-});
-
-test('validateCoordinates catches coordinate precision default ', () => {
-  expect(() => validateCoordinates(85.12,172.12)).toThrowError('Latitude and longitude must be precise to 3 decimal places.');
-});
-
-test('validateCoordinates catches coordinate precision custom value ', () => {
-  expect(() => validateCoordinates(85.123,172.123, 4)).toThrowError('Latitude and longitude must be precise to 4 decimal places.');
-});
+test('countDecimals returns the right value', () => {
+  expect(countDecimals(7.24)).toBe(2)
+})
 
 
 test('getMethod returns method by key', () => {

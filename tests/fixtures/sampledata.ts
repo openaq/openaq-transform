@@ -1,3 +1,4 @@
+const tempf = 26.7;
 
 export const widedata = {
   locations: [
@@ -107,7 +108,7 @@ export const expectedOutput = {
     {
       sensor_id: 'testing-ts1-temperature',
       timestamp: '2024-01-01T00:00:00-08:00',
-      value: 80,
+      value: tempf,
     }
   ]
 };

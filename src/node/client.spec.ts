@@ -54,12 +54,12 @@ server.listen()
 describe('Simple client example', () => {
 
   class FakeClient extends Client {
-    url: string = 'fake.url';
+    resource: string = 'fake.resource';
   }
 
-  test('url is updated', () => {
+  test('resource is updated', () => {
     const cln = new FakeClient()
-    expect(cln.url).toBe('fake.url');
+    expect(cln.resource).toBe('fake.resource');
   });
 
   test('abstract defaults persist', () => {
@@ -73,11 +73,11 @@ describe('Simple client example', () => {
     expect(cln.provider).toBe(provider);
   });
 
-  test('url cant be overidden', () => {
-    const url = 'different.fake.url'
+  test('resource cant be overidden', () => {
+    const resource = 'different.fake.resource'
     const provider = 'my-provider'
-    const cln = new FakeClient({ url, provider })
-    expect(cln.url).toBe('fake.url');
+    const cln = new FakeClient({ resource, provider })
+    expect(cln.resource).toBe('fake.resource');
     expect(cln.provider).toBe(provider);
   });
 
@@ -87,7 +87,7 @@ describe('Client with data in wide format', () => {
 
 
   class JsonClient extends Client {
-    url = 'https://blah.org/wide';
+    resource = 'https://blah.org/wide';
     provider = 'testing';
     // mapping data
     xGeometryKey = 'longitude';
@@ -107,9 +107,9 @@ describe('Client with data in wide format', () => {
 
   }
 
-  test('Url check', () => {
+  test('Resource check', () => {
     const cln = new JsonClient()
-    expect(cln.url).toBe('https://blah.org/wide');
+    expect(cln.resource).toBe('https://blah.org/wide');
   });
 
 
@@ -121,19 +121,19 @@ describe('Client with data in wide format', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
 })
 
 
-describe('Client with data split between two different urls', () => {
+describe('Client with data split between two different resources', () => {
 
 
   class JsonClient extends Client {
-    url = {
-        // name of the node and then the src url
+    resource = {
+        // name of the node and then the src resource
         locations: 'https://blah.org/test-provider/stations',
         measurements: 'https://blah.org/test-provider/measurements',
     };
@@ -157,7 +157,7 @@ describe('Client with data split between two different urls', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -166,7 +166,7 @@ describe('Client with data split between two different urls', () => {
 describe('Client with data in long format', () => {
 
   class JsonClient extends Client{
-    url = 'https://blah.org/long';
+    resource = 'https://blah.org/long';
     provider = 'testing';
     // mapping data
     longFormat = true;
@@ -187,7 +187,7 @@ describe('Client with data in long format', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -197,7 +197,7 @@ describe('Client with data in long format', () => {
 describe('Provider that passes sensor data', () => {
 
   class JsonClient extends Client{
-    url = 'https://blah.org/withsensors';
+    resource = 'https://blah.org/withsensors';
     provider = 'testing';
     // mapping data
     longFormat = true;
@@ -218,7 +218,7 @@ describe('Provider that passes sensor data', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -227,7 +227,7 @@ describe('Provider that passes sensor data', () => {
 describe('Dynamic adapter that gets mapping from initial config', () => {
 
   class JsonClient extends Client{
-    url = 'https://blah.org/withsensors';
+    resource = 'https://blah.org/withsensors';
     provider = 'testing';
     longFormat = true;
     parameters = {
@@ -249,7 +249,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
       ownerKey: () => 'test_owner',
       isMobileKey: () => false,
     })
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -258,7 +258,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
 describe('Dynamic adapter that gets mapping from delayed configure', () => {
 
   class JsonClient extends Client{
-    url = 'https://blah.org/withsensors';
+    resource = 'https://blah.org/withsensors';
     provider = 'testing';
     longFormat = true;
   }
@@ -284,7 +284,7 @@ describe('Dynamic adapter that gets mapping from delayed configure', () => {
       isMobileKey: () => false,
     })
 
-    const data = await cln.fetch();
+    const data = await cln.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -375,7 +375,7 @@ describe('Client with measurement errors', () => {
 
 
   class JsonClient extends Client {
-    url = 'https://blah.org/wideerrors';
+    resource = 'https://blah.org/wideerrors';
     provider = 'testing';
     strict = false;
     longFormat = true;

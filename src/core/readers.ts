@@ -4,13 +4,13 @@ interface TextReaderParamsDefinition {
   text: string
 }
 
-interface UrlReaderParamsDefinition {
-  url: string;
+interface ResourceReaderParamsDefinition {
+  resource: string;
   readAs: ReadAs;
 }
 
 export interface BlobReaderParamsDefinition {
-  url: Blob;
+  resource: Blob;
 }
 
 export interface FileSystemReaderParamsDefinition {
@@ -20,7 +20,7 @@ export interface FileSystemReaderParamsDefinition {
 
 export type ReaderDefinition = (
   params:
-    | UrlReaderParamsDefinition
+    | ResourceReaderParamsDefinition
     | BlobReaderParamsDefinition
     | FileSystemReaderParamsDefinition
     | TextReaderParamsDefinition
@@ -30,10 +30,10 @@ export interface ReaderMethodsDefinition {
   [key: string]: ReaderDefinition;
 }
 export const apiReader = async ({
-  url,
+  resource,
   readAs,
-}: UrlReaderParamsDefinition): Promise<Blob | string | Response> => {
-  const res = await fetch(url);
+}: ResourceReaderParamsDefinition): Promise<Blob | string | Response> => {
+  const res = await fetch(resource);
   if (readAs === 'json') {
     return res.json();
   } else if (readAs === 'text') {
@@ -60,4 +60,3 @@ export const textReader = ({text}: TextReaderParamsDefinition) : Promise<string>
 // export const google = (args: ReaderParamsDefinition) => {
 //   return args;
 // };
-

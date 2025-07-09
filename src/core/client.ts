@@ -77,13 +77,15 @@ interface LogEntry {
 
 type ParseFunction = (data?: any) => string | number | object | boolean;
 
-interface IndexedUrlDefinition {
-  measurements: string | File;
-  locations?: string | File;
+type resource = string | File
+
+interface IndexedResourceDefinition {
+  measurements: resource;
+  locations?: resource;
 }
 
 interface ClientConfigDefinition {
-  url?: string | File | IndexedUrlDefinition;
+  resource?: resource | IndexedResourceDefinition;
   reader?: string;
   parser?: string;
   provider?: string;
@@ -127,7 +129,7 @@ type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 
 export abstract class Client {
   provider!: string;
-  url?: string | File | IndexedUrlDefinition;
+  resource?: string | File | IndexedResourceDefinition;
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;
@@ -188,7 +190,7 @@ export abstract class Client {
   }
 
   configure(params: ClientConfigDefinition) {
-    params?.url && (this.url = params.url);
+    params?.resource && (this.resource = params.resource);
     params?.provider && (this.provider = params.provider);
 
     params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
@@ -352,7 +354,7 @@ export abstract class Client {
    * fetches data and convert to json
    *
    */
-  async fetchData() {
+  async loadResources() {
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
@@ -360,23 +362,23 @@ export abstract class Client {
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
-    if (typeof this.url === 'object' && !isFile(this.url)) {
+    if (typeof this.resource === 'object' && !isFile(this.resource)) {
       // loop through all those keys to create the data object
       const data: FetchedDataDefinition = {};
 
-      for (const [key, url] of Object.entries(this.url)) {
+      for (const [key, resource] of Object.entries(this.resource)) {
         const reader = getMethod(
-          key as keyof IndexedUrlDefinition,
+          key as keyof IndexedResourceDefinition,
           this.reader,
           this.readers
         );
         const parser = getMethod(
-          key as keyof IndexedUrlDefinition,
+          key as keyof IndexedResourceDefinition,
           this.parser,
           this.parsers
         );
 
-        const text = await reader({ url });
+        const text = await reader({ resource });
         const d = await parser({ text });
         // check to make sure the parser did something
         // need a better check here
@@ -389,16 +391,16 @@ export abstract class Client {
       // assume is should just be passed to the reader method
       let reader;
       let parser;
-      let url = this.url;
-      if (typeof this.url === 'object' && isFile(this.url)) {
+      let resource = this.resource;
+      if (typeof this.resource === 'object' && isFile(this.resource)) {
         reader = getMethod('measurements', this.reader, this.readers);
         parser = getMethod('measurements', this.parser, this.parsers);
       } else {
-        url = this.url;
+        resource = this.resource;
         reader = getMethod(null, this.reader, this.readers);
         parser = getMethod(null, this.parser, this.parsers);
       }
-      const text = await reader({ url });
+      const text = await reader({ resource });
       const d = await parser({ text });
 
       if (typeof d !== 'object')
@@ -467,9 +469,8 @@ export abstract class Client {
    *
    * @param {(string|file|object)} file - file path, object or file
    */
-
-  async fetch() {
-    const data = await this.fetchData();
+  async load() {
+    const data = await this.loadResources();
     this.process(data);
     return this.data();
   }

@@ -77,15 +77,15 @@ interface LogEntry {
 
 type ParseFunction = (data?: any) => string | number | object | boolean;
 
-type resource = string | File
+type Resource = string | File
 
 interface IndexedResourceDefinition {
-  measurements: resource;
-  locations?: resource;
+  measurements: Resource;
+  locations?: Resource;
 }
 
 interface ClientConfigDefinition {
-  resource?: resource | IndexedResourceDefinition;
+  resource?: Resource | IndexedResourceDefinition;
   reader?: string;
   parser?: string;
   provider?: string;
@@ -129,7 +129,7 @@ type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 
 export abstract class Client {
   provider!: string;
-  resource?: string | File | IndexedResourceDefinition;
+  resource?: Resource | IndexedResourceDefinition;
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;

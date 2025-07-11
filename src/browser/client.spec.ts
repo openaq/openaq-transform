@@ -33,7 +33,7 @@ class CustomClient extends Client {
 }
 
 // a simple file reader to read in the file data
-const read = async ({ url })=> {
+const read = async ({ resource })=> {
   return await new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -42,7 +42,7 @@ const read = async ({ url })=> {
     reader.onerror = (e) => {
       reject(e)
     }
-    reader.readAsText(url)
+    reader.readAsText(resource)
   })
 }
 
@@ -62,8 +62,8 @@ describe('reading one json file', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: file })
-    const data = await client.fetch();
+    client.configure({ resource: file })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -86,8 +86,8 @@ describe('reading one csv file', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: file })
-    const data = await client.fetch();
+    client.configure({ resource: file })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -106,8 +106,8 @@ describe('reading one json file v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: file })
-    const data = await client.fetch();
+    client.configure({ resource: file })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -127,8 +127,8 @@ describe('different files with the same parser', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -147,8 +147,8 @@ describe('different files with different parsers', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -172,8 +172,8 @@ describe('different files with different custom readers', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -193,8 +193,8 @@ describe('different files with different custom readers v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -217,8 +217,8 @@ describe('different files with custom parser and library parser', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -242,8 +242,8 @@ describe('different files with custom parser and library parser v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient()
-    client.configure({ url: { locations, measurements } })
-    const data = await client.fetch();
+    client.configure({ resource: { locations, measurements } })
+    const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   })
 

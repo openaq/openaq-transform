@@ -4,7 +4,7 @@ interface TextReaderParamsDefinition {
   text: string
 }
 
-interface ResourceReaderParamsDefinition {
+interface UrlReaderParamsDefinition {
   resource: string;
   readAs: ReadAs;
 }
@@ -20,7 +20,7 @@ export interface FileSystemReaderParamsDefinition {
 
 export type ReaderDefinition = (
   params:
-    | ResourceReaderParamsDefinition
+    | UrlReaderParamsDefinition
     | BlobReaderParamsDefinition
     | FileSystemReaderParamsDefinition
     | TextReaderParamsDefinition
@@ -32,7 +32,7 @@ export interface ReaderMethodsDefinition {
 export const apiReader = async ({
   resource,
   readAs,
-}: ResourceReaderParamsDefinition): Promise<Blob | string | Response> => {
+}: UrlReaderParamsDefinition): Promise<Blob | string | Response> => {
   const res = await fetch(resource);
   if (readAs === 'json') {
     return res.json();

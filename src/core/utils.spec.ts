@@ -1,6 +1,11 @@
 import { expect, test } from 'vitest';
-import { cleanKey, validateCoordinates, getValueFromKey, getMethod } from './utils.ts';
-import { countDecimals } from './utils';
+import {
+  cleanKey,
+  validateCoordinates,
+  getValueFromKey,
+  getMethod,
+  countDecimals,
+} from './utils.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');

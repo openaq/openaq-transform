@@ -76,7 +76,10 @@ export class Datetime {
     this.format = options?.format;
     this.timezone = options?.timezone;
     this.locationTimezone = options?.locationTimezone ?? options?.timezone;
-    this.date = input instanceof Datetime ? DateTime.fromObject(input.date.toObject(), { zone: input.locationTimezone }) as DateTime<true> : this.parseDate();
+    this.date = this.parseDate();
+    if (this.date > DateTime.now()) {
+      throw new RangeError('Date string cannot be in the future');
+    }
   }
 
   /**

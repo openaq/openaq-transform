@@ -9,6 +9,11 @@ test('constructor throws when Date with no timezone provided', () => {
     expect(() => new Datetime(new Date())).toThrow(TypeError);
 })
 
+test('constructor throws when Date is in the future', () => {
+    expect(() => new Datetime('2099-01-01')).toThrow(RangeError);
+    expect(() => new Datetime(new Date('2099-01-01'), {timezone: 'America/Lima'})).toThrow(RangeError);
+})
+
 test('parseDate throws when invalid string passed', () => {
     expect(() => new Datetime('2025-01-01T25:00:00Z')).toThrow(TypeError);
 })

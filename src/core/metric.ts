@@ -26,23 +26,77 @@ export interface ParameterMapDefinition {
   [key: string]: ParameterDefinition;
 };
 
+const noConversion = (d: number | string) => +d;
+const ppbToPpm = (ppb: number | string) => +ppb/1000;
+const ppmToPpb = (ppb: number | string) => +ppb*1000;
+const mgm3ToUgm3 = (gm3: number | string) => +mgm3*1000;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMapDefinition = {
-  'pm25': {
+  pm25: {
     numeric: true,
     units: 'ug/m3',
     converters: {
-      'ug/m3': (d: number | string) => +d
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
     }
   },
-  'o3': {
+  pm10: {
     numeric: true,
+    units: 'ug/m3',
     converters: {
-      'ppm': (d: number | string) => +d,
-      'ppb': (d: number | string) => +d
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  no2_mass: {
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  nox_mass: {
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  so2_mass: {
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  o3_parts: {
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppmToPpb
+    }
+  },
+  o3_mass: {
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  co_mass: {
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
     }
   },
   'temperature': {

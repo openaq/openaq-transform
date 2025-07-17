@@ -2,7 +2,7 @@ import { Datetime } from './datetime';
 import { Sensor } from './sensor'
 import type { BBox } from 'geojson';
 import { Coordinates, updateBounds, CoordinatesJsonDefinition } from './coordinates';
-import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
+import { ClientParametersDefinition, PARAMETER_DEFAULTS, Metric } from './metric';
 
 import {
   TransformError,
@@ -16,9 +16,9 @@ export class Measurements {
   from?: Datetime;
   to?: Datetime;
   bounds?: BBox | null;
-  parameters: ParametersDefinition;
+  parameters: Map<string, Metric>;
 
-  constructor(parameters?: ParametersDefinition) {
+  constructor(parameters: ClientParametersDefinition = PARAMETER_DEFAULTS) {
     this._measurements = new Map<string, Measurement>();
     this.headers = [
       'sensor_id',
@@ -27,17 +27,20 @@ export class Measurements {
       'longitude',
       'latitude',
     ];
-      //this.bounds = null;
-      this.parameters = parameters ?? PARAMETER_DEFAULTS;
-
+    // build a map that goes from the client parameter key
+    // to the api parameter
+    this.parameters = new Map()
+    Object.entries(parameters).forEach(([providerKey, { parameter, unit }]) => {
+      this.parameters.set(providerKey, new Metric(parameter, unit))
+    });
   }
 
-  measurands() {
-    return this.parameters;
+  parameterKeys() {
+    return Array.from(this.parameters.keys());
   }
 
   metricFromProviderKey(key: string) {
-    return this.parameters[key]
+    return this.parameters.get(key)
   }
 
   add(measurement: Measurement) {

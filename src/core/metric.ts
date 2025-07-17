@@ -149,10 +149,21 @@ export const PARAMETERS: ParameterMapDefinition = {
 
 export const PROVIDER_VALUE_FLAGS: Array<any> = [-99, -999, '-99', '-999'];
 
-export interface MetricDefinition {
+export interface ParameterUnitDefinition {
   parameter: string;
   unit: string;
 }
+
+export interface ClientParametersDefinition {
+    [key: string]: ParameterUnitDefinition
+}
+
+
+export const PARAMETER_DEFAULTS: ClientParametersDefinition = {
+  'pm25': { parameter: 'pm_25', unit: 'ugm3'},
+  'o3': { parameter: 'o_3', unit: 'ppm'},
+}
+
 
 export class Metric {
   key: string
@@ -183,9 +194,6 @@ export class Metric {
     this.key = Object.keys(PARAMETERS)[idx]
     this.parameter = PARAMETERS[this.key];
     this.unit = unit;
-
-    console.log('here', idx, this.key, this.parameter, this.unit)
-
 
     this.converter = this.parameter?.converters[this.unit]
 

@@ -19,6 +19,12 @@ test('unsupported units returns error', () => {
   expect(() => new Metric('temperature','kelvin')).toThrowError(UnsupportedUnitsError);
 })
 
+
+test('parameter supported with both mass and parts distinquishes without explicitly providing key', () => {
+  const m = new Metric('o3', 'ppm')
+  expect(m.key).toBe('o3:parts')
+})
+
 test('supported parameter and units returned rounded', () => {
   const m = new Metric('temperature','c')
   expect(m.process(18.3333333)).toBe(18.3)
@@ -72,11 +78,6 @@ test('empty string throws missing value error', () => {
   const v = ''
   expect(() => m.process(v)).toThrowError(MissingValueError)
 })
-
-
-
-
-
 
 
 test.todo('missing value throws range error')

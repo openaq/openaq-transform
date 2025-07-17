@@ -1,4 +1,5 @@
 
+import { PARAMETERS } from './metric'
 
 export const TRANSFORM_ERROR = Symbol('Transform error');
 
@@ -17,7 +18,7 @@ export class TransformError extends RangeError {
   flag?: string
 
   constructor(message: string, value: any) {
-    super(`${message} '${value}' was provided.`);
+    super(`${message}. Client provided '${value}'.`);
     this.name = this.constructor.name;
     this.type = TRANSFORM_ERROR
     this.value = value
@@ -70,7 +71,8 @@ export class MissingAttributeError extends MeasurementError {
 // return the parameters that we do support
 export class UnsupportedParameterError extends MeasurementError {
   constructor(parameter: string) {
-    super(`Parameter currently unsupported`, parameter)
+    const supportedParameters = Object.keys(PARAMETERS)?.join(', ');
+    super(`Parameter currently unsupported. Currently supporting ${supportedParameters}`, parameter)
   }
 }
 
@@ -78,7 +80,8 @@ export class UnsupportedParameterError extends MeasurementError {
 // return what units we support in that parameter
 export class UnsupportedUnitsError extends MeasurementError {
   constructor(parameter: string, units: string) {
-    super(`Unsupported units for '${parameter}'.`, units)
+    const supportedUnits = Object.keys(PARAMETERS[parameter]?.converters)?.join(', ');
+    super(`Unsupported units for '${parameter}'. Currently supporting ${supportedUnits}`, units)
   }
 }
 

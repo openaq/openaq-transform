@@ -15,6 +15,7 @@ export interface ConverterMapDefinition {
 
 
 export interface ParameterDefinition {
+  name: string;
   numeric: boolean;
   units?: string;
   converters: ConverterMapDefinition;
@@ -34,7 +35,8 @@ const mgm3ToUgm3 = (mgm3: number | string) => +mgm3*1000;
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMapDefinition = {
-  pm25: {
+  'pm25:mass': {
+    name: 'pm25',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -42,7 +44,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  pm10: {
+  'pm10:mass': {
+    name: 'pm10',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -50,7 +53,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  no2_mass: {
+  'no2:mass': {
+    name: 'no2',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -58,7 +62,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  nox_mass: {
+  'nox:mass': {
+    name: 'nox',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -66,7 +71,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  so2_mass: {
+  'so2:mass': {
+    name: 'so2',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -74,7 +80,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  o3_parts: {
+  'o3:parts': {
+    name: 'o3',
     numeric: true,
     units: 'ppm',
     converters: {
@@ -82,7 +89,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'ppb': ppbToPpm
     }
   },
-  o3_mass: {
+  'o3:mass': {
+    name: 'o3',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -90,7 +98,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  co_mass: {
+  'co:mass': {
+    name: 'co',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -98,7 +107,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'mg/m3': mgm3ToUgm3,
     }
   },
-  co_parts: {
+  'co:parts': {
+    name: 'co',
     numeric: true,
     units: 'ppm',
     converters: {
@@ -106,7 +116,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'ppb': ppbToPpm,
     }
   },
-  no2_parts: {
+  'no2:parts': {
+    name: 'no2',
     numeric: true,
     units: 'ppm',
     converters: {
@@ -114,7 +125,8 @@ export const PARAMETERS: ParameterMapDefinition = {
       'ppb': ppbToPpm,
     }
   },
-  so2_parts: {
+  'so2:parts': {
+    name: 'so',
     numeric: true,
     units: 'ppm',
     converters: {
@@ -123,13 +135,14 @@ export const PARAMETERS: ParameterMapDefinition = {
     }
   },
   'temperature': {
+    name: 'temperature',
     numeric: true,
     units: 'c',
     precision: 1,
     range: [-50, 50],
     converters: {
+      'c': noConversion,
       'f': (d: number | string) => (+d-32) * 5/9,
-      'c': (d: number| string) => +d
     },
   }
 }
@@ -151,16 +164,29 @@ export class Metric {
 
 
   constructor(parameter: string, unit: string) {
-    this.key = parameter
-    this.parameter = PARAMETERS[parameter];
-    this.unit = unit;
 
-    if (!this.parameter) {
+    let idx = -1
+    // check for parameter(s)
+    idx = Object.values(PARAMETERS).findIndex(p=>p.name == parameter);
+
+    if (idx < 0) {
       throw new UnsupportedParameterError(parameter);
     }
-    if (!this.parameter?.converters[this.unit]) {
+
+    // now add the units
+    idx = Object.values(PARAMETERS).findIndex(p=>p.name == parameter && Object.keys(p.converters).includes(unit))
+
+    if (idx < 0) {
       throw new UnsupportedUnitsError(parameter, unit);
     }
+
+    this.key = Object.keys(PARAMETERS)[idx]
+    this.parameter = PARAMETERS[this.key];
+    this.unit = unit;
+
+    console.log('here', idx, this.key, this.parameter, this.unit)
+
+
     this.converter = this.parameter?.converters[this.unit]
 
     if (this.parameter?.precision) {

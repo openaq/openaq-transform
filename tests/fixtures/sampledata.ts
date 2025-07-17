@@ -78,7 +78,7 @@ export const expectedOutput = {
           sensors: [
             {
               sensor_id: 'testing-ts1-pm25',
-              parameter: 'pm25',
+              parameter: 'pm25:mass',
               units: 'ug/m3',
               averaging_interval_secs: 3600,
               logging_interval_secs: 3600,

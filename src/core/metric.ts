@@ -28,8 +28,7 @@ export interface ParameterMapDefinition {
 
 const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb/1000;
-const ppmToPpb = (ppb: number | string) => +ppb*1000;
-const mgm3ToUgm3 = (gm3: number | string) => +mgm3*1000;
+const mgm3ToUgm3 = (mgm3: number | string) => +mgm3*1000;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
@@ -80,7 +79,7 @@ export const PARAMETERS: ParameterMapDefinition = {
     units: 'ppm',
     converters: {
       'ppm': noConversion,
-      'ppb': ppmToPpb
+      'ppb': ppbToPpm
     }
   },
   o3_mass: {
@@ -97,6 +96,30 @@ export const PARAMETERS: ParameterMapDefinition = {
     converters: {
       'ug/m3': noConversion,
       'mg/m3': mgm3ToUgm3,
+    }
+  },
+  co_parts: {
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
+    }
+  },
+  no2_parts: {
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
+    }
+  },
+  so2_parts: {
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
     }
   },
   'temperature': {

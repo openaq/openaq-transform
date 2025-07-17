@@ -78,7 +78,7 @@ export class Datetime {
     this.locationTimezone = options?.locationTimezone ?? options?.timezone;
     this.date = this.parseDate();
     if (this.date > DateTime.now()) {
-      throw new RangeError('Date string cannot be in the future');
+      throw new RangeError(`Date string cannot be in the future. ${input} --> ${this.toLocal()}`);
     }
   }
 

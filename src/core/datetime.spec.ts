@@ -14,6 +14,20 @@ test('constructor throws when Date is in the future', () => {
     expect(() => new Datetime(new Date('2099-01-01'), {timezone: 'America/Lima'})).toThrow(RangeError);
 })
 
+test('constructor throws when Date/time is in the future', () => {
+  const ftime = new Date(Date.now() + 10000).toISOString()
+  // console.debug(ftime)
+  expect(() => new Datetime(ftime)).toThrow(RangeError);
+})
+
+test('constructor throws when Date/time with timezone is in the future', () => {
+  const ftime = new Date(Date.now() + 1000).toISOString()
+  console.log(ftime, new Date(ftime))
+  //console.log(new Datetime(ftime, {timezone: 'America/Lima'}).toString())
+  expect(() => new Datetime(ftime, {timezone: 'America/Lima'})).toThrow(RangeError);
+  expect(() => new Datetime(new Date(ftime), {timezone: 'America/Lima'})).toThrow(RangeError);
+})
+
 test('parseDate throws when invalid string passed', () => {
     expect(() => new Datetime('2025-01-01T25:00:00Z')).toThrow(TypeError);
 })

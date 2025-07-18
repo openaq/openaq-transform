@@ -80,7 +80,11 @@ export class UnsupportedParameterError extends MeasurementError {
 // return what units we support in that parameter
 export class UnsupportedUnitsError extends MeasurementError {
   constructor(parameter: string, units: string) {
-    const supportedUnits = Object.keys(PARAMETERS[parameter]?.converters)?.join(', ');
+    const supportedUnits = Object.values(PARAMETERS)
+      .filter(d => d.name == parameter)
+      .map(d => Object.keys(d.converters))
+      .flat()
+      .join(',')
     super(`Unsupported units for '${parameter}'. Currently supporting ${supportedUnits}`, units)
   }
 }

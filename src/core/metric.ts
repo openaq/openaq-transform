@@ -126,7 +126,7 @@ export const PARAMETERS: ParameterMapDefinition = {
     }
   },
   'so2:parts': {
-    name: 'so',
+    name: 'so2',
     numeric: true,
     units: 'ppm',
     converters: {

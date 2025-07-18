@@ -20,6 +20,11 @@ test('unsupported units returns error', () => {
 })
 
 
+test('unsupported units returns error #2', () => {
+  expect(() => new Metric('pm25','kelvin')).toThrowError(UnsupportedUnitsError);
+})
+
+
 test('parameter supported with both mass and parts distinquishes without explicitly providing key', () => {
   const m = new Metric('o3', 'ppm')
   expect(m.key).toBe('o3:parts')

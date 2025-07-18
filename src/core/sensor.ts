@@ -1,5 +1,5 @@
 import { Flag, FlagDefinition } from "./flag";
-import { Metric, MetricDefinition } from "./metric";
+import { Metric, ParameterUnitDefinition } from "./metric";
 import { stripNulls } from "./utils";
 
 
@@ -8,7 +8,7 @@ import { stripNulls } from "./utils";
 export interface SensorDefinition {
   sensorId: string;
   systemId: string;
-  metric: Metric | MetricDefinition;
+  metric: Metric | ParameterUnitDefinition;
   averagingIntervalSeconds: number;
   loggingIntervalSeconds: number;
   status: string;

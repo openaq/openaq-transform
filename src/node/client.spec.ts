@@ -366,7 +366,7 @@ describe('Client with measurement errors', () => {
         flags: ['TOO_HIGH']
       },
       {
-        sensor_id: "testing-ts1-pm25",
+        sensor_id: "testing-ts1-pm25:mass",
         timestamp: "2024-01-01T05:00:00-08:00",
         value: 65, // number as string
       },

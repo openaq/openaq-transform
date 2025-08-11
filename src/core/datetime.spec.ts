@@ -9,6 +9,28 @@ test('constructor throws when Date with no timezone provided', () => {
     expect(() => new Datetime(new Date())).toThrow(TypeError);
 })
 
+test('constructor throws when Date is in the future', () => {
+    expect(() => new Datetime('2099-01-01')).toThrow(RangeError);
+    expect(() => new Datetime(new Date('2099-01-01'), {timezone: 'America/Lima'})).toThrow(RangeError);
+})
+
+test('string and date object both create the same tiemstamp', () => {
+  const ftime = '2025-01-01T00:00:00-05:00'
+  const dt1 = new Datetime(ftime, {timezone: 'America/Lima'})
+  const dt2 = new Datetime(new Date(ftime), {timezone: 'America/Lima'})
+  expect(dt1.toString()).toBe(dt2.toString())
+})
+
+test('constructor throws when Date/time is in the future', () => {
+  const ftime = new Date(Date.now() + 10000).toISOString()
+  expect(() => new Datetime(ftime)).toThrow(RangeError);
+})
+
+test('constructor throws error when Date/time with timezone is in the future', () => {
+  const ftime = new Date(Date.now() + 1000).toISOString()
+  expect(() => new Datetime(ftime)).toThrow(RangeError);
+})
+
 test('parseDate throws when invalid string passed', () => {
     expect(() => new Datetime('2025-01-01T25:00:00Z')).toThrow(TypeError);
 })
@@ -24,6 +46,10 @@ test('ISO format parses correctly by default', () => {
     const datetime = new Datetime('2025-01-01T00:00:00-05:00')
     expect(datetime.toUTC()).toBe('2025-01-01T05:00:00Z');
     expect(datetime.toLocal()).toBe('2025-01-01T00:00:00-05:00');
+});
+
+test('ISO format throws error when timezone is included', () => {
+    expect(() => new Datetime('2025-01-01T05:00:00Z', { timezone: 'America/Lima' })).toThrow(TypeError)
 });
 
 test('datetime string, with no timezone parse correctly from UTC to UTC equivalent tiemzone', () => {

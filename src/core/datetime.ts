@@ -67,7 +67,7 @@ export class Datetime {
     options?: DatetimeOptionsDefinition
   ) {
     if (
-      options?.format?.includes('Z') && options?.timezone
+      (options?.format?.includes('Z') || (typeof(input) === 'string' && input.includes('Z'))) && options?.timezone
     ) throw new TypeError(`You cannot include both the Z option in your format (${options.format}) and a timezone (${options.timezone})`)
     if (input instanceof Date && !options?.timezone) {
       throw new TypeError("Input of type Date must include timezone option");
@@ -76,7 +76,10 @@ export class Datetime {
     this.format = options?.format;
     this.timezone = options?.timezone;
     this.locationTimezone = options?.locationTimezone ?? options?.timezone;
-    this.date = input instanceof Datetime ? DateTime.fromObject(input.date.toObject(), { zone: input.locationTimezone }) as DateTime<true> : this.parseDate();
+    this.date = this.parseDate();
+    if (this.date > DateTime.now()) {
+      throw new RangeError(`Date string cannot be in the future. ${input} --> ${this.toLocal()}`);
+    }
   }
 
   /**
@@ -96,13 +99,7 @@ export class Datetime {
       parsedDate = DateTime.fromSeconds(this.#input);
       if (!this.locationTimezone) this.locationTimezone = 'UTC'
     } else if (this.#input instanceof Date) {
-      const year = this.#input.getFullYear();
-      const month = this.#input.getMonth() + 1;
-      const day = this.#input.getDate();
-      const hour = this.#input.getHours();
-      const minute = this.#input.getMinutes();
-      const second = this.#input.getSeconds();
-      parsedDate = DateTime.fromObject({year, month,day,hour,minute,second}, {zone: this.locationTimezone})
+      parsedDate = DateTime.fromISO(this.#input.toISOString(), { setZone: true })
     } else {
       try {
         if (!this.format) { // defaults to ISO-8601

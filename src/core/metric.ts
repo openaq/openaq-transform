@@ -15,6 +15,7 @@ export interface ConverterMapDefinition {
 
 
 export interface ParameterDefinition {
+  name: string;
   numeric: boolean;
   units?: string;
   converters: ConverterMapDefinition;
@@ -26,43 +27,143 @@ export interface ParameterMapDefinition {
   [key: string]: ParameterDefinition;
 };
 
+const noConversion = (d: number | string) => +d;
+const ppbToPpm = (ppb: number | string) => +ppb/1000;
+const mgm3ToUgm3 = (mgm3: number | string) => +mgm3*1000;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMapDefinition = {
-  'pm25': {
+  'pm25:mass': {
+    name: 'pm25',
     numeric: true,
     units: 'ug/m3',
     converters: {
-      'ug/m3': (d: number | string) => +d
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
     }
   },
-  'o3': {
+  'pm10:mass': {
+    name: 'pm10',
     numeric: true,
+    units: 'ug/m3',
     converters: {
-      'ppm': (d: number | string) => +d,
-      'ppb': (d: number | string) => +d
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'no2:mass': {
+    name: 'no2',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'nox:mass': {
+    name: 'nox',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'so2:mass': {
+    name: 'so2',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'o3:parts': {
+    name: 'o3',
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm
+    }
+  },
+  'o3:mass': {
+    name: 'o3',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'co:mass': {
+    name: 'co',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    }
+  },
+  'co:parts': {
+    name: 'co',
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
+    }
+  },
+  'no2:parts': {
+    name: 'no2',
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
+    }
+  },
+  'so2:parts': {
+    name: 'so2',
+    numeric: true,
+    units: 'ppm',
+    converters: {
+      'ppm': noConversion,
+      'ppb': ppbToPpm,
     }
   },
   'temperature': {
+    name: 'temperature',
     numeric: true,
     units: 'c',
     precision: 1,
     range: [-50, 50],
     converters: {
+      'c': noConversion,
       'f': (d: number | string) => (+d-32) * 5/9,
-      'c': (d: number| string) => +d
     },
   }
 }
 
 export const PROVIDER_VALUE_FLAGS: Array<any> = [-99, -999, '-99', '-999'];
 
-export interface MetricDefinition {
+export interface ParameterUnitDefinition {
   parameter: string;
   unit: string;
 }
+
+export interface ClientParametersDefinition {
+    [key: string]: ParameterUnitDefinition
+}
+
+
+export const PARAMETER_DEFAULTS: ClientParametersDefinition = {
+  'pm25': { parameter: 'pm_25', unit: 'ugm3'},
+  'o3': { parameter: 'o_3', unit: 'ppm'},
+}
+
 
 export class Metric {
   key: string
@@ -74,16 +175,26 @@ export class Metric {
 
 
   constructor(parameter: string, unit: string) {
-    this.key = parameter
-    this.parameter = PARAMETERS[parameter];
-    this.unit = unit;
 
-    if (!this.parameter) {
+    let idx = -1
+    // check for parameter(s)
+    idx = Object.values(PARAMETERS).findIndex(p=>p.name == parameter);
+
+    if (idx < 0) {
       throw new UnsupportedParameterError(parameter);
     }
-    if (!this.parameter?.converters[this.unit]) {
+
+    // now add the units
+    idx = Object.values(PARAMETERS).findIndex(p=>p.name == parameter && Object.keys(p.converters).includes(unit))
+
+    if (idx < 0) {
       throw new UnsupportedUnitsError(parameter, unit);
     }
+
+    this.key = Object.keys(PARAMETERS)[idx]
+    this.parameter = PARAMETERS[this.key];
+    this.unit = unit;
+
     this.converter = this.parameter?.converters[this.unit]
 
     if (this.parameter?.precision) {

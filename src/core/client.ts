@@ -5,7 +5,7 @@ import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
 import { System } from './system';
-import { ParametersDefinition, PARAMETER_DEFAULTS } from './constants';
+import { ClientParametersDefinition, PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { ParserObjectDefinition } from './parsers';
@@ -115,7 +115,7 @@ interface ClientConfigDefinition {
 
   datasources?: object;
   missingDatasources?: string[];
-  parameters?: ParametersDefinition;
+  parameters?: ClientParametersDefinition;
 }
 
 type ClientParserDefinition = string | Function | ParserObjectDefinition;
@@ -165,7 +165,7 @@ export abstract class Client {
 
   // this should be the list of parameters in the data and how to extract them
   // transforming could be later
-  parameters: ParametersDefinition = PARAMETER_DEFAULTS;
+  parameters: ClientParametersDefinition = PARAMETER_DEFAULTS;
 
   _measurements?: Measurements;
   _locations: Locations;
@@ -278,7 +278,7 @@ export abstract class Client {
     if (!measurand) {
       throw new Error(`Could not find measurand for ${row}`);
     }
-    const key = [measurand.parameter];
+    const key = [measurand.key];
     if (instance) key.push(instance);
     if (version) key.push(version);
     return `${location_id}-${key.join(':')}`;
@@ -606,7 +606,7 @@ export abstract class Client {
     // the end goal is just an array of parameter names to loop through
     const params: Array<string> = this.longFormat
       ? [getValueFromKey(null, this.parameterNameKey)]
-      : Object.keys(this.measurements.measurands());
+      : this.measurements.parameterKeys();
 
     measurements.forEach((meas: any) => {
       try {

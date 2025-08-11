@@ -23,14 +23,12 @@ test('string and date object both create the same tiemstamp', () => {
 
 test('constructor throws when Date/time is in the future', () => {
   const ftime = new Date(Date.now() + 10000).toISOString()
-  // console.debug(ftime)
   expect(() => new Datetime(ftime)).toThrow(RangeError);
 })
 
 test('constructor throws error when Date/time with timezone is in the future', () => {
   const ftime = new Date(Date.now() + 1000).toISOString()
   expect(() => new Datetime(ftime)).toThrow(RangeError);
-  //expect(() => new Datetime(new Date(ftime), {timezone: 'America/Lima'})).toThrow(RangeError);
 })
 
 test('parseDate throws when invalid string passed', () => {

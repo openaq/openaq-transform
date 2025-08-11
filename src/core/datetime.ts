@@ -99,13 +99,6 @@ export class Datetime {
       parsedDate = DateTime.fromSeconds(this.#input);
       if (!this.locationTimezone) this.locationTimezone = 'UTC'
     } else if (this.#input instanceof Date) {
-      // const year = this.#input.getFullYear();
-      // const month = this.#input.getMonth() + 1;
-      // const day = this.#input.getDate();
-      // const hour = this.#input.getHours();
-      // const minute = this.#input.getMinutes();
-      // const second = this.#input.getSeconds();
-      //parsedDate = DateTime.fromObject({year, month,day,hour,minute,second}, {zone: this.locationTimezone})
       parsedDate = DateTime.fromISO(this.#input.toISOString(), { setZone: true })
     } else {
       try {

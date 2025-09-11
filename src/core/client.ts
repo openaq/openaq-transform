@@ -398,7 +398,22 @@ export abstract class Client {
         // pass existing data to the current resource
         const text = await reader({ resource, options });
         //const d = await parser({ text, data });
-        data = await parser({ text, data });
+        // we want to pass the current data object to the parsers in case they are needed
+        // and the parsers are expected to either build the data object
+        // which would mean we just overwrite the data object
+        // or it could be the more traditional method of returning an array
+        // so we need to do a check and
+        const d = await parser({ text, data });
+        if (Array.isArray(d)) {
+          // method returned a list and we need to index it
+          data[key] = d;
+        } else {
+          // method returned an object that should replace the old one
+          // we could check the keys (e.g. key in d) but I am not sure that it matters
+          // might be best to create a property of the client like `overwriteFetchedData`
+          data = d;
+        }
+
         // check to make sure the parser did something
         // need a better check here
         //if (typeof d !== 'object')
@@ -495,9 +510,12 @@ export abstract class Client {
   }
 
   process(data: FetchedDataDefinition) {
-    log2(`Processing data`, Object.keys(data))
+    log2(`Processing data`, Object.keys(data), Array.isArray(data))
     if (!data) {
       throw new Error('No data was returned from file');
+    }
+    if(!('locations' in data || 'sensors' in data || 'measurements' in data || 'flags' in data)) {
+      throw new Error(`Data is not in the correct format to be processed. Current object has the following keys: ${Object.keys(data)}`);
     }
     if (data.locations) {
       this.processLocationsData(data.locations);

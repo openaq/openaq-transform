@@ -59,7 +59,7 @@ export interface ParserMethodsDefinition {
 }
 
 export const json = async ({ text }: ParserParamsDefinition) => {
-  log('Parsing data', text)
+  log(`Parsing ${typeof(text)} data using the json method`)
   if(typeof(text) === 'string') {
     return JSON.parse(text);
   } else {

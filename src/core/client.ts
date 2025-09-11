@@ -1,5 +1,5 @@
 import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
-import type { ReaderMethodsDefinition } from './readers';
+import type { ReaderMethodsDefinition, ReaderOptionsDefinition, IndexedReaderOptionsDefinition } from './readers';
 import type { ParserMethodsDefinition } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
@@ -9,7 +9,14 @@ import { ClientParametersDefinition, PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { ParserObjectDefinition } from './parsers';
+import { getReaderOptions } from './readers';
 import type { BBox } from 'geojson';
+import debug from 'debug';
+
+debug.enable('*');
+
+const log1 = debug('client (core): v1')
+const log2 = debug('client (core): v2')
 
 export interface MetaDefinition {
   locationIdKey: string;
@@ -86,6 +93,7 @@ interface IndexedResourceDefinition {
 
 interface ClientConfigDefinition {
   resource?: Resource | IndexedResourceDefinition;
+  readerOptions?: ReaderOptionsDefinition | IndexedReaderOptionsDefinition;
   reader?: string;
   parser?: string;
   provider?: string;
@@ -134,6 +142,7 @@ export abstract class Client {
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;
   abstract parsers: ParserMethodsDefinition;
+  readerOptions: ReaderOptionsDefinition | IndexedReaderOptionsDefinition = {};
   fetched: boolean = false;
   // source: Source;
   timezone?: string;
@@ -191,6 +200,7 @@ export abstract class Client {
 
   configure(params: ClientConfigDefinition) {
     params?.resource && (this.resource = params.resource);
+    params?.readerOptions && (this.readerOptions = params.readerOptions);
     params?.provider && (this.provider = params.provider);
 
     params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
@@ -355,6 +365,7 @@ export abstract class Client {
    *
    */
   async loadResources() {
+    log1(`Loading resources`)
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
@@ -364,27 +375,35 @@ export abstract class Client {
 
     if (typeof this.resource === 'object' && !isFile(this.resource)) {
       // loop through all those keys to create the data object
-      const data: FetchedDataDefinition = {};
+      let data: FetchedDataDefinition = {};
 
       for (const [key, resource] of Object.entries(this.resource)) {
+        log2(`Loading ${key} using ${resource}`)
+
         const reader = getMethod(
           key as keyof IndexedResourceDefinition,
           this.reader,
           this.readers
         );
+
         const parser = getMethod(
           key as keyof IndexedResourceDefinition,
           this.parser,
           this.parsers
         );
 
-        const text = await reader({ resource });
-        const d = await parser({ text });
+        // we need a way to get the secrets injected here
+        const options = getReaderOptions(this.readerOptions, key as keyof IndexedReaderOptionsDefinition)
+
+        // pass existing data to the current resource
+        const text = await reader({ resource, options });
+        //const d = await parser({ text, data });
+        data = await parser({ text, data });
         // check to make sure the parser did something
         // need a better check here
-        if (typeof d !== 'object')
-          throw new Error('Parser did not return an object');
-        data[key] = d;
+        //if (typeof d !== 'object')
+        //  throw new Error('Parser did not return an object');
+        //data[key] = d;
       }
       return data;
     } else {
@@ -476,6 +495,7 @@ export abstract class Client {
   }
 
   process(data: FetchedDataDefinition) {
+    log2(`Processing data`, Object.keys(data))
     if (!data) {
       throw new Error('No data was returned from file');
     }
@@ -536,7 +556,7 @@ export abstract class Client {
    * Process a list of locations
    */
   async processLocationsData(locations: LocationDataDefinition[]) {
-    console.debug(`Processing ${locations.length} locations`);
+    log2(`Processing ${locations.length} locations`);
     for (const location of locations) {
       try {
         this.addLocation(location);
@@ -554,7 +574,7 @@ export abstract class Client {
    * @param {array} sensors - list of sensor data
    */
   async processSensorsData(sensors: SensorDataDefinition[]) {
-    console.debug(`Processing ${sensors.length} sensors`);
+    log2(`Processing ${sensors.length} sensors`);
     for (const sensor of sensors) {
       this.addSensor(sensor);
     }

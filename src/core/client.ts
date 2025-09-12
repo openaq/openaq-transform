@@ -103,6 +103,7 @@ interface ClientConfigDefinition {
   longFormat?: boolean;
   sourceProjection?: string;
   datetimeFormat?: string;
+  secrets?: object;
 
   locationIdKey?: string | ParseFunction;
   locationLabelKey?: string | ParseFunction;
@@ -138,6 +139,7 @@ type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 export abstract class Client {
   provider!: string;
   resource?: Resource | IndexedResourceDefinition;
+  secrets?: object
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;
@@ -235,8 +237,19 @@ export abstract class Client {
       (this.averagingIntervalKey = params.averagingIntervalKey);
     params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
     params?.parameters && (this.parameters = params.parameters);
+    params?.secrets && (this.secrets = params.secrets);
 
+    // if we were able to pass more values in params we
+    // could include the params in the postConfigure args
+    this.postConfigure()
   }
+
+  postConfigure() {
+    // this is an opportunity for the developer to do some customizing
+    // this is where you would update any properties based on secrets or other values
+    log2('No post configuration provided')
+  }
+
 
   get measurements() {
     if (!this._measurements) {

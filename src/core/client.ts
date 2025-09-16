@@ -554,6 +554,7 @@ export abstract class Client {
     if (!location) {
       // process data through the location map
       const l = new Location({
+        ...data, // if sommething like locationId is in here we want the key to override it
         locationId: key,
         siteId: getValueFromKey(data, this.locationIdKey),
         siteName: getValueFromKey(data, this.locationLabelKey),
@@ -575,7 +576,6 @@ export abstract class Client {
         status: getValueFromKey(data, this.sensorStatusKey),
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
-        ...data,
       });
       this._locations.add(l);
       return l;

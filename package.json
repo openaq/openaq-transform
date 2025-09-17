@@ -31,6 +31,18 @@
         "types": "./dist/node/index.d.ts",
         "default": "./dist/node/index.js"
       }
+    },
+    "./core": {
+      "browser": null,
+      "core": {
+        "types": "./dist/core/index.d.ts",
+        "core": "./dist/core/index.js",
+        "default": "./dist/core/index.js"
+      },
+      "default": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      }
     }
   },
   "scripts": {

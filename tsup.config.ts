@@ -22,4 +22,14 @@ export default defineConfig([
     dts: true,
     external: ['fs/promises'],
   },
+  {
+    entry: ['src/core/index.ts'],
+    outDir: 'dist/core',
+    format: ['esm'],
+    splitting: false,
+    sourcemap: true,
+    clean: false,
+    dts: true,
+    external: ['fs/promises'],
+  },
 ]);

@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('sensor: v2')
+
 import { Flag, FlagDefinition } from "./flag";
 import { Metric, ParameterUnitDefinition } from "./metric";
 import { stripNulls } from "./utils";
@@ -57,6 +60,7 @@ export class Sensor {
 
 
   constructor(data: SensorDefinition) {
+    log(`Adding new sensor: ${data.sensorId}`)
     this.sensorId = data.sensorId;
     this.systemId = data.systemId;
     //this.metric = data.metric;
@@ -80,7 +84,7 @@ export class Sensor {
   add(f: FlagDefinition) {
     f.sensorId = this.sensorId;
     const flag = new Flag(f);
-    console.debug(`adding flag (${flag.flagId}) to sensor (${this.id})`)
+    log(`adding flag (${flag.flagId}) to sensor (${this.id})`)
     this.flags[flag.flagId] = flag;
     return flag;
   }
@@ -92,7 +96,7 @@ export class Sensor {
       status: this.status,
       instance: this.instance,
       parameter: this.metric.key,
-      units: this.metric.unit,
+      units: this.metric?.parameter?.units,
       averaging_interval_secs: this.averagingIntervalSeconds,
       logging_interval_secs: this.loggingIntervalSeconds,
       flags: Object.values(this.flags).map((s) => s.json()),

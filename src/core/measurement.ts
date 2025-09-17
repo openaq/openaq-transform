@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('measurements: v2')
+
 import { Datetime } from './datetime';
 import { Sensor } from './sensor'
 import type { BBox } from 'geojson';
@@ -59,7 +62,7 @@ export class Measurements {
       this.from = measurement.timestamp
     }
 
-    console.debug(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
+    log(`Adding measurement (${measurement.id})/${measurement.value} to measurements (total: ${this.length})`)
     this._measurements.set(
       measurement.id,
       measurement

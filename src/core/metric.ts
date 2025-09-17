@@ -144,6 +144,16 @@ export const PARAMETERS: ParameterMapDefinition = {
       'c': noConversion,
       'f': (d: number | string) => (+d-32) * 5/9,
     },
+  },
+  'rh': {
+    name: 'rh',
+    numeric: true,
+    units: '%',
+    precision: 1,
+    range: [0, 100],
+    converters: {
+      '%': noConversion,
+    },
   }
 }
 

@@ -88,7 +88,7 @@ export const expectedOutput = {
             {
               sensor_id: 'testing-ts1-temperature',
               parameter: 'temperature',
-              units: 'f',
+              units: 'c',
               averaging_interval_secs: 3600,
               logging_interval_secs: 3600,
               status: 'asdf',

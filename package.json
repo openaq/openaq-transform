@@ -46,7 +46,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "watch:build": "tsc --watch",
     "test": "vitest --typecheck",
     "doc": "typedoc ./src/core/datetime.ts",
@@ -62,7 +62,7 @@
     "happy-dom": "^17.4.6",
     "msw": "^2.7.5",
     "oxlint": "^0.16.8",
-    "tsup": "^8.5.0",
+    "tsdown": "^0.15.4",
     "typedoc": "^0.28.5",
     "typescript": "~5.8.3",
     "vitest": "^3.2.4"

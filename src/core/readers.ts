@@ -62,6 +62,17 @@ export interface ReaderMethodsDefinition {
   [key: string]: ReaderDefinition;
 }
 
+// Create the Map with proper typing
+const contentTypeMap = new Map<string | null | undefined, ReadAs>([
+  ['application/json', 'json'],
+  ['application/ld+json', 'text'],
+  ['text/plain', 'text'],
+  ['text/csv', 'text'],
+  ['text/zip', 'blob'],
+  [null, 'json'],
+  [undefined, 'json'],
+]);
+
 export const apiReader = async ({
   resource,
   readAs,
@@ -72,6 +83,12 @@ export const apiReader = async ({
   if (res.status !== 200) {
     throw Error(res.statusText)
   }
+  if (!readAs) {
+    // check headers to get return method
+    const ctype = res.headers.get('Content-Type');
+    // fall back to json if type is not mapped
+    readAs = contentTypeMap.get(ctype) ?? 'json';
+  }
   if (readAs === 'json') {
     return res.json();
   } else if (readAs === 'text') {
@@ -81,6 +98,7 @@ export const apiReader = async ({
   } else if (readAs === 'response') {
     return res;
   } else {
+    // default to json
     return res.json();
   }
 };

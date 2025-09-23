@@ -49,7 +49,6 @@
     "build": "tsdown",
     "watch:build": "tsc --watch",
     "test": "vitest --typecheck",
-    "doc": "typedoc ./src/core/datetime.ts",
     "oxlint": "oxlint src"
   },
   "devDependencies": {

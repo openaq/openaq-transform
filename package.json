@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "main": "src/core/datetime.ts",
   "files": [
     "dist"
   ],
@@ -33,16 +32,9 @@
       }
     },
     "./core": {
-      "browser": null,
-      "core": {
-        "types": "./dist/core/index.d.ts",
-        "core": "./dist/core/index.js",
-        "default": "./dist/core/index.js"
-      },
-      "default": {
-        "types": "./dist/core/index.d.ts",
-        "default": "./dist/core/index.js"
-      }
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
     }
   },
   "scripts": {

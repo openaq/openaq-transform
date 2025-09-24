@@ -2,7 +2,7 @@ import { defineConfig } from 'tsdown';
 
 export default defineConfig([
   {
-    entry: ['src/browser/index.ts'],
+    entry: 'src/browser/index.ts',
     outDir: 'dist/browser',
     format: ['esm'],
     platform: 'browser',
@@ -12,7 +12,7 @@ export default defineConfig([
     dts: true,
   },
   {
-    entry: ['src/node/index.ts'],
+    entry: 'src/node/index.ts',
     outDir: 'dist/node',
     format: ['esm'],
     platform: 'node',
@@ -21,5 +21,15 @@ export default defineConfig([
     clean: false,
     dts: true,
     external: ['fs/promises'],
+  },
+  {
+    entry: 'src/core/index.ts',
+    outDir: 'dist/core',
+    format: ['esm'],
+    platform: 'neutral',
+    splitting: false,
+    sourcemap: true,
+    clean: false,
+    dts: true,
   },
 ]);

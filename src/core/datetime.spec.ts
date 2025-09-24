@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
 import { Datetime } from './datetime';
+import { DateTime, Settings } from 'luxon';
+
+const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
+Settings.now = () => expectedNow.toMillis();
+
 
 test('constructor throws when no input', () => {
     expect(() => new Datetime('')).toThrow(TypeError);
@@ -46,6 +51,12 @@ test('ISO format parses correctly by default', () => {
     const datetime = new Datetime('2025-01-01T00:00:00-05:00')
     expect(datetime.toUTC()).toBe('2025-01-01T05:00:00Z');
     expect(datetime.toLocal()).toBe('2025-01-01T00:00:00-05:00');
+});
+
+test('exports to specific format when provided', () => {
+    const datetime = new Datetime('2025-01-01T00:00:00-05:00')
+    expect(datetime.toUTC('yyyy-MM-dd HH:mm:ss')).toBe('2025-01-01 05:00:00');
+    expect(datetime.toLocal('yyyy-MM-dd HH:mm:ss')).toBe('2025-01-01 00:00:00');
 });
 
 test('ISO format throws error when timezone is included', () => {
@@ -141,4 +152,23 @@ test('toDate works with Date input', () => {
     const datetime = new Datetime(date, {timezone: 'America/Lima'})
     const d = new Date('2025-01-01T05:00:00Z')
     expect(datetime.toDate()).toStrictEqual(d)
+})
+
+test('static now method returns instance of class', () => {
+    const now = Datetime.now()
+    expect(now).toBeInstanceOf(Datetime)
+})
+
+test('static method returns offset data v1', () => {
+  // offset method assumes seconds
+  const now = Datetime.now(1)
+  const fmt = now.toUTC()
+  expect(fmt).toBe('2025-06-01T04:59:59Z')
+})
+
+test('static method returns offset data v2', () => {
+  // offset method assumes seconds
+  const now = Datetime.now({ hours: 1 })
+  const fmt = now.toUTC()
+  expect(fmt).toBe('2025-06-01T04:00:00Z')
 })

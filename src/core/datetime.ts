@@ -1,10 +1,16 @@
-import { DateTime } from 'luxon';
+import { Duration, DateTime } from 'luxon';
 
 
 interface DatetimeOptionsDefinition {
   format?: string,
   timezone?: string,
   locationTimezone?: string
+}
+
+interface TimeOffsetDefinition {
+  minutes?: number;
+  days?: number;
+  hours?: number;
 }
 
 /**
@@ -21,7 +27,7 @@ export class Datetime {
    * or another `Datetime` instance.
    * @private
    */
-  #input: string | number | Date;
+  #input: string | number | Date | DateTime;
 
   /**
    * The format of the timestamp string if the input was a string and a format was provided.
@@ -63,7 +69,7 @@ export class Datetime {
    * @throws {TypeError} If parsing fails or the resulting date is invalid.
    */
   constructor(
-    input: string | number | Date,
+    input: string | number | Date | DateTime,
     options?: DatetimeOptionsDefinition
   ) {
     if (
@@ -95,7 +101,9 @@ export class Datetime {
     }
     let parsedDate: DateTime | null = null;
 
-    if (typeof this.#input == 'number') {
+    if (this.#input instanceof DateTime) {
+      parsedDate = this.#input
+    } else if (typeof this.#input == 'number') {
       parsedDate = DateTime.fromSeconds(this.#input);
       if (!this.locationTimezone) this.locationTimezone = 'UTC'
     } else if (this.#input instanceof Date) {
@@ -178,9 +186,11 @@ export class Datetime {
    *
    * @returns {string} An ISO 8601 string in UTC, e.g., '2025-01-01T00:00:00Z'.
    */
-  toUTC(): string{
+  toUTC(formatString=null): string {
     const date = this.date.setZone('UTC') as DateTime<true>;
-    return date.toISO({ suppressMilliseconds: true });
+    return formatString
+      ? date.toFormat(formatString)
+      : date.toISO({ suppressMilliseconds: true });
   }
 
   /**
@@ -190,10 +200,12 @@ export class Datetime {
    * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
    * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
    */
-  toLocal(): string | undefined {
+  toLocal(formatString=null): string | undefined {
     const date = this.date.setZone(this.locationTimezone);
     if (date.isValid) {
-      return date.toISO({ suppressMilliseconds: true });
+      return formatString
+        ? date.toFormat(formatString)
+        : date.toISO({ suppressMilliseconds: true });
     }
   }
 
@@ -203,8 +215,34 @@ export class Datetime {
    * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
    * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
    */
-  toString(): string | undefined {
-    return this.toLocal()
+  toString(formatString=null): string | undefined {
+    return this.toLocal(formatString)
+  }
+
+  /**
+   * Creates a new Datetime instance representing the current date and time,
+   * optionally adjusted by a specified offset into the past.
+   *
+   * @static
+   * @param {number | Duration | TimeOffset} [offset=0] - The amount to subtract from the current time.
+   *
+   * @returns {Datetime} A new Datetime instance adjusted by the specified offset
+   */
+  static now(timeOffset: number | Duration | TimeOffsetDefinition = 0): Datetime {
+    const now = DateTime.now();
+    let dt: DateTime;
+
+    if (typeof timeOffset === 'number') {
+      dt = now.minus(Math.abs(timeOffset) * 1000);
+    } else if (timeOffset instanceof Duration) {
+      dt = now.minus(timeOffset);
+    } else if (typeof timeOffset === 'object') {
+      dt = now.minus(timeOffset as TimeOffsetDefinition);
+    } else {
+      dt = now;
+    }
+
+    return new this(dt);
   }
 
 }

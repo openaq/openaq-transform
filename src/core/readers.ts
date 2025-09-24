@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('readers: v2')
+
 type ReadAs = 'json' | 'text' | 'blob' | 'response';
 
 interface TextReaderParamsDefinition {
@@ -7,6 +10,7 @@ interface TextReaderParamsDefinition {
 interface UrlReaderParamsDefinition {
   resource: string;
   readAs: ReadAs;
+  options: object;
 }
 
 export interface BlobReaderParamsDefinition {
@@ -26,14 +30,65 @@ export type ReaderDefinition = (
     | TextReaderParamsDefinition
 ) => Promise<Blob | string | Response>;
 
+export interface ReaderOptionsDefinition {
+  headers?: object
+  gzip?: boolean
+  method?: 'GET' | 'POST'
+}
+
+export interface IndexedReaderOptionsDefinition {
+  measurements: ReaderOptionsDefinition
+  locations: ReaderOptionsDefinition
+  meta: ReaderOptionsDefinition
+}
+
+function isIndexedReaderOptions(obj: ReaderOptionsDefinition | IndexedReaderOptionsDefinition):
+obj is IndexedReaderOptionsDefinition {
+  return 'locations' in obj || 'measurements' in obj || 'meta' in obj;
+}
+
+export function getReaderOptions(
+  options: ReaderOptionsDefinition | IndexedReaderOptionsDefinition,
+  key: 'locations' | 'measurements' | 'meta'
+): ReaderOptionsDefinition {
+  if (isIndexedReaderOptions(options)) {
+    return options[key];
+  } else {
+    return options;
+  }
+}
+
 export interface ReaderMethodsDefinition {
   [key: string]: ReaderDefinition;
 }
+
+// Create the Map with proper typing
+const contentTypeMap = new Map<string | null | undefined, ReadAs>([
+  ['application/json', 'json'],
+  ['application/ld+json', 'text'],
+  ['text/plain', 'text'],
+  ['text/csv', 'text'],
+  ['text/zip', 'blob'],
+  [null, 'json'],
+  [undefined, 'json'],
+]);
+
 export const apiReader = async ({
   resource,
   readAs,
+  options,
 }: UrlReaderParamsDefinition): Promise<Blob | string | Response> => {
-  const res = await fetch(resource);
+  log(`Fetching ${readAs} data from ${resource}`)
+  const res = await fetch(resource, options);
+  if (res.status !== 200) {
+    throw Error(res.statusText)
+  }
+  if (!readAs) {
+    // check headers to get return method
+    const ctype = res.headers.get('Content-Type');
+    // fall back to json if type is not mapped
+    readAs = contentTypeMap.get(ctype) ?? 'json';
+  }
   if (readAs === 'json') {
     return res.json();
   } else if (readAs === 'text') {
@@ -43,6 +98,7 @@ export const apiReader = async ({
   } else if (readAs === 'response') {
     return res;
   } else {
+    // default to json
     return res.json();
   }
 };

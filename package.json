@@ -31,6 +31,18 @@
         "types": "./dist/node/index.d.ts",
         "default": "./dist/node/index.js"
       }
+    },
+    "./core": {
+      "browser": null,
+      "core": {
+        "types": "./dist/core/index.d.ts",
+        "core": "./dist/core/index.js",
+        "default": "./dist/core/index.js"
+      },
+      "default": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      }
     }
   },
   "scripts": {
@@ -40,6 +52,7 @@
     "oxlint": "oxlint src"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.12",
     "@types/geojson": "^7946.0.16",
     "@types/luxon": "^3.6.2",
     "@types/node": "^24.0.1",
@@ -55,6 +68,7 @@
   },
   "dependencies": {
     "csv-parse": "^5.6.0",
+    "debug": "^4.4.1",
     "luxon": "^3.6.1",
     "proj4": "^2.15.0"
   }

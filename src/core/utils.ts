@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('utils: v2')
+
 import {
   InvalidPrecisionError,
   LatitudeBoundsError,
@@ -102,17 +105,18 @@ export function getMethod(
   methods: ParserMethodsDefinition | ReaderMethodsDefinition
 ): Function {
   let methodKeyOrFunction: string | Function;
+  log(`Getting method for '${key}' from ${method} and ${Object.keys(methods)}`)
 
   if (typeof key === 'function') {
     methodKeyOrFunction = key;
   }
+
   if (key !== null) {
     if (
       typeof method === 'object' &&
-        'measurements' in method &&
-        'locations' in method &&
-        typeof key === 'string' &&
-        ['measurements', 'locations'].includes(key)
+        ('measurements' in method || 'locations' in method || 'meta' in method)
+        && typeof key === 'string' &&
+        ['measurements', 'locations', 'meta'].includes(key)
     ) {
       methodKeyOrFunction = method[key as keyof ParserObjectDefinition] as string;
     } else if (typeof method === 'string' || typeof method === 'function') {
@@ -138,7 +142,7 @@ export function getMethod(
     }
     if (!methods[methodKeyOrFunction]) {
       throw new Error(
-        `Could not find a method named '${methodKeyOrFunction}' in available methods: ${Object.keys(methods)}. `
+        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(methods)}. `
       );
     }
     return methods[methodKeyOrFunction];

@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('systems: v2')
+
 import { stripNulls } from './utils';
 import { Sensor } from './sensor';
 
@@ -50,7 +53,7 @@ export class System {
   }
 
   add(sensor: Sensor): Sensor {
-    console.debug(`adding sensor (${sensor.id}) to system (${this.id})`)
+    log(`adding sensor (${sensor.id}) to system (${this.id})`)
     this._sensors.set(sensor.id, sensor)
     return sensor
   }

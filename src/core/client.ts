@@ -1,5 +1,5 @@
 import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
-import type { ReaderMethodsDefinition } from './readers';
+import type { ReaderMethodsDefinition, ReaderOptionsDefinition, IndexedReaderOptionsDefinition } from './readers';
 import type { ParserMethodsDefinition } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
@@ -9,7 +9,14 @@ import { ClientParametersDefinition, PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { ParserObjectDefinition } from './parsers';
+import { getReaderOptions } from './readers';
 import type { BBox } from 'geojson';
+import debug from 'debug';
+
+debug.enable('*');
+
+const log1 = debug('client (core): v1')
+const log2 = debug('client (core): v2')
 
 export interface MetaDefinition {
   locationIdKey: string;
@@ -86,6 +93,7 @@ interface IndexedResourceDefinition {
 
 interface ClientConfigDefinition {
   resource?: Resource | IndexedResourceDefinition;
+  readerOptions?: ReaderOptionsDefinition | IndexedReaderOptionsDefinition;
   reader?: string;
   parser?: string;
   provider?: string;
@@ -95,6 +103,7 @@ interface ClientConfigDefinition {
   longFormat?: boolean;
   sourceProjection?: string;
   datetimeFormat?: string;
+  secrets?: object;
 
   locationIdKey?: string | ParseFunction;
   locationLabelKey?: string | ParseFunction;
@@ -130,10 +139,12 @@ type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 export abstract class Client {
   provider!: string;
   resource?: Resource | IndexedResourceDefinition;
+  secrets?: object
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;
   abstract parsers: ParserMethodsDefinition;
+  readerOptions: ReaderOptionsDefinition | IndexedReaderOptionsDefinition = {};
   fetched: boolean = false;
   // source: Source;
   timezone?: string;
@@ -191,6 +202,7 @@ export abstract class Client {
 
   configure(params: ClientConfigDefinition) {
     params?.resource && (this.resource = params.resource);
+    params?.readerOptions && (this.readerOptions = params.readerOptions);
     params?.provider && (this.provider = params.provider);
 
     params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
@@ -225,8 +237,19 @@ export abstract class Client {
       (this.averagingIntervalKey = params.averagingIntervalKey);
     params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
     params?.parameters && (this.parameters = params.parameters);
+    params?.secrets && (this.secrets = params.secrets);
 
+    // if we were able to pass more values in params we
+    // could include the params in the postConfigure args
+    this.postConfigure()
   }
+
+  postConfigure() {
+    // this is an opportunity for the developer to do some customizing
+    // this is where you would update any properties based on secrets or other values
+    log2('No post configuration provided')
+  }
+
 
   get measurements() {
     if (!this._measurements) {
@@ -355,6 +378,7 @@ export abstract class Client {
    *
    */
   async loadResources() {
+    log1(`Loading resources`)
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
@@ -364,27 +388,50 @@ export abstract class Client {
 
     if (typeof this.resource === 'object' && !isFile(this.resource)) {
       // loop through all those keys to create the data object
-      const data: FetchedDataDefinition = {};
+      let data: FetchedDataDefinition = {};
 
       for (const [key, resource] of Object.entries(this.resource)) {
+        log2(`Loading ${key} using ${resource}`)
+
         const reader = getMethod(
           key as keyof IndexedResourceDefinition,
           this.reader,
           this.readers
         );
+
         const parser = getMethod(
           key as keyof IndexedResourceDefinition,
           this.parser,
           this.parsers
         );
 
-        const text = await reader({ resource });
-        const d = await parser({ text });
+        // we need a way to get the secrets injected here
+        const options = getReaderOptions(this.readerOptions, key as keyof IndexedReaderOptionsDefinition)
+
+        // pass existing data to the current resource
+        const text = await reader({ resource, options });
+        //const d = await parser({ text, data });
+        // we want to pass the current data object to the parsers in case they are needed
+        // and the parsers are expected to either build the data object
+        // which would mean we just overwrite the data object
+        // or it could be the more traditional method of returning an array
+        // so we need to do a check and
+        const d = await parser({ text, data });
+        if (Array.isArray(d)) {
+          // method returned a list and we need to index it
+          data[key] = d;
+        } else {
+          // method returned an object that should replace the old one
+          // we could check the keys (e.g. key in d) but I am not sure that it matters
+          // might be best to create a property of the client like `overwriteFetchedData`
+          data = d;
+        }
+
         // check to make sure the parser did something
         // need a better check here
-        if (typeof d !== 'object')
-          throw new Error('Parser did not return an object');
-        data[key] = d;
+        //if (typeof d !== 'object')
+        //  throw new Error('Parser did not return an object');
+        //data[key] = d;
       }
       return data;
     } else {
@@ -476,8 +523,12 @@ export abstract class Client {
   }
 
   process(data: FetchedDataDefinition) {
+    log2(`Processing data`, Object.keys(data), Array.isArray(data))
     if (!data) {
       throw new Error('No data was returned from file');
+    }
+    if(!('locations' in data || 'sensors' in data || 'measurements' in data || 'flags' in data)) {
+      throw new Error(`Data is not in the correct format to be processed. Current object has the following keys: ${Object.keys(data)}`);
     }
     if (data.locations) {
       this.processLocationsData(data.locations);
@@ -503,6 +554,7 @@ export abstract class Client {
     if (!location) {
       // process data through the location map
       const l = new Location({
+        ...data, // if sommething like locationId is in here we want the key to override it
         locationId: key,
         siteId: getValueFromKey(data, this.locationIdKey),
         siteName: getValueFromKey(data, this.locationLabelKey),
@@ -524,7 +576,6 @@ export abstract class Client {
         status: getValueFromKey(data, this.sensorStatusKey),
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
-        ...data,
       });
       this._locations.add(l);
       return l;
@@ -536,7 +587,7 @@ export abstract class Client {
    * Process a list of locations
    */
   async processLocationsData(locations: LocationDataDefinition[]) {
-    console.debug(`Processing ${locations.length} locations`);
+    log2(`Processing ${locations.length} locations`);
     for (const location of locations) {
       try {
         this.addLocation(location);
@@ -554,7 +605,7 @@ export abstract class Client {
    * @param {array} sensors - list of sensor data
    */
   async processSensorsData(sensors: SensorDataDefinition[]) {
-    console.debug(`Processing ${sensors.length} sensors`);
+    log2(`Processing ${sensors.length} sensors`);
     for (const sensor of sensors) {
       this.addSensor(sensor);
     }

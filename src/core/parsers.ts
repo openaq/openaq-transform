@@ -1,9 +1,17 @@
+import debug from 'debug';
+const log = debug('parsers: v2')
+
 import type { Options as CsvParseOptions } from 'csv-parse';
 
 type CsvParseFunction = (
   input: string | Buffer,
   options?: CsvParseOptions
 ) => any;
+
+
+interface ExistingDataDefinition {
+  [key: string]: any;
+}
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
   const csv = async ({ text }: ParserParamsDefinition) => {
@@ -35,21 +43,23 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 
 export interface ParserParamsDefinition {
   text: string,
+  data?: ExistingDataDefinition
 }
 
-export type ParserDefinition = (params: ParserParamsDefinition) => object
+export type ParserDefinition = (params: ParserParamsDefinition ) => object
 
 export interface ParserObjectDefinition {
   measurements: string;
   locations?: string;
+  meta?: string;
 }
-
 
 export interface ParserMethodsDefinition {
   [key: string]: ParserDefinition
 }
 
 export const json = async ({ text }: ParserParamsDefinition) => {
+  log(`Parsing ${typeof(text)} data using the json method`)
   if(typeof(text) === 'string') {
     return JSON.parse(text);
   } else {

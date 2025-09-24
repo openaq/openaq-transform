@@ -130,7 +130,6 @@ describe('Client with data in wide format', () => {
 
 describe('Client with data split between two different resources', () => {
 
-
   class JsonClient extends Client {
     resource = {
         // name of the node and then the src resource

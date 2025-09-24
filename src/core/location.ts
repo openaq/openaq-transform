@@ -1,3 +1,6 @@
+import debug from 'debug';
+const log = debug('locations: v2')
+
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
 import { System, SystemDefinition } from './system';
@@ -68,7 +71,7 @@ export class Location {
   _systems: Map<string, System>;
 
   constructor(data: LocationDefinition) {
-    console.debug(`New location: ${data.locationId}`)
+    log(`Adding new location: ${data.locationId}`)
     const coordinates = new Coordinates(Number(data.x), Number(data.y), data.projection);
     this.locationId = data.locationId;
     this.siteId = data.siteId;
@@ -129,7 +132,7 @@ export class Location {
    * @returns {*} - a sensor object
    */
   add(sensor: Sensor): Sensor {
-    console.debug(`adding sensor (${sensor.id}) to location (${this.id})`)
+    log(`adding sensor (${sensor.id}) to location (${this.id})`)
     // first we get the system name
     // e.g. :provider/:site/:manufacturer-:model
     const sys = this.getSystem(sensor);

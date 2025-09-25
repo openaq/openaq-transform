@@ -51,10 +51,12 @@ test('Coordinates json() method returns correct structure and values for project
 });
 
 test('Coordinates fail when latitude is null', () => {
+  // @ts-expect-error Testing null input validation
   expect(() => new Coordinates(20, null)).toThrowError(/Latitude/);
 });
 
 test('Coordinates fail when longitude is null', () => {
+  // @ts-expect-error Testing null input validation
   expect(() => new Coordinates(null, 20)).toThrowError(/Longitude/);
 });
 

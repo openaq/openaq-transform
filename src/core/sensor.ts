@@ -1,16 +1,13 @@
 import debug from 'debug';
-const log = debug('sensor: v2')
+const log = debug('sensor: v2');
 
-import { Flag, FlagDefinition } from "./flag";
-import { Metric, ParameterUnitDefinition } from "./metric";
-import { stripNulls } from "./utils";
-
-
-
+import { Flag, FlagDefinition } from './flag';
+import { Metric, ParameterUnitDefinition } from './metric';
+import { stripNulls } from './utils';
 
 export interface SensorDefinition {
-  sensorId: string;
-  systemId: string;
+  key: string;
+  systemKey: string;
   metric: Metric | ParameterUnitDefinition;
   averagingIntervalSeconds: number;
   loggingIntervalSeconds: number;
@@ -19,84 +16,75 @@ export interface SensorDefinition {
   instance?: string;
 }
 
-
 export class Sensors {
-
-  _sensors: Map<string, Sensor>;
+  #sensors: Map<string, Sensor>;
 
   constructor() {
-    this._sensors = new Map<string, Sensor>();
+    this.#sensors = new Map<string, Sensor>();
   }
 
   add(sensor: Sensor) {
-    this._sensors.set(sensor.id, sensor);
+    this.#sensors.set(sensor.key, sensor);
   }
 
   get(sensorId: string): Sensor | undefined {
-    return this._sensors.get(sensorId);
+    return this.#sensors.get(sensorId);
   }
 
   has(sensorId: string): boolean {
-    return this._sensors.has(sensorId);
+    return this.#sensors.has(sensorId);
   }
 
   length(): number {
-    return this._sensors.size;
+    return this.#sensors.size;
   }
 }
 
-
 export class Sensor {
-
-  sensorId: string;
-  systemId: string;
+  key: string;
+  systemKey: string;
   metric: Metric;
   averagingIntervalSeconds: number;
   loggingIntervalSeconds: number;
   status: string;
   versionDate: string | undefined;
   instance: string | undefined;
-  flags: { [key: string]: Flag; }
-
+  flags: { [key: string]: Flag };
 
   constructor(data: SensorDefinition) {
-    log(`Adding new sensor: ${data.sensorId}`)
-    this.sensorId = data.sensorId;
-    this.systemId = data.systemId;
-    //this.metric = data.metric;
+    log(`Adding new sensor: ${data.key}`);
+    this.key = data.key;
+    this.systemKey = data.systemKey;
     if (data.metric instanceof Metric) {
       this.metric = data.metric;
     } else {
       this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
     }
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
-    this.loggingIntervalSeconds = data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
+    this.loggingIntervalSeconds =
+      data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
     this.versionDate = data.versionDate;
     this.instance = data.instance;
     this.status = data.status;
     this.flags = {};
   }
 
-  get id() {
-    return this.sensorId;
-  }
-
   add(f: FlagDefinition) {
-    f.sensorId = this.sensorId;
+    f.sensorId = this.key;
     const flag = new Flag(f);
-    log(`adding flag (${flag.flagId}) to sensor (${this.id})`)
+    log(`adding flag (${flag.flagId}) to sensor (${this.key})`);
     this.flags[flag.flagId] = flag;
     return flag;
   }
 
   json() {
     return stripNulls({
-      sensor_id: this.sensorId,
+      key: this.key,
       version_date: this.versionDate,
       status: this.status,
       instance: this.instance,
       parameter: this.metric.key,
-      units: this.metric?.parameter?.units,
+      units: this.metric.parameter.units,
       averaging_interval_secs: this.averagingIntervalSeconds,
       logging_interval_secs: this.loggingIntervalSeconds,
       flags: Object.values(this.flags).map((s) => s.json()),

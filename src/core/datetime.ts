@@ -1,11 +1,10 @@
 import { Duration, DateTime } from 'luxon';
 import { formatValueForLog } from './utils';
 
-
 interface DatetimeOptionsDefinition {
-  format?: string,
-  timezone?: string,
-  locationTimezone?: string
+  format?: string;
+  timezone?: string;
+  locationTimezone?: string;
 }
 
 interface TimeOffsetDefinition {
@@ -54,7 +53,6 @@ export class Datetime {
    */
   readonly date: DateTime<true>;
 
-
   /**
    * Creates an instance of `Datetime`.
    *
@@ -74,10 +72,15 @@ export class Datetime {
     options?: DatetimeOptionsDefinition
   ) {
     if (
-      (options?.format?.includes('Z') || (typeof(input) === 'string' && input.includes('Z'))) && options?.timezone
-    ) throw new TypeError(`You cannot include both the Z option in your format (${options.format}) and a timezone (${options.timezone})`)
+      (options?.format?.includes('Z') ||
+        (typeof input === 'string' && input.includes('Z'))) &&
+      options?.timezone
+    )
+      throw new TypeError(
+        `You cannot include both the Z option in your format (${options.format}) and a timezone (${options.timezone})`
+      );
     if (input instanceof Date && !options?.timezone) {
-      throw new TypeError("Input of type Date must include timezone option");
+      throw new TypeError('Input of type Date must include timezone option');
     }
     this.#input = input;
     this.format = options?.format;
@@ -85,7 +88,11 @@ export class Datetime {
     this.locationTimezone = options?.locationTimezone ?? options?.timezone;
     this.date = this.parseDate();
     if (this.date > DateTime.now()) {
-      throw new RangeError(`Date string cannot be in the future. ${String(input)} --> ${this.toLocal()}`);
+      throw new RangeError(
+        `Date string cannot be in the future. ${String(
+          input
+        )} --> ${this.toLocal()}`
+      );
     }
   }
 
@@ -103,38 +110,48 @@ export class Datetime {
     let parsedDate: DateTime | null = null;
 
     if (this.#input instanceof DateTime) {
-      parsedDate = this.#input
+      parsedDate = this.#input;
     } else if (typeof this.#input == 'number') {
       parsedDate = DateTime.fromSeconds(this.#input);
-      if (!this.locationTimezone) this.locationTimezone = 'UTC'
+      if (!this.locationTimezone) this.locationTimezone = 'UTC';
     } else if (this.#input instanceof Date) {
-      parsedDate = DateTime.fromISO(this.#input.toISOString(), { setZone: true })
+      parsedDate = DateTime.fromISO(this.#input.toISOString(), {
+        setZone: true,
+      });
     } else {
       try {
-        if (!this.format) { // defaults to ISO-8601
+        if (!this.format) {
+          // defaults to ISO-8601
           // the setZone option will ensure that it sets the zone to the string offset and not the local zone
           parsedDate = DateTime.fromISO(this.#input, { setZone: true });
         } else {
           if (this.timezone) {
-            parsedDate = DateTime.fromFormat(this.#input, this.format, { zone: this.timezone })
+            parsedDate = DateTime.fromFormat(this.#input, this.format, {
+              zone: this.timezone,
+            });
           } else {
-            parsedDate = DateTime.fromFormat(this.#input, this.format, { setZone: true })
+            parsedDate = DateTime.fromFormat(this.#input, this.format, {
+              setZone: true,
+            });
           }
         }
 
-        if(!this.locationTimezone && !!parsedDate.zoneName) {
-          this.locationTimezone = parsedDate.zoneName
+        if (!this.locationTimezone && !!parsedDate.zoneName) {
+          this.locationTimezone = parsedDate.zoneName;
         }
-
       } catch (error) {
         throw new TypeError(
-          `Failed to parse date string "${formatValueForLog(this.#input)}" with format "${this.format}". Error: ${String(error)}`
+          `Failed to parse date string "${formatValueForLog(
+            this.#input
+          )}" with format "${this.format}". Error: ${String(error)}`
         );
       }
     }
     if (!parsedDate.isValid) {
       throw new TypeError(
-        `Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`
+        `Invalid date input: "${formatValueForLog(this.#input)}" with format "${
+          this.format
+        }: ${parsedDate.invalidReason}".`
       );
     }
     return parsedDate;
@@ -155,7 +172,7 @@ export class Datetime {
    * @param date The `Datetime` instance to compare against.
    * @returns {boolean} `true` if this instance is later, `false` otherwise.
    */
-  readonly isGreaterThan = (date: Datetime): boolean => this.date > date.date
+  readonly isGreaterThan = (date: Datetime): boolean => this.date > date.date;
 
   /**
    * Checks if this `Datetime` instance represents a moment in time
@@ -163,7 +180,7 @@ export class Datetime {
    * @param date The `Datetime` instance to compare against.
    * @returns {boolean} `true` if this instance is earlier, `false` otherwise.
    */
-  readonly isLessThan = (date: Datetime): boolean => this.date < date.date
+  readonly isLessThan = (date: Datetime): boolean => this.date < date.date;
 
   /**
    * Returns the `Datetime` instance that represents the later moment in time
@@ -171,7 +188,8 @@ export class Datetime {
    * @param date The `Datetime` instance to compare against.
    * @returns {Datetime} This instance if it's later or equal, otherwise the provided `date` instance.
    */
-  readonly greaterOf = (date: Datetime): Datetime => this.date >= date.date ? this : date
+  readonly greaterOf = (date: Datetime): Datetime =>
+    this.date >= date.date ? this : date;
 
   /**
    * Returns the `Datetime` instance that represents the earlier moment in time
@@ -179,7 +197,8 @@ export class Datetime {
    * @param date The `Datetime` instance to compare against.
    * @returns {Datetime} This instance if it's earlier or equal, otherwise the provided `date` instance.
    */
-  readonly lesserOf = (date: Datetime): Datetime => this.date <= date.date ? this : date
+  readonly lesserOf = (date: Datetime): Datetime =>
+    this.date <= date.date ? this : date;
 
   /**
    * Converts the `Datetime` to its UTC representation as an ISO 8601 string,
@@ -187,7 +206,7 @@ export class Datetime {
    *
    * @returns {string} An ISO 8601 string in UTC, e.g., '2025-01-01T00:00:00Z'.
    */
-  toUTC(formatString=null): string {
+  toUTC(formatString: string | null = null): string {
     const date = this.date.setZone('UTC') as DateTime<true>;
     return formatString
       ? date.toFormat(formatString)
@@ -201,7 +220,7 @@ export class Datetime {
    * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
    * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
    */
-  toLocal(formatString=null): string | undefined {
+  toLocal(formatString: string | null = null): string | undefined {
     const date = this.date.setZone(this.locationTimezone);
     if (date.isValid) {
       return formatString
@@ -216,8 +235,8 @@ export class Datetime {
    * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
    * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
    */
-  toString(formatString=null): string | undefined {
-    return this.toLocal(formatString)
+  toString(formatString = null): string | undefined {
+    return this.toLocal(formatString);
   }
 
   /**
@@ -229,7 +248,9 @@ export class Datetime {
    *
    * @returns {Datetime} A new Datetime instance adjusted by the specified offset
    */
-  static now(timeOffset: number | Duration | TimeOffsetDefinition = 0): Datetime {
+  static now(
+    timeOffset: number | Duration | TimeOffsetDefinition = 0
+  ): Datetime {
     const now = DateTime.now();
     let dt: DateTime;
 
@@ -245,5 +266,4 @@ export class Datetime {
 
     return new this(dt);
   }
-
 }

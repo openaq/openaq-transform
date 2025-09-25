@@ -53,62 +53,55 @@ export const csvdata = {
     all: "station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,tempf\n\"ts1\",\"test site #1\",45.56665,-123.12121,3600,\"2024-01-01T00:00:00-08:00\",10,80"
 }
 
+
 export const expectedOutput = {
   meta: {
-    matching_method: "ingest-id",
     schema: "v0.1",
     source: "testing",
+    matching_method: "ingest-id"
   },
   locations: [
     {
-      location_id: 'testing-ts1',
-      site_id: 'ts1',
-      site_name: 'test site #1',
+      key: "testing-ts1",
+      site_id: "ts1",
+      site_name: "test site #1",
       coordinates: {
         latitude: 45.56665,
         longitude: -123.12121,
-        proj: 'EPSG:4326',
+        proj: "EPSG:4326"
       },
       ismobile: false,
       systems: [
         {
-          system_id: 'testing-ts1',
-          manufacturer_name: 'default',
-          model_name: 'default',
+          key: "testing-ts1",
+          manufacturer_name: "default",
+          model_name: "default",
           sensors: [
             {
-              sensor_id: 'testing-ts1-pm25:mass',
-              parameter: 'pm25:mass',
-              units: 'ug/m3',
+              key: "testing-ts1-temperature",
+              status: "asdf",
+              parameter: "temperature",
+              units: "c",
               averaging_interval_secs: 3600,
               logging_interval_secs: 3600,
-              status: 'asdf',
-              flags: [],
-            },
-            {
-              sensor_id: 'testing-ts1-temperature',
-              parameter: 'temperature',
-              units: 'c',
-              averaging_interval_secs: 3600,
-              logging_interval_secs: 3600,
-              status: 'asdf',
-              flags: [],
-            },
+              flags: []
+            }
           ]
-        },
-      ],
+        }
+      ]
     }
   ],
   measurements: [
     {
-      sensor_id: 'testing-ts1-pm25:mass',
-      timestamp: '2024-01-01T00:00:00-08:00',
-      value: 10,
+      key: "testing-ts1-pm25:mass",
+      timestamp: "2024-01-01T00:00:00-08:00",
+      value: 10
     },
     {
-      sensor_id: 'testing-ts1-temperature',
-      timestamp: '2024-01-01T00:00:00-08:00',
-      value: tempf,
+      key: "testing-ts1-temperature",
+      timestamp: "2024-01-01T00:00:00-08:00",
+      value: 26.7
     }
   ]
 };
+

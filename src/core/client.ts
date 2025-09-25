@@ -1,4 +1,10 @@
-import { cleanKey, isFile, getMethod, getValueFromKey, formatValueForLog } from './utils';
+import {
+  cleanKey,
+  isFile,
+  getMethod,
+  getValueFromKey,
+  formatValueForLog,
+} from './utils';
 import type {
   ReaderMethodsDefinition,
   ReaderOptionsDefinition,
@@ -182,9 +188,9 @@ export abstract class Client {
   // transforming could be later
   parameters: ClientParametersDefinition = PARAMETER_DEFAULTS;
 
-  _measurements?: Measurements;
-  _locations: Locations;
-  _sensors: Sensors;
+  #measurements?: Measurements;
+  #locations: Locations;
+  #sensors: Sensors;
   // log object for compiling errors/warnings for later reference
   log: Map<string, Array<LogEntry>>;
   strict: boolean = true;
@@ -197,9 +203,9 @@ export abstract class Client {
     // this should convert the clients set of expected parameter to something we can use
     // and include our transform methods
     //this._measurands = new Measurands(this.parameters)
-    //this._measurements = new Measurements(this.parameters);
-    this._locations = new Locations();
-    this._sensors = new Sensors();
+    //this.#measurements = new Measurements(this.parameters);
+    this.#locations = new Locations();
+    this.#sensors = new Sensors();
     this.log = new Map();
   }
 
@@ -254,30 +260,30 @@ export abstract class Client {
   }
 
   get measurements() {
-    if (!this._measurements) {
-      this._measurements = new Measurements(this.parameters);
+    if (!this.#measurements) {
+      this.#measurements = new Measurements(this.parameters);
     }
-    return this._measurements;
+    return this.#measurements;
   }
 
   /**
-   * Provide a location based ingest id
+   * Provide a location based key
    */
-  getLocationIngestId(data: LocationDataDefinition) {
-    const locationId =
+  getLocationKey(data: LocationDataDefinition): string {
+    const locationKey =
       typeof this.locationIdKey === 'function'
         ? this.locationIdKey(data)
         : data[this.locationIdKey];
-    return `${this.provider}-${locationId}`;
+    return `${this.provider}-${locationKey}`;
   }
 
   /**
    * Provide a system based ingest id
    */
-  getSystemId(row: any): string {
+  getSystemKey(row: any): string {
     const manufacturer = cleanKey(getValueFromKey(row, this.manufacturerKey));
     const model = cleanKey(getValueFromKey(row, this.modelKey));
-    const location_id = this.getLocationIngestId(row);
+    const locationKey = this.getLocationKey(row);
     let key = '';
     if (manufacturer && model) {
       key = `-${manufacturer}:${model}`;
@@ -286,7 +292,7 @@ export abstract class Client {
     } else {
       key = `-${manufacturer || model}`;
     }
-    return `${location_id}${key}`;
+    return `${locationKey}${key}`;
   }
 
   /**
@@ -295,8 +301,8 @@ export abstract class Client {
    * @param {object} row - data for building key
    * @returns {string} - sensor id key
    */
-  getSensorIngestId(row: any): string {
-    const location_id = this.getLocationIngestId(row);
+  getSensorKey(row: any): string {
+    const locationKey = this.getLocationKey(row);
     const measurand = row.metric;
     const version = cleanKey(row.version_date);
     const instance = cleanKey(row.instance);
@@ -306,7 +312,7 @@ export abstract class Client {
     const key = [measurand.key];
     if (instance) key.push(instance);
     if (version) key.push(version);
-    return `${location_id}-${key.join(':')}`;
+    return `${locationKey}-${key.join(':')}`;
   }
 
   /**
@@ -316,18 +322,18 @@ export abstract class Client {
    * @returns {object} - location object
    */
   getLocation(key: LocationDataDefinition | string) {
-    let loc: Location | undefined;
+    let location: Location | undefined;
     let data = {};
     if (typeof key === 'object') {
       data = { ...key };
-      key = this.getLocationIngestId(data);
+      key = this.getLocationKey(data);
     }
-    loc = this._locations.get(key);
-    if (!loc) {
-      loc = this.addLocation({ locationId: key, ...data });
+    location = this.#locations.get(key);
+    if (!location) {
+      location = this.addLocation({ key, ...data });
     }
 
-    return loc;
+    return location;
   }
 
   // getSecret() {
@@ -345,10 +351,10 @@ export abstract class Client {
     let data = {};
     if (typeof key === 'object') {
       data = { ...key };
-      key = this.getSensorIngestId(data);
+      key = this.getSensorKey(data);
     }
-    if (this._sensors.has(key)) {
-      sensor = this._sensors.get(key);
+    if (this.#sensors.has(key)) {
+      sensor = this.#sensors.get(key);
     } else {
       sensor = this.addSensor(data);
     }
@@ -365,7 +371,9 @@ export abstract class Client {
     const dtString: string = getValueFromKey(row, this.datetimeKey);
     if (!dtString) {
       throw new Error(
-        `Missing date/time field. Looking in ${formatValueForLog(this.datetimeKey)}`
+        `Missing date/time field. Looking in ${formatValueForLog(
+          this.datetimeKey
+        )}`
       );
     }
     const dt = new Datetime(dtString, {
@@ -564,14 +572,14 @@ export abstract class Client {
    * Add a location to our list
    */
   addLocation(data: LocationDataDefinition) {
-    const key = this.getLocationIngestId(data);
-    const location = this._locations.get(key);
+    const key = this.getLocationKey(data);
+    const location = this.#locations.get(key);
 
     if (!location) {
       // process data through the location map
       const l = new Location({
-        ...data, // if sommething like locationId is in here we want the key to override it
-        locationId: key,
+        ...data, // if sommething like key is in here we want the key to override it
+        key: key,
         siteId: getValueFromKey(data, this.locationIdKey),
         siteName: getValueFromKey(data, this.locationLabelKey),
         ismobile: getValueFromKey(data, this.isMobileKey),
@@ -593,7 +601,7 @@ export abstract class Client {
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
       });
-      this._locations.add(l);
+      this.#locations.add(l);
       return l;
     }
     return location;
@@ -633,8 +641,8 @@ export abstract class Client {
       data.metric = this.measurements.metricFromProviderKey(metricName);
     }
 
-    const sensorId = this.getSensorIngestId(data);
-    const systemId = this.getSystemId(data);
+    const sensorKey = this.getSensorKey(data);
+    const systemKey = this.getSystemKey(data);
     const location = this.getLocation(data);
     // check for averaging data but fall back to the location values
     const averagingIntervalSeconds =
@@ -647,8 +655,8 @@ export abstract class Client {
       getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
     // maintain a way to get the sensor back without traversing everything
     const sensor = new Sensor({
-      sensorId,
-      systemId,
+      key: sensorKey,
+      systemKey,
       metric: data.metric,
       averagingIntervalSeconds,
       loggingIntervalSeconds,
@@ -657,7 +665,7 @@ export abstract class Client {
       status,
     });
     location.add(sensor);
-    this._sensors.add(sensor);
+    this.#sensors.add(sensor);
     return sensor;
   }
 
@@ -720,10 +728,9 @@ export abstract class Client {
           }
         });
       } catch (e: unknown) {
-        this.errorHandler(e);
-        //if( e instanceof Error) {
-        //    this.logMessage(MEASUREMENT_ERROR, 'error', e);
-        //}
+        if (e instanceof Error || typeof e === 'string') {
+          this.errorHandler(e);
+        }
       }
     });
   }
@@ -768,7 +775,7 @@ export abstract class Client {
         matching_method: 'ingest-id',
       },
       measurements: this.measurements.json(),
-      locations: this._locations.json(),
+      locations: this.#locations.json(),
     };
   }
 
@@ -783,14 +790,14 @@ export abstract class Client {
     return {
       sourceName: this.provider,
       locations: {
-        count: this._locations.length,
-        bounds: this._locations.bounds,
+        count: this.#locations.length,
+        bounds: this.#locations.bounds,
       },
-      systems: Object.values(this._locations)
+      systems: Object.values(this.#locations)
         .map((l: Location) => Object.values(l.systems).length)
         .flat()
         .reduce((d, i) => d + i),
-      sensors: Object.values(this._locations)
+      sensors: Object.values(this.#locations)
         .map((l: Location) =>
           Object.values(l.systems).map(
             (s: System) => Object.values(s.sensors).length
@@ -799,7 +806,7 @@ export abstract class Client {
         .flat()
         .reduce((d, i) => d + i),
       // taking advantage of the sensor object list
-      flags: Object.values(this._sensors)
+      flags: Object.values(this.#sensors)
         .map((s: Sensor) => Object.values(s.flags).length)
         .flat()
         .reduce((d, i) => d + i),

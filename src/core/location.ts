@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('locations: v2')
+const log = debug('locations: v2');
 
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
@@ -8,7 +8,7 @@ import { Sensor } from './sensor';
 import { Coordinates, updateBounds } from './coordinates';
 
 interface LocationDefinition {
-  locationId: string;
+  key: string;
   siteId: string;
   siteName: string;
   owner: string;
@@ -18,16 +18,16 @@ interface LocationDefinition {
   projection?: string;
   ismobile: boolean;
   status: string;
-  averagingIntervalSeconds?: number
-  loggingIntervalSeconds?: number
+  averagingIntervalSeconds?: number;
+  loggingIntervalSeconds?: number;
 }
 
 export class Locations {
-  _locations: Map<string, Location>;
+  #locations: Map<string, Location>;
   bounds: BBox | null;
 
   constructor() {
-    this._locations = new Map<string, Location>();
+    this.#locations = new Map<string, Location>();
     this.bounds = null; // its easier to work with a null boundary than the 4 number infinity boundary
   }
 
@@ -35,26 +35,26 @@ export class Locations {
     if (location.coordinates) {
       this.bounds = updateBounds(location.coordinates, this.bounds);
     }
-    this._locations.set(location.locationId, location);
+    this.#locations.set(location.key, location);
   }
 
   get(locationId: string): Location | undefined {
-    return this._locations.get(locationId);
+    return this.#locations.get(locationId);
   }
 
   get length(): number {
-    return this._locations.size;
+    return this.#locations.size;
   }
 
   json() {
-    return Array.from(this._locations.values(), (l) => {
+    return Array.from(this.#locations.values(), (l) => {
       return l.json();
     });
   }
 }
 
 export class Location {
-  locationId: string; // the ingest id
+  key: string;
   siteId: string;
   siteName: string;
   owner: string | undefined;
@@ -68,12 +68,16 @@ export class Location {
   loggingIntervalSeconds?: number;
   sensorStatus?: string;
 
-  _systems: Map<string, System>;
+  #systems: Map<string, System>;
 
   constructor(data: LocationDefinition) {
-    log(`Adding new location: ${data.locationId}`)
-    const coordinates = new Coordinates(Number(data.x), Number(data.y), data.projection);
-    this.locationId = data.locationId;
+    log(`Adding new location: ${data.key}`);
+    const coordinates = new Coordinates(
+      Number(data.x),
+      Number(data.y),
+      data.projection
+    );
+    this.key = data.key;
     this.siteId = data.siteId;
     this.siteName = data.siteName;
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
@@ -84,19 +88,15 @@ export class Location {
     this.owner = data.owner;
     this.ismobile = data.ismobile;
 
-    this._systems = new Map<string, System>();
-  }
-
-  get id() {
-    return this.locationId;
+    this.#systems = new Map<string, System>();
   }
 
   get systems() {
-    return this._systems;
+    return this.#systems;
   }
 
   addSystem(system: System) {
-    this._systems.set(system.id, system);
+    this.#systems.set(system.key, system);
   }
 
   /**
@@ -105,24 +105,32 @@ export class Location {
    * @param {(string|object)} data - object with data or key value
    * @returns {*} - system object
    */
-  getSystem(data: SystemDefinition | Sensor ): System {
-    if (!this._systems.has(data.systemId)) {
+  getSystem(data: SystemDefinition | Sensor): System {
+    let key;
+    if (data instanceof Sensor) {
+      key = data.systemKey;
+    } else {
+      key = data.key;
+    }
+    if (!this.#systems.has(data.key)) {
       // We are not runing into this anywhere in our tests
       // so we either need to think of a reason to keep it or
       // we should probably remove it
-      this.addSystem(new System({
-        systemId: data.systemId,
-        locationId: this.locationId,
-        modelName: "modelName" in data ? data.modelName : 'default',
-        manufacturerName: "manufacturerName" in data ? data.manufacturerName : 'default',
-      }));
-    }
-    const sys = this._systems.get(data.systemId);
-    if (
-      !sys
-    ) throw new TypeError('Could not get system')
 
-    return sys
+      this.addSystem(
+        new System({
+          key: key,
+          locationKey: this.key,
+          modelName: 'modelName' in data ? data.modelName : 'default',
+          manufacturerName:
+            'manufacturerName' in data ? data.manufacturerName : 'default',
+        })
+      );
+    }
+    const sys = this.#systems.get(key);
+    if (!sys) throw new TypeError('Could not get system');
+
+    return sys;
   }
 
   /**
@@ -132,7 +140,7 @@ export class Location {
    * @returns {*} - a sensor object
    */
   add(sensor: Sensor): Sensor {
-    log(`adding sensor (${sensor.id}) to location (${this.id})`)
+    log(`adding sensor (${sensor.key}) to location (${this.key})`);
     // first we get the system name
     // e.g. :provider/:site/:manufacturer-:model
     const sys = this.getSystem(sensor);
@@ -144,12 +152,12 @@ export class Location {
    */
   json() {
     return stripNulls({
-      location_id: this.locationId,
+      key: this.key,
       site_id: this.siteId,
       site_name: this.siteName,
       coordinates: this.coordinates.json(),
       ismobile: this.ismobile,
-      systems: Array.from(this._systems.values(), (s) => s.json()),
+      systems: Array.from(this.#systems.values(), (s) => s.json()),
     });
   }
 }

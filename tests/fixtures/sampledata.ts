@@ -100,7 +100,7 @@ export const expectedOutput = {
     {
       key: "testing-ts1-temperature",
       timestamp: "2024-01-01T00:00:00-08:00",
-      value: 26.7
+      value: tempf
     }
   ]
 };

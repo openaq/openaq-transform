@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { Measurements, Measurement } from './measurement';
+import { Measurement } from './measurement';
 import { Datetime } from './datetime'
 import { Sensor } from './sensor'
 import { MissingAttributeError } from './errors'

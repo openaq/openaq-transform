@@ -2,12 +2,6 @@ import debug from 'debug';
 const log = debug('utils: v2')
 
 import {
-  InvalidPrecisionError,
-  LatitudeBoundsError,
-  LongitudeBoundsError,
-} from './errors';
-
-import {
   ParserObjectDefinition,
   ParserMethodsDefinition,
 } from './parsers';
@@ -59,24 +53,6 @@ export const stripWhitespace = (value: string): string => {
   return value.replace(/^[ ]+|[ ]+$/, '');
 };
 
-export function validateCoordinates(
-  latitude: number,
-  longitude: number,
-  precision: number = 3
-): void {
-  if (latitude < -90 || latitude > 90) {
-    throw new LatitudeBoundsError(latitude);
-  }
-  if (longitude < -180 || longitude > 180) {
-    throw new LongitudeBoundsError(longitude);
-  }
-  if (countDecimals(latitude) < precision) {
-    throw new InvalidPrecisionError(latitude, precision);
-  }
-  if (countDecimals(longitude) < precision) {
-    throw new InvalidPrecisionError(longitude, precision);
-  }
-}
 /**
  * Count the number of decimal places in value
  * @returns number
@@ -92,6 +68,31 @@ export function isFile(obj: object) {
   return obj.constructor.name === 'File';
 }
 
+
+export function formatValueForLog(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'function') {
+    return value.name || '[Function]';
+  }
+  if (value === null) {
+    return 'null';
+  }
+  if (value === undefined) {
+    return 'undefined';
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[object Object]';
+    }
+  }
+  return `[${typeof value}]`;
+}
+
+
 /**
  *  Method to determine which method we want to use to parse/read
  * the return value for this is a function
@@ -105,7 +106,7 @@ export function getMethod(
   methods: ParserMethodsDefinition | ReaderMethodsDefinition
 ): Function {
   let methodKeyOrFunction: string | Function;
-  log(`Getting method for '${key}' from ${method} and ${Object.keys(methods)}`)
+  log(`Getting method for '${String(key)}' from ${formatValueForLog(method)} and ${Object.keys(methods).join(', ')}`)
 
   if (typeof key === 'function') {
     methodKeyOrFunction = key;
@@ -142,7 +143,7 @@ export function getMethod(
     }
     if (!methods[methodKeyOrFunction]) {
       throw new Error(
-        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(methods)}. `
+        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(methods).join(', ')}. `
       );
     }
     return methods[methodKeyOrFunction];

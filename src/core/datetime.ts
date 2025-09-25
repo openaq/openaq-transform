@@ -1,4 +1,5 @@
 import { Duration, DateTime } from 'luxon';
+import { formatValueForLog } from './utils';
 
 
 interface DatetimeOptionsDefinition {
@@ -84,7 +85,7 @@ export class Datetime {
     this.locationTimezone = options?.locationTimezone ?? options?.timezone;
     this.date = this.parseDate();
     if (this.date > DateTime.now()) {
-      throw new RangeError(`Date string cannot be in the future. ${input} --> ${this.toLocal()}`);
+      throw new RangeError(`Date string cannot be in the future. ${String(input)} --> ${this.toLocal()}`);
     }
   }
 
@@ -127,13 +128,13 @@ export class Datetime {
 
       } catch (error) {
         throw new TypeError(
-          `Failed to parse date string "${this.#input}" with format "${this.format}". Error: ${error}`
+          `Failed to parse date string "${formatValueForLog(this.#input)}" with format "${this.format}". Error: ${String(error)}`
         );
       }
     }
     if (!parsedDate.isValid) {
       throw new TypeError(
-        `Invalid date input: "${this.#input}" with format "${this.format}: ${parsedDate.invalidReason}".`
+        `Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`
       );
     }
     return parsedDate;

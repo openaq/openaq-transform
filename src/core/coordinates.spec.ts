@@ -3,8 +3,6 @@ import { Coordinates, updateBounds } from './coordinates';
 import proj4 from 'proj4';
 import { type BBox } from 'geojson';
 
-import { LatitudeBoundsError } from './errors'
-
 test('Coordinates latitude and longitude return unchanged value for EPSG:4326', () => {
   const coordinates = new Coordinates(32, 42);
   expect(coordinates.longitude).toBe(32);

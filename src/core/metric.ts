@@ -179,7 +179,7 @@ export class Metric {
   key: string
   parameter: ParameterDefinition;
   unit: string;
-  numeric: Boolean = true;
+  numeric: boolean = true;
   precision?: number;
   converter: Function
 

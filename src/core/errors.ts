@@ -13,7 +13,7 @@ export const FETCHER_ERROR = Symbol('Fetcher error');
 
 export class TransformError extends RangeError {
   name: string
-  type: Symbol
+  type: symbol
   value?: any
   flag?: string
 

@@ -1,5 +1,9 @@
-import { cleanKey, isFile, getMethod, getValueFromKey } from './utils';
-import type { ReaderMethodsDefinition, ReaderOptionsDefinition, IndexedReaderOptionsDefinition } from './readers';
+import { cleanKey, isFile, getMethod, getValueFromKey, formatValueForLog } from './utils';
+import type {
+  ReaderMethodsDefinition,
+  ReaderOptionsDefinition,
+  IndexedReaderOptionsDefinition,
+} from './readers';
 import type { ParserMethodsDefinition } from './parsers';
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
@@ -15,8 +19,8 @@ import debug from 'debug';
 
 debug.enable('*');
 
-const log1 = debug('client (core): v1')
-const log2 = debug('client (core): v2')
+const log1 = debug('client (core): v1');
+const log2 = debug('client (core): v2');
 
 export interface MetaDefinition {
   locationIdKey: string;
@@ -84,7 +88,7 @@ interface LogEntry {
 
 type ParseFunction = (data?: any) => string | number | object | boolean;
 
-type Resource = string | File
+type Resource = string | File;
 
 interface IndexedResourceDefinition {
   measurements: Resource;
@@ -139,7 +143,7 @@ type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 export abstract class Client {
   provider!: string;
   resource?: Resource | IndexedResourceDefinition;
-  secrets?: object
+  secrets?: object;
   reader: ClientReaderDefinition = 'api';
   parser: ClientParserDefinition = 'json';
   abstract readers: ReaderMethodsDefinition;
@@ -197,7 +201,6 @@ export abstract class Client {
     this._locations = new Locations();
     this._sensors = new Sensors();
     this.log = new Map();
-
   }
 
   configure(params: ClientConfigDefinition) {
@@ -241,15 +244,14 @@ export abstract class Client {
 
     // if we were able to pass more values in params we
     // could include the params in the postConfigure args
-    this.postConfigure()
+    this.postConfigure();
   }
 
   postConfigure() {
     // this is an opportunity for the developer to do some customizing
     // this is where you would update any properties based on secrets or other values
-    log2('No post configuration provided')
+    log2('No post configuration provided');
   }
-
 
   get measurements() {
     if (!this._measurements) {
@@ -363,7 +365,7 @@ export abstract class Client {
     const dtString: string = getValueFromKey(row, this.datetimeKey);
     if (!dtString) {
       throw new Error(
-        `Missing date/time field. Looking in ${this.datetimeKey}`
+        `Missing date/time field. Looking in ${formatValueForLog(this.datetimeKey)}`
       );
     }
     const dt = new Datetime(dtString, {
@@ -378,7 +380,7 @@ export abstract class Client {
    *
    */
   async loadResources() {
-    log1(`Loading resources`)
+    log1(`Loading resources`);
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
@@ -391,7 +393,7 @@ export abstract class Client {
       let data: FetchedDataDefinition = {};
 
       for (const [key, resource] of Object.entries(this.resource)) {
-        log2(`Loading ${key} using ${resource}`)
+        log2(`Loading ${key} using ${resource}`);
 
         const reader = getMethod(
           key as keyof IndexedResourceDefinition,
@@ -406,7 +408,10 @@ export abstract class Client {
         );
 
         // we need a way to get the secrets injected here
-        const options = getReaderOptions(this.readerOptions, key as keyof IndexedReaderOptionsDefinition)
+        const options = getReaderOptions(
+          this.readerOptions,
+          key as keyof IndexedReaderOptionsDefinition
+        );
 
         // pass existing data to the current resource
         const text = await reader({ resource, options });
@@ -479,7 +484,7 @@ export abstract class Client {
   // fetching in production - log error and move on
   // fetching in upload tool - throw error if strict is on
   // developing - throw error
-  errorHandler(err: string | unknown) {
+  errorHandler(err: string | Error) {
     // types: error, warning, info
     // check if warning or error
     // if strict then throw error, otherwise just log for later
@@ -523,12 +528,23 @@ export abstract class Client {
   }
 
   process(data: FetchedDataDefinition) {
-    log2(`Processing data`, Object.keys(data), Array.isArray(data))
+    log2(`Processing data`, Object.keys(data), Array.isArray(data));
     if (!data) {
       throw new Error('No data was returned from file');
     }
-    if(!('locations' in data || 'sensors' in data || 'measurements' in data || 'flags' in data)) {
-      throw new Error(`Data is not in the correct format to be processed. Current object has the following keys: ${Object.keys(data)}`);
+    if (
+      !(
+        'locations' in data ||
+        'sensors' in data ||
+        'measurements' in data ||
+        'flags' in data
+      )
+    ) {
+      throw new Error(
+        `Data is not in the correct format to be processed. Current object has the following keys: ${Object.keys(
+          data
+        ).join(', ')}`
+      );
     }
     if (data.locations) {
       this.processLocationsData(data.locations);
@@ -586,7 +602,7 @@ export abstract class Client {
   /**
    * Process a list of locations
    */
-  async processLocationsData(locations: LocationDataDefinition[]) {
+  processLocationsData(locations: LocationDataDefinition[]) {
     log2(`Processing ${locations.length} locations`);
     for (const location of locations) {
       try {
@@ -604,7 +620,7 @@ export abstract class Client {
    *
    * @param {array} sensors - list of sensor data
    */
-  async processSensorsData(sensors: SensorDataDefinition[]) {
+  processSensorsData(sensors: SensorDataDefinition[]) {
     log2(`Processing ${sensors.length} sensors`);
     for (const sensor of sensors) {
       this.addSensor(sensor);
@@ -650,7 +666,7 @@ export abstract class Client {
    *
    * @param {array} measurements - list of measurement data
    */
-  async processMeasurementsData(measurements: any) {
+  processMeasurementsData(measurements: any) {
     console.debug(`Processing ${measurements.length} measurement(s)`);
     // if we provided a parameter column key we use that
     // otherwise we use the list of parameters
@@ -682,9 +698,7 @@ export abstract class Client {
             metric = this.measurements.metricFromProviderKey(metricName);
 
             if (!metric) {
-              this.errorHandler(
-                new UnsupportedParameterError(metricName)
-              );
+              this.errorHandler(new UnsupportedParameterError(metricName));
               return;
             }
             // get the approprate sensor, or create it
@@ -720,7 +734,7 @@ export abstract class Client {
    * @param {*} flags -
    * @returns {*} -
    */
-  async processFlagsData(flags: Array<any>) {
+  processFlagsData(flags: Array<any>) {
     console.debug(`Processing ${flags.length} flags`);
     flags.map((d: any) => {
       try {

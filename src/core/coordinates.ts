@@ -90,7 +90,7 @@ export class Coordinates {
         this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
       } catch (e: unknown) {
         // proj4 throws a string as an error
-        throw new LocationError(`PROJ4 ERROR: ${e}`, { proj });
+        throw new LocationError(`PROJ4 ERROR: ${String(e)}`, { proj });
       }
     } else {
 

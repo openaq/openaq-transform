@@ -1,7 +1,6 @@
 import { expect, test } from 'vitest';
 import {
   cleanKey,
-  validateCoordinates,
   getValueFromKey,
   getMethod,
   countDecimals,

@@ -3,7 +3,7 @@ import { defineConfig } from 'tsdown';
 export default defineConfig([
   {
     entry: 'src/browser/index.ts',
-    outDir: 'dist/browser',
+    outDir: 'dist/transform-browser',
     format: ['esm'],
     platform: 'browser',
     splitting: true,
@@ -13,7 +13,7 @@ export default defineConfig([
   },
   {
     entry: 'src/node/index.ts',
-    outDir: 'dist/node',
+    outDir: 'dist/transform-node',
     format: ['esm'],
     platform: 'node',
     splitting: false,
@@ -24,7 +24,7 @@ export default defineConfig([
   },
   {
     entry: 'src/core/index.ts',
-    outDir: 'dist/core',
+    outDir: 'dist/transform-core',
     format: ['esm'],
     platform: 'neutral',
     splitting: false,

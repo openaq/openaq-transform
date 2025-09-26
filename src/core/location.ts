@@ -3,24 +3,11 @@ const log = debug('locations: v2');
 
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
-import { System, SystemDefinition } from './system';
+import { System } from './system';
 import { Sensor } from './sensor';
 import { Coordinates, updateBounds } from './coordinates';
-
-interface LocationDefinition {
-  key: string;
-  siteId: string;
-  siteName: string;
-  owner: string;
-  label: string;
-  x: number;
-  y: number;
-  projection?: string;
-  ismobile: boolean;
-  status: string;
-  averagingIntervalSeconds?: number;
-  loggingIntervalSeconds?: number;
-}
+import type { LocationData } from '../types/location';
+import type { SystemData } from '../types/system';
 
 export class Locations {
   #locations: Map<string, Location>;
@@ -70,7 +57,7 @@ export class Location {
 
   #systems: Map<string, System>;
 
-  constructor(data: LocationDefinition) {
+  constructor(data: LocationData) {
     log(`Adding new location: ${data.key}`);
     const coordinates = new Coordinates(
       Number(data.x),
@@ -105,7 +92,7 @@ export class Location {
    * @param {(string|object)} data - object with data or key value
    * @returns {*} - system object
    */
-  getSystem(data: SystemDefinition | Sensor): System {
+  getSystem(data: SystemData | Sensor): System {
     let key;
     if (data instanceof Sensor) {
       key = data.systemKey;

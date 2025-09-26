@@ -2,19 +2,17 @@ import { Client } from '../core/client';
 import { apiReader, textReader } from '../core/readers';
 import {fileReader} from './readers';
 import { csv, tsv } from './parsers';
-import { json, ParserMethodsDefinition } from '../core/parsers';
-import type {
-  ReaderDefinition,
-  ReaderMethodsDefinition,
-} from '../core/readers';
+import { json } from '../core/parsers';
+import { ParserMethods } from '../types/parsers';
+import type { Reader, ReaderMethods } from '../types/readers';
 
-const readers: ReaderMethodsDefinition = {
-  api: apiReader as ReaderDefinition,
-  file: fileReader as ReaderDefinition,
-  text: textReader as ReaderDefinition
+const readers: ReaderMethods = {
+  api: apiReader as Reader,
+  file: fileReader as Reader,
+  text: textReader as Reader
 };
 
-const parsers: ParserMethodsDefinition = {
+const parsers: ParserMethods = {
   json,
   csv,
   tsv,

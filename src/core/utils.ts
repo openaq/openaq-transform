@@ -1,11 +1,7 @@
 import debug from 'debug';
+import type { ParserMethods, IndexedParser } from '../types/parsers';
+import type { ReaderMethods } from '../types/readers';
 const log = debug('utils: v2')
-
-import {
-  ParserObjectDefinition,
-  ParserMethodsDefinition,
-} from './parsers';
-import { ReaderMethodsDefinition } from './readers';
 
 export const stripNulls = <T extends object>(
   obj: T
@@ -102,8 +98,8 @@ export function formatValueForLog(value: unknown): string {
  */
 export function getMethod(
   key: 'measurements' | 'locations' | Function | null,
-  method: Function | string | ParserObjectDefinition,
-  methods: ParserMethodsDefinition | ReaderMethodsDefinition
+  method: Function | string | IndexedParser,
+  methods: ParserMethods | ReaderMethods
 ): Function {
   let methodKeyOrFunction: string | Function;
   log(`Getting method for '${String(key)}' from ${formatValueForLog(method)} and ${Object.keys(methods).join(', ')}`)
@@ -119,7 +115,7 @@ export function getMethod(
         && typeof key === 'string' &&
         ['measurements', 'locations', 'meta'].includes(key)
     ) {
-      methodKeyOrFunction = method[key as keyof ParserObjectDefinition] as string;
+      methodKeyOrFunction = method[key as keyof IndexedParser] as string;
     } else if (typeof method === 'string' || typeof method === 'function') {
       methodKeyOrFunction = method;
     } else {

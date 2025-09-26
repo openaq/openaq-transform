@@ -1,37 +1,28 @@
 import debug from 'debug';
-const log = debug('parsers: v2')
-
-import type { Options as CsvParseOptions } from 'csv-parse';
-
-type CsvParseFunction = (
-  input: string | Buffer,
-  options?: CsvParseOptions
-) => any;
-
-
-interface ExistingDataDefinition {
-  [key: string]: any;
-}
+import type { CsvParseFunction, ParserParameters } from '../types/parsers';
+const log = debug('parsers: v2');
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
-  const csv = async ({ text }: ParserParamsDefinition) => {
-    if (typeof (text) === 'string') {
+  const csv = async ({ text }: ParserParameters) => {
+    log(`Parsing ${typeof text} data using the csv method`);
+    if (typeof text === 'string') {
       const data = parse(text, {
         columns: true,
-        skip_empty_lines: true
+        skip_empty_lines: true,
       });
-      return data
+      return data;
     } else {
       return text;
     }
   };
 
-  const tsv = async ({ text }: ParserParamsDefinition) => {
-    if (typeof (text) === 'string') {
+  const tsv = async ({ text }: ParserParameters) => {
+    log(`Parsing ${typeof text} data using the tsv method`);
+    if (typeof text === 'string') {
       return await parse(text, {
         delimiter: '\t',
         columns: true,
-        skip_empty_lines: true
+        skip_empty_lines: true,
       });
     } else {
       return text;
@@ -41,26 +32,9 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
   return { csv, tsv };
 };
 
-export interface ParserParamsDefinition {
-  text: string,
-  data?: ExistingDataDefinition
-}
-
-export type ParserDefinition = (params: ParserParamsDefinition ) => object
-
-export interface ParserObjectDefinition {
-  measurements: string;
-  locations?: string;
-  meta?: string;
-}
-
-export interface ParserMethodsDefinition {
-  [key: string]: ParserDefinition
-}
-
-export const json = async ({ text }: ParserParamsDefinition) => {
-  log(`Parsing ${typeof(text)} data using the json method`)
-  if(typeof(text) === 'string') {
+export const json = async ({ text }: ParserParameters) => {
+  log(`Parsing ${typeof text} data using the json method`);
+  if (typeof text === 'string') {
     return JSON.parse(text);
   } else {
     return text;

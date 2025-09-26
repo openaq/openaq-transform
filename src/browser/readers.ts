@@ -1,8 +1,8 @@
-import { BlobReaderParamsDefinition } from "../core/readers";
+import { BlobReaderParameters } from "../types/readers";
 
 export const fileReader = async ({
   resource,
-}: BlobReaderParamsDefinition): Promise<string> => {
+}: BlobReaderParameters): Promise<string> => {
   return await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e: ProgressEvent<FileReader>) => {

@@ -4,18 +4,15 @@ const log = debug('measurements: v2');
 import { Datetime } from './datetime';
 import { Sensor } from './sensor';
 import type { BBox } from 'geojson';
-import {
-  Coordinates,
-  updateBounds,
-  CoordinatesJsonDefinition,
-} from './coordinates';
-import {
-  ClientParametersDefinition,
-  PARAMETER_DEFAULTS,
-  Metric,
-} from './metric';
+import { Coordinates, updateBounds } from './coordinates';
+import { PARAMETER_DEFAULTS, Metric } from './metric';
 
 import { TransformError, MissingAttributeError } from './errors';
+import type { ClientParameters } from '../types/metric';
+import type {
+  MeasurementData,
+  MeasurementJSON,
+} from '../types/measurement';
 
 export class Measurements {
   headers: string[];
@@ -25,7 +22,7 @@ export class Measurements {
   bounds?: BBox | null;
   parameters: Map<string, Metric>;
 
-  constructor(parameters: ClientParametersDefinition = PARAMETER_DEFAULTS) {
+  constructor(parameters: ClientParameters = PARAMETER_DEFAULTS) {
     this.#measurements = new Map<string, Measurement>();
     this.headers = [
       'sensor_id',
@@ -78,7 +75,7 @@ export class Measurements {
 
   json() {
     return Array.from(this.#measurements.values(), (m) => {
-      const measurement: MeasurementJsonDefinition = {
+      const measurement: MeasurementJSON = {
         key: m.sensor?.key,
         timestamp: m.timestamp.toString(),
         value: m.value,
@@ -90,23 +87,6 @@ export class Measurements {
   }
 }
 
-interface MeasurementDefinition {
-  sensor: Sensor;
-  timestamp: Datetime;
-  value: number | null;
-  coordinates?: Coordinates;
-  flags?: Array<string>;
-  //units: string;
-}
-
-export interface MeasurementJsonDefinition {
-  key: string;
-  timestamp: string | undefined; // this is just temp to solve a typing issue
-  value: number | null;
-  coordinates?: CoordinatesJsonDefinition;
-  flags?: Array<string>;
-}
-
 export class Measurement {
   sensor: Sensor;
   timestamp: Datetime;
@@ -114,13 +94,13 @@ export class Measurement {
   coordinates?: Coordinates;
   flags?: Array<string>;
 
-  constructor(params: MeasurementDefinition) {
-    if (!params.sensor) throw new MissingAttributeError('sensor', params);
-    if (!params.timestamp) throw new MissingAttributeError('timestamp', params);
+  constructor(data: MeasurementData) {
+    if (!data.sensor) throw new MissingAttributeError('sensor', data);
+    if (!data.timestamp) throw new MissingAttributeError('timestamp', data);
 
     this.value = null;
-    this.sensor = params.sensor;
-    this.timestamp = params.timestamp;
+    this.sensor = data.sensor;
+    this.timestamp = data.timestamp;
     // the csv parser does not convert values to numbers
     // should we do something here to do that?
     // the only issue I see is if we expect a flag here, in which case we could catch an error?
@@ -129,7 +109,7 @@ export class Measurement {
     // and then add a flag
 
     try {
-      this.value = this.sensor?.metric.process(params.value);
+      this.value = this.sensor?.metric.process(data.value);
     } catch (e: unknown) {
       // if the error includes a flag value we
       if (e instanceof TransformError) {
@@ -140,8 +120,8 @@ export class Measurement {
       }
     }
 
-    if (params.coordinates) {
-      this.coordinates = params.coordinates;
+    if (data.coordinates) {
+      this.coordinates = data.coordinates;
     }
   }
 

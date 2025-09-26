@@ -5,156 +5,37 @@ import {
   getValueFromKey,
   formatValueForLog,
 } from './utils';
-import type {
-  ReaderMethodsDefinition,
-  ReaderOptionsDefinition,
-  IndexedReaderOptionsDefinition,
-} from './readers';
-import type { ParserMethodsDefinition } from './parsers';
+
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
 import { System } from './system';
-import { ClientParametersDefinition, PARAMETER_DEFAULTS } from './metric';
+import {  PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
-import { ParserObjectDefinition } from './parsers';
 import { getReaderOptions } from './readers';
-import type { BBox } from 'geojson';
 import debug from 'debug';
+import { ClientConfiguration, ClientParser, ClientReader, DataDefinition, ErrorSummary, IndexedResource, LogEntry, ParseFunction, Resource, Summary } from '../types/client';
+import { ParserMethods } from '../types/parsers';
+import type { IndexedReaderOptions, ReaderMethods, ReaderOptions } from '../types/readers';
+import { ClientParameters } from '../types/metric';
 
 debug.enable('*');
 
 const log1 = debug('client (core): v1');
 const log2 = debug('client (core): v2');
 
-export interface MetaDefinition {
-  locationIdKey: string;
-  locationLabelKey: string;
-  parameterKey: string;
-  valueKey: string;
-  projection: string;
-  latitudeKey: string;
-  longitudeKey: string;
-  manufacturerKey: string;
-  modelKey: string;
-  ownerKey: string;
-  licenseKey: string;
-  timestampKey: string;
-  datetimeFormat: string;
-  timezone: string;
-}
 
-export interface Source {
-  meta: MetaDefinition;
-  provider: string;
-  parameters: string[];
-}
-
-interface LocationDataDefinition {
-  [key: string]: any;
-}
-
-interface SensorDataDefinition {
-  [key: string]: any;
-}
-
-interface FetchedDataDefinition {
-  [key: string]: any;
-}
-
-type ErrorSummaryDefinition = { [key: string]: number };
-
-interface LocationsSummary {
-  count: number;
-  bounds: BBox | null;
-}
-
-interface MeasurementsSummary {
-  count: number;
-  from: string | null | undefined;
-  to: string | null | undefined;
-}
-
-interface SummaryDefinition {
-  sourceName: string;
-  locations: LocationsSummary;
-  systems: number;
-  sensors: number;
-  flags: number;
-  measures: number;
-  errors: ErrorSummaryDefinition;
-  measurements: MeasurementsSummary;
-}
-
-interface LogEntry {
-  message: string;
-  err?: Error;
-}
-
-type ParseFunction = (data?: any) => string | number | object | boolean;
-
-type Resource = string | File;
-
-interface IndexedResourceDefinition {
-  measurements: Resource;
-  locations?: Resource;
-}
-
-interface ClientConfigDefinition {
-  resource?: Resource | IndexedResourceDefinition;
-  readerOptions?: ReaderOptionsDefinition | IndexedReaderOptionsDefinition;
-  reader?: string;
-  parser?: string;
-  provider?: string;
-  fetched?: boolean;
-  source?: Source;
-  timezone?: string;
-  longFormat?: boolean;
-  sourceProjection?: string;
-  datetimeFormat?: string;
-  secrets?: object;
-
-  locationIdKey?: string | ParseFunction;
-  locationLabelKey?: string | ParseFunction;
-  parameterNameKey?: string | ParseFunction;
-  parameterValueKey?: string | ParseFunction;
-  xGeometryKey?: string | ParseFunction;
-  yGeometryKey?: string | ParseFunction;
-  geometryProjectionKey?: string | ParseFunction;
-  manufacturerKey?: string | ParseFunction;
-  modelKey?: string | ParseFunction;
-  ownerKey?: string | ParseFunction;
-  datetimeKey?: string | ParseFunction;
-  licenseKey?: string | ParseFunction;
-  isMobileKey?: string | ParseFunction;
-  loggingIntervalKey?: string | ParseFunction;
-  averagingIntervalKey?: string | ParseFunction;
-  sensorStatusKey?: string | ParseFunction;
-
-  datasources?: object;
-  missingDatasources?: string[];
-  parameters?: ClientParametersDefinition;
-}
-
-type ClientParserDefinition = string | Function | ParserObjectDefinition;
-
-interface ClientReaderObjectDefinition {
-  measurements: string;
-  locations?: string;
-}
-
-type ClientReaderDefinition = string | Function | ClientReaderObjectDefinition;
 
 export abstract class Client {
   provider!: string;
-  resource?: Resource | IndexedResourceDefinition;
+  resource?: Resource | IndexedResource;
   secrets?: object;
-  reader: ClientReaderDefinition = 'api';
-  parser: ClientParserDefinition = 'json';
-  abstract readers: ReaderMethodsDefinition;
-  abstract parsers: ParserMethodsDefinition;
-  readerOptions: ReaderOptionsDefinition | IndexedReaderOptionsDefinition = {};
+  reader: ClientReader = 'api';
+  parser: ClientParser = 'json';
+  abstract readers: ReaderMethods;
+  abstract parsers: ParserMethods;
+  readerOptions: ReaderOptions | IndexedReaderOptions = {};
   fetched: boolean = false;
   // source: Source;
   timezone?: string;
@@ -186,7 +67,7 @@ export abstract class Client {
 
   // this should be the list of parameters in the data and how to extract them
   // transforming could be later
-  parameters: ClientParametersDefinition = PARAMETER_DEFAULTS;
+  parameters: ClientParameters = PARAMETER_DEFAULTS;
 
   #measurements?: Measurements;
   #locations: Locations;
@@ -195,7 +76,7 @@ export abstract class Client {
   log: Map<string, Array<LogEntry>>;
   strict: boolean = true;
 
-  constructor(params?: ClientConfigDefinition) {
+  constructor(params?: ClientConfiguration) {
     // update with config if the config was passed in
     // this will still behave oddly in our abstract/extend framework
     if (params) this.configure(params);
@@ -209,7 +90,7 @@ export abstract class Client {
     this.log = new Map();
   }
 
-  configure(params: ClientConfigDefinition) {
+  configure(params: ClientConfiguration) {
     params?.resource && (this.resource = params.resource);
     params?.readerOptions && (this.readerOptions = params.readerOptions);
     params?.provider && (this.provider = params.provider);
@@ -269,7 +150,7 @@ export abstract class Client {
   /**
    * Provide a location based key
    */
-  getLocationKey(data: LocationDataDefinition): string {
+  getLocationKey(data: DataDefinition): string {
     const locationKey =
       typeof this.locationIdKey === 'function'
         ? this.locationIdKey(data)
@@ -321,7 +202,7 @@ export abstract class Client {
    * @param {(string|object)} key - key or data to build location
    * @returns {object} - location object
    */
-  getLocation(key: LocationDataDefinition | string) {
+  getLocation(key: DataDefinition | string) {
     let location: Location | undefined;
     let data = {};
     if (typeof key === 'object') {
@@ -398,19 +279,19 @@ export abstract class Client {
 
     if (typeof this.resource === 'object' && !isFile(this.resource)) {
       // loop through all those keys to create the data object
-      let data: FetchedDataDefinition = {};
+      let data: DataDefinition = {};
 
       for (const [key, resource] of Object.entries(this.resource)) {
         log2(`Loading ${key} using ${resource}`);
 
         const reader = getMethod(
-          key as keyof IndexedResourceDefinition,
+          key as keyof IndexedResource,
           this.reader,
           this.readers
         );
 
         const parser = getMethod(
-          key as keyof IndexedResourceDefinition,
+          key as keyof IndexedResource,
           this.parser,
           this.parsers
         );
@@ -418,7 +299,7 @@ export abstract class Client {
         // we need a way to get the secrets injected here
         const options = getReaderOptions(
           this.readerOptions,
-          key as keyof IndexedReaderOptionsDefinition
+          key as keyof IndexedReaderOptions
         );
 
         // pass existing data to the current resource
@@ -535,7 +416,7 @@ export abstract class Client {
     return this.data();
   }
 
-  process(data: FetchedDataDefinition) {
+  process(data: DataDefinition) {
     log2(`Processing data`, Object.keys(data), Array.isArray(data));
     if (!data) {
       throw new Error('No data was returned from file');
@@ -571,7 +452,7 @@ export abstract class Client {
   /**
    * Add a location to our list
    */
-  addLocation(data: LocationDataDefinition) {
+  addLocation(data: DataDefinition) {
     const key = this.getLocationKey(data);
     const location = this.#locations.get(key);
 
@@ -610,7 +491,7 @@ export abstract class Client {
   /**
    * Process a list of locations
    */
-  processLocationsData(locations: LocationDataDefinition[]) {
+  processLocationsData(locations: DataDefinition[]) {
     log2(`Processing ${locations.length} locations`);
     for (const location of locations) {
       try {
@@ -628,14 +509,14 @@ export abstract class Client {
    *
    * @param {array} sensors - list of sensor data
    */
-  processSensorsData(sensors: SensorDataDefinition[]) {
+  processSensorsData(sensors: DataDefinition[]) {
     log2(`Processing ${sensors.length} sensors`);
     for (const sensor of sensors) {
       this.addSensor(sensor);
     }
   }
 
-  private addSensor(data: SensorDataDefinition): Sensor {
+  private addSensor(data: DataDefinition): Sensor {
     if (!data.metric) {
       let metricName = getValueFromKey(data, this.parameterNameKey);
       data.metric = this.measurements.metricFromProviderKey(metricName);
@@ -782,8 +663,8 @@ export abstract class Client {
   /**
    * Dump a summary that we can pass back to the log
    */
-  summary(): SummaryDefinition {
-    const errorSummary: ErrorSummaryDefinition = {};
+  summary(): Summary {
+    const errorSummary: ErrorSummary = {};
     this.log.forEach((v, k) => {
       errorSummary[k] = v.length;
     });

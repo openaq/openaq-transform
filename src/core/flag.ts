@@ -1,14 +1,5 @@
+import type { FlagData } from "../types/flag";
 import { stripNulls } from "./utils";
-
-
-export interface FlagDefinition {
-    sensorId: string;
-    flagId: string | undefined;
-    starts: string;
-    ends: string;
-    flag: string;
-    note: string;
-}
 
 
 export class Flag {
@@ -19,7 +10,7 @@ export class Flag {
     flagName: string;
     note: string;
 
-    constructor(data: FlagDefinition) {
+    constructor(data: FlagData) {
         this.flagId = data.flagId || Flag.id(data);
         this.datetimeFrom = data.starts;
         this.datetimeTo = data.ends;
@@ -27,7 +18,7 @@ export class Flag {
         this.note = data.note;
     }
 
-    static id(data: FlagDefinition): string {
+    static id(data: FlagData): string {
         const starts = data.starts || 'infinity';
         return `${data.sensorId}-${data.flag}::${starts}`;
     }

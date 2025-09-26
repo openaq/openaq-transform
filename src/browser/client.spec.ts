@@ -9,9 +9,9 @@ import {
   expectedOutput,
 } from '../../tests/fixtures/sampledata.ts';
 
-import type { ReaderDefinition } from '../core/readers';
 
 import { csv } from './parsers';
+import type { Reader } from '../types/readers.ts';
 
 test('test environment', () => {
   expect(typeof window).not.toBe('undefined');
@@ -59,7 +59,7 @@ describe('reading one json file', () => {
   class UploadClient extends CustomClient {
     reader = 'file';
     readers = {
-      file: read as ReaderDefinition,
+      file: read as Reader,
     };
   }
 
@@ -78,8 +78,8 @@ describe('reading one csv file', () => {
     reader = 'file';
     parser = 'csv';
     readers = {
-      file: read as ReaderDefinition,
-      csv: csv as ReaderDefinition,
+      file: read as Reader,
+      csv: csv as Reader,
     };
   }
 

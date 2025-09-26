@@ -8,28 +8,8 @@ import {
 } from './errors';
 
 import { countDecimals } from './utils';
+import type { CoordinatesJSON } from '../types/coordinates';
 
-/**
- * Interface representing a JSON definition for geographic coordinates,
- * specifically in 'EPSG:4326' (WGS84) projection.
- */
-export interface CoordinatesJsonDefinition {
-    /**
-   * The latitude coordinate in degrees.
-   * @example 36.035513
-   */
-  latitude: number,
-  /**
-   * The longitude coordinate in degrees.
-   * @example 36.091573
-   */
-  longitude: number,
-  /**
-   * The projection string.
-   * @example 'EPSG:4326'
-   */
-  proj: string
-}
 
 /**
  * Represents geographic coordinates, capable of handling different projections
@@ -151,7 +131,7 @@ export class Coordinates {
    * console.log(coords.json());
    * // { latitude: -6.22383, longitude: 106.82293, proj: 'EPSG:4326' }
    */
-  json(): CoordinatesJsonDefinition {
+  json(): CoordinatesJSON {
     return {
       latitude: this.latitude,
       longitude: this.longitude,

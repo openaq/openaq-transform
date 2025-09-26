@@ -1,20 +1,13 @@
 import debug from 'debug';
 const log = debug('sensor: v2');
 
-import { Flag, FlagDefinition } from './flag';
-import { Metric, ParameterUnitDefinition } from './metric';
+import { Flag } from './flag';
+import { Metric } from './metric';
 import { stripNulls } from './utils';
+import type { FlagData, IndexedFlags } from '../types/flag';
+import type { SensorData } from '../types/sensor';
 
-export interface SensorDefinition {
-  key: string;
-  systemKey: string;
-  metric: Metric | ParameterUnitDefinition;
-  averagingIntervalSeconds: number;
-  loggingIntervalSeconds: number;
-  status: string;
-  versionDate?: string;
-  instance?: string;
-}
+
 
 export class Sensors {
   #sensors: Map<string, Sensor>;
@@ -40,6 +33,7 @@ export class Sensors {
   }
 }
 
+
 export class Sensor {
   key: string;
   systemKey: string;
@@ -49,9 +43,9 @@ export class Sensor {
   status: string;
   versionDate: string | undefined;
   instance: string | undefined;
-  flags: { [key: string]: Flag };
+  flags: IndexedFlags;
 
-  constructor(data: SensorDefinition) {
+  constructor(data: SensorData) {
     log(`Adding new sensor: ${data.key}`);
     this.key = data.key;
     this.systemKey = data.systemKey;
@@ -69,9 +63,9 @@ export class Sensor {
     this.flags = {};
   }
 
-  add(f: FlagDefinition) {
-    f.sensorId = this.key;
-    const flag = new Flag(f);
+  add(data: FlagData) {
+    data.sensorId = this.key;
+    const flag = new Flag(data);
     log(`adding flag (${flag.flagId}) to sensor (${this.key})`);
     this.flags[flag.flagId] = flag;
     return flag;

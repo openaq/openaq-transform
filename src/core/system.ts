@@ -3,13 +3,7 @@ const log = debug('systems: v2');
 
 import { stripNulls } from './utils';
 import { Sensor } from './sensor';
-
-export interface SystemDefinition {
-  key: string;
-  locationKey: string;
-  manufacturerName?: string;
-  modelName?: string;
-}
+import type { SystemData } from '../types/system';
 
 export class Systems {
   #systems: Map<string, System>;
@@ -35,7 +29,7 @@ export class System {
   metadata: { [key: string]: any };
   #sensors: Map<string, Sensor>;
 
-  constructor(data: SystemDefinition) {
+  constructor(data: SystemData) {
     this.key = data.key;
     this.locationKey = data.locationKey;
     this.manufacturerName = data.manufacturerName ?? 'default';

@@ -1,17 +1,6 @@
 import { Duration, DateTime } from 'luxon';
 import { formatValueForLog } from './utils';
-
-interface DatetimeOptionsDefinition {
-  format?: string;
-  timezone?: string;
-  locationTimezone?: string;
-}
-
-interface TimeOffsetDefinition {
-  minutes?: number;
-  days?: number;
-  hours?: number;
-}
+import { isTimeOffset, type DatetimeOptions, type TimeOffset } from '../types/datetime';
 
 /**
  * A wrapper class for Luxon's `DateTime` that provides simplified
@@ -69,7 +58,7 @@ export class Datetime {
    */
   constructor(
     input: string | number | Date | DateTime,
-    options?: DatetimeOptionsDefinition
+    options?: DatetimeOptions
   ) {
     if (
       (options?.format?.includes('Z') ||
@@ -249,7 +238,7 @@ export class Datetime {
    * @returns {Datetime} A new Datetime instance adjusted by the specified offset
    */
   static now(
-    timeOffset: number | Duration | TimeOffsetDefinition = 0
+    timeOffset: number | Duration | TimeOffset = 0
   ): Datetime {
     const now = DateTime.now();
     let dt: DateTime;
@@ -258,8 +247,8 @@ export class Datetime {
       dt = now.minus(Math.abs(timeOffset) * 1000);
     } else if (timeOffset instanceof Duration) {
       dt = now.minus(timeOffset);
-    } else if (typeof timeOffset === 'object') {
-      dt = now.minus(timeOffset as TimeOffsetDefinition);
+    } else if (isTimeOffset(timeOffset)) {
+      dt = now.minus(timeOffset);
     } else {
       dt = now;
     }

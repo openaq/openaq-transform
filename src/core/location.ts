@@ -6,7 +6,7 @@ import { stripNulls } from './utils';
 import { System } from './system';
 import { Sensor } from './sensor';
 import { Coordinates, updateBounds } from './coordinates';
-import type { LocationData } from '../types/location';
+import type { LocationData, LocationJSON } from '../types/location';
 import type { SystemData } from '../types/system';
 
 export class Locations {
@@ -47,7 +47,7 @@ export class Location {
   owner: string | undefined;
   label: string | undefined;
   coordinates: Coordinates;
-  ismobile: boolean | undefined;
+  ismobile: boolean;
   // for setting periods at the location level
   // not required because a provider could have a sensor file
   // and the data could be passed directly to the sensor
@@ -137,7 +137,7 @@ export class Location {
   /**
    * Export method to convert to json
    */
-  json() {
+  json(): LocationJSON {
     return stripNulls({
       key: this.key,
       site_id: this.siteId,

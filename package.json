@@ -40,7 +40,8 @@
   "scripts": {
     "build": "tsdown",
     "watch:build": "tsc --watch",
-    "test": "vitest --typecheck",
+    "test": "vitest run --typecheck",
+    "coverage": "vitest run --typecheck --coverage",
     "oxlint": "oxlint src"
   },
   "devDependencies": {

@@ -5,7 +5,7 @@ import { Flag } from './flag';
 import { Metric } from './metric';
 import { stripNulls } from './utils';
 import type { FlagData, IndexedFlags } from '../types/flag';
-import type { SensorData } from '../types/sensor';
+import type { SensorData, SensorJSON } from '../types/sensor';
 
 
 
@@ -20,12 +20,12 @@ export class Sensors {
     this.#sensors.set(sensor.key, sensor);
   }
 
-  get(sensorId: string): Sensor | undefined {
-    return this.#sensors.get(sensorId);
+  get(key: string): Sensor | undefined {
+    return this.#sensors.get(key);
   }
 
-  has(sensorId: string): boolean {
-    return this.#sensors.has(sensorId);
+  has(key: string): boolean {
+    return this.#sensors.has(key);
   }
 
   length(): number {
@@ -64,14 +64,14 @@ export class Sensor {
   }
 
   add(data: FlagData) {
-    data.sensorId = this.key;
+    data.key = this.key;
     const flag = new Flag(data);
-    log(`adding flag (${flag.flagId}) to sensor (${this.key})`);
-    this.flags[flag.flagId] = flag;
+    log(`adding flag (${flag.key}) to sensor (${this.key})`);
+    this.flags[flag.key] = flag;
     return flag;
   }
 
-  json() {
+  json(): SensorJSON {
     return stripNulls({
       key: this.key,
       version_date: this.versionDate,

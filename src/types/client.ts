@@ -1,7 +1,7 @@
 import type { BBox } from "geojson";
-import { IndexedReaderOptions, ReaderOptions } from "./readers";
-import { IndexedParser } from "./parsers";
-import { ClientParameters } from "./metric";
+import type { IndexedReaderOptions, ReaderOptions } from "./readers";
+import type { IndexedParser } from "./parsers";
+import type { ClientParameters } from "./metric";
 
 interface Meta {
   locationIdKey: string;

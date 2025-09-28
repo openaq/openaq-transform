@@ -7,13 +7,12 @@ export type CsvParseFunction = (
 
 type ExistingData = Record<string, any>;
 
-
 export interface ParserParameters {
-  text: string,
-  data?: ExistingData
+  text: string;
+  data?: ExistingData;
 }
 
-type Parser = (params: ParserParameters ) => object
+type Parser = (params: ParserParameters) => object;
 
 export interface IndexedParser {
   measurements: string;

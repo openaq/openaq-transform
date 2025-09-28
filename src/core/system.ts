@@ -3,7 +3,7 @@ const log = debug('systems: v2');
 
 import { stripNulls } from './utils';
 import { Sensor } from './sensor';
-import type { SystemData } from '../types/system';
+import type { SystemData, SystemJSON } from '../types/system';
 
 export class Systems {
   #systems: Map<string, System>;
@@ -48,7 +48,7 @@ export class System {
     return sensor;
   }
 
-  json() {
+  json(): SystemJSON {
     return stripNulls({
       key: this.key,
       manufacturer_name: this.manufacturerName,

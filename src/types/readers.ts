@@ -1,13 +1,13 @@
 export type ReadAs = 'json' | 'text' | 'blob' | 'response';
 
 export interface TextReaderParameters {
-  text: string
+  text: string;
 }
 
 export interface UrlReaderParameters {
   resource: string;
   readAs?: ReadAs;
-  options: object;
+  options: ReaderOptions;
 }
 
 export interface BlobReaderParameters {
@@ -16,15 +16,18 @@ export interface BlobReaderParameters {
 
 export interface FileSystemReaderParameters {
   path: string;
-  encoding?: 'utf8' | 'utf16le' | 'latin1'; // supported Node encodings
+  encoding?: 'utf8' | 'utf16le' | 'latin1' | 'ascii' | 'base64' | 'hex'; // supported Node encodings
 }
 
+export type ReaderParameters =
+  | UrlReaderParameters
+  | BlobReaderParameters
+  | FileSystemReaderParameters
+  | TextReaderParameters;
+
+
 export type Reader = (
-  params:
-    | UrlReaderParameters
-    | BlobReaderParameters
-    | FileSystemReaderParameters
-    | TextReaderParameters
+  params: ReaderParameters
 ) => Promise<Blob | string | Response>;
 
 export interface ReaderOptions {
@@ -36,16 +39,20 @@ export interface ReaderOptions {
 }
 
 export interface IndexedReaderOptions {
-  measurements?: ReaderOptions
-  locations?: ReaderOptions
-  meta?: ReaderOptions
+  measurements?: ReaderOptions;
+  locations?: ReaderOptions;
+  meta?: ReaderOptions;
 }
 
-export function isIndexedReaderOptions(obj: ReaderOptions | IndexedReaderOptions):
-obj is IndexedReaderOptions {
-  return 'locations' in obj || 'measurements' in obj || 'meta' in obj;
+export function isIndexedReaderOptions(
+  obj: ReaderOptions | IndexedReaderOptions
+): obj is IndexedReaderOptions {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    ('locations' in obj || 'measurements' in obj || 'meta' in obj)
+  );
 }
-
 
 export interface ReaderMethods {
   [key: string]: Reader;

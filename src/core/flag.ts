@@ -1,34 +1,34 @@
-import type { FlagData } from "../types/flag";
+import type { FlagData, FlagJSON } from "../types/flag";
 import { stripNulls } from "./utils";
 
 
 export class Flag {
 
-    flagId: string;
+    key: string;
     datetimeFrom: string;
     datetimeTo: string;
     flagName: string;
     note: string;
 
     constructor(data: FlagData) {
-        this.flagId = data.flagId || Flag.id(data);
+        this.key = data.key || this.#key(data)
         this.datetimeFrom = data.starts;
         this.datetimeTo = data.ends;
         this.flagName = data.flag;
         this.note = data.note;
     }
 
-    static id(data: FlagData): string {
+    #key(data: FlagData): string {
         const starts = data.starts || 'infinity';
-        return `${data.sensorId}-${data.flag}::${starts}`;
+        return `${data.sensorKey}-${data.flag}::${starts}`;
     }
 
     /**
      * Export method to convert to json
      */
-    json() {
+    json(): FlagJSON {
         return stripNulls({
-            flag_id: this.flagId,
+            key: this.key,
             datetime_from: this.datetimeFrom,
             datetime_to: this.datetimeTo,
             flag_name: this.flagName,

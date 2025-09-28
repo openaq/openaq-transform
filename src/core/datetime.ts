@@ -232,8 +232,7 @@ export class Datetime {
    * Creates a new Datetime instance representing the current date and time,
    * optionally adjusted by a specified offset into the past.
    *
-   * @static
-   * @param {number | Duration | TimeOffset} [offset=0] - The amount to subtract from the current time.
+   * @param {number | Duration | TimeOffset} [timeOffset=0] - The amount to subtract from the current time.
    *
    * @returns {Datetime} A new Datetime instance adjusted by the specified offset
    */

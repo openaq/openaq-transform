@@ -1,6 +1,7 @@
 /**
- * Interface representing a JSON definition for geographic coordinates,
- * specifically in 'EPSG:4326' (WGS84) projection.
+ * JSON serialization format for Coordinates objects.
+ * Represents the structure returned by the Coordinates.json() method.
+ * 
  */
 export interface CoordinatesJSON {
     /**

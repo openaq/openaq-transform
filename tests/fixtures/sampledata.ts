@@ -78,6 +78,15 @@ export const expectedOutput = {
           model_name: "default",
           sensors: [
             {
+              key: "testing-ts1-pm25:mass",
+              status: "asdf",
+              parameter: "pm25:mass",
+              units: "ug/m3",
+              averaging_interval_secs: 3600,
+              logging_interval_secs: 3600,
+              flags: []
+            },
+            {
               key: "testing-ts1-temperature",
               status: "asdf",
               parameter: "temperature",
@@ -104,4 +113,3 @@ export const expectedOutput = {
     }
   ]
 };
-

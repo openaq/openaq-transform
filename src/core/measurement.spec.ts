@@ -7,7 +7,6 @@ import { MissingAttributeError } from './errors';
 test('Measurement to initialize correctly', () => {
   const m = new Measurement({
     sensor: new Sensor({
-      key: 'sensor-key',
       systemKey: 'system-key',
       metric: {
         parameter: 'temperature',
@@ -21,7 +20,7 @@ test('Measurement to initialize correctly', () => {
     value: 4,
   });
   // just track that it worked
-  expect(m.key).toEqual('sensor-key-2025-01-01T00:00:00-05:00');
+  expect(m.key).toEqual('system-key-temperature-2025-01-01T00:00:00-05:00');
 });
 
 test('Measurement without sensorKey throws error', () => {
@@ -33,7 +32,6 @@ test('Measurement without sensorKey throws error', () => {
 test('Measurement without timestamp throws error', () => {
   const m = {
     sensor: new Sensor({
-      key: 'sensor-key',
       systemKey: 'system-key',
       metric: {
         parameter: 'temperature',
@@ -52,7 +50,6 @@ test('Measurement without timestamp throws error', () => {
 test('Measurement with incorrect units gets converted', () => {
   const m = new Measurement({
     sensor: new Sensor({
-      key: 'sensor-key',
       systemKey: 'system-key',
       metric: {
         parameter: 'temperature',

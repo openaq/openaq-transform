@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('locations: v2');
+const log = debug('locations: DEBUG');
 
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
@@ -25,8 +25,10 @@ export class Locations {
     this.#locations.set(location.key, location);
   }
 
-  get(locationId: string): Location | undefined {
-    return this.#locations.get(locationId);
+  get(locationKey: string): Location | undefined {
+    //const key = `${this.provider}-${siteId}`
+    //log('checking for location', key);
+    return this.#locations.get(locationKey);
   }
 
   get length(): number {
@@ -41,7 +43,7 @@ export class Locations {
 }
 
 export class Location {
-  key: string;
+  //key: string;
   siteId: string;
   siteName: string;
   owner: string | undefined;
@@ -58,13 +60,13 @@ export class Location {
   #systems: Map<string, System>;
 
   constructor(data: LocationData) {
-    log(`Adding new location: ${data.key}`);
+    log(`Adding new location: ${data.siteId}`);
     const coordinates = new Coordinates(
       Number(data.x),
       Number(data.y),
       data.projection
     );
-    this.key = data.key;
+    //this.key = data.key;
     this.siteId = data.siteId;
     this.siteName = data.siteName;
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
@@ -74,8 +76,15 @@ export class Location {
     this.coordinates = coordinates;
     this.owner = data.owner;
     this.ismobile = data.ismobile;
+    this.provider = data.provider
 
     this.#systems = new Map<string, System>();
+  }
+
+  get key(): string {
+    // provider + location id
+    log('returning the location key', `${this.provider}-${this.siteId}`)
+    return `${this.provider}-${this.siteId}`;
   }
 
   get systems() {
@@ -83,7 +92,8 @@ export class Location {
   }
 
   addSystem(system: System) {
-    this.#systems.set(system.key, system);
+    const key = system.key;
+    this.#systems.set(key, system);
   }
 
   /**
@@ -96,17 +106,23 @@ export class Location {
     let key;
     if (data instanceof Sensor) {
       key = data.systemKey;
+    } else if (Object.keys(data).includes('key')){
+      key = data.key; // should remove this section once the new key methods are working
     } else {
-      key = data.key;
+      key = [this.key]
+      if (data.manufacturer) key.push(data.manufacturer)
+      if (data.model) key.push(data.model)
+      key = key.join('-')
     }
-    if (!this.#systems.has(data.key)) {
+
+    if (!this.#systems.has(key)) {
       // We are not runing into this anywhere in our tests
       // so we either need to think of a reason to keep it or
       // we should probably remove it
 
       this.addSystem(
         new System({
-          key: key,
+          //key: key,
           locationKey: this.key,
           modelName: 'modelName' in data ? data.modelName : 'default',
           manufacturerName:
@@ -114,8 +130,9 @@ export class Location {
         })
       );
     }
+
     const sys = this.#systems.get(key);
-    if (!sys) throw new TypeError('Could not get system');
+    if (!sys) throw new TypeError(`Could not get system - ${key}`);
 
     return sys;
   }

@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('sensor: v2');
+const log = debug('sensor: DEBUG');
 
 import { Flag } from './flag';
 import { Metric } from './metric';
@@ -35,7 +35,7 @@ export class Sensors {
 
 
 export class Sensor {
-  key: string;
+ // key: string;
   systemKey: string;
   metric: Metric;
   averagingIntervalSeconds: number;
@@ -47,13 +47,14 @@ export class Sensor {
 
   constructor(data: SensorData) {
     log(`Adding new sensor: ${data.key}`);
-    this.key = data.key;
+    //this.key = data.key;
     this.systemKey = data.systemKey;
     if (data.metric instanceof Metric) {
       this.metric = data.metric;
     } else {
       this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
     }
+    this.system =
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
     this.loggingIntervalSeconds =
       data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
@@ -69,6 +70,15 @@ export class Sensor {
     log(`adding flag (${flag.key}) to sensor (${this.key})`);
     this.flags[flag.key] = flag;
     return flag;
+  }
+
+  get key(): string {
+    // provider + location id
+    const key = [this.metric.key]
+    if (this.instance) key.push(this.instance)
+    if (this.versionDate) key.push(this.versionDate)
+    //log('returning the sensor key', this.systemKey)
+    return `${this.systemKey}-${key.join(':')}`;
   }
 
   json(): SensorJSON {

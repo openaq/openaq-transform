@@ -1,4 +1,3 @@
-
 import { PARAMETERS } from './metric'
 
 export const TRANSFORM_ERROR = Symbol('Transform error');

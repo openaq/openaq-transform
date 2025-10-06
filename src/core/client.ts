@@ -10,14 +10,29 @@ import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
 import { System } from './system';
-import {  PARAMETER_DEFAULTS } from './metric';
+import { PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
 import { getReaderOptions } from './readers';
 import debug from 'debug';
-import { ClientConfiguration, ClientParser, ClientReader, DataDefinition, ErrorSummary, IndexedResource, LogEntry, ParseFunction, Resource, Summary } from '../types/client';
+import {
+  ClientConfiguration,
+  ClientParser,
+  ClientReader,
+  DataDefinition,
+  ErrorSummary,
+  IndexedResource,
+  LogEntry,
+  ParseFunction,
+  Resource,
+  Summary,
+} from '../types/client';
 import { ParserMethods } from '../types/parsers';
-import type { IndexedReaderOptions, ReaderMethods, ReaderOptions } from '../types/readers';
+import type {
+  IndexedReaderOptions,
+  ReaderMethods,
+  ReaderOptions,
+} from '../types/readers';
 import { ClientParameters } from '../types/metric';
 
 debug.enable('*');
@@ -25,16 +40,17 @@ debug.enable('*');
 const log1 = debug('client (core): v1');
 const log2 = debug('client (core): v2');
 
-
-
-export abstract class Client {
+export abstract class Client<
+  R extends ReaderMethods = ReaderMethods,
+  P extends ParserMethods = ParserMethods
+> {
   provider!: string;
   resource?: Resource | IndexedResource;
   secrets?: object;
   reader: ClientReader = 'api';
   parser: ClientParser = 'json';
-  abstract readers: ReaderMethods;
-  abstract parsers: ParserMethods;
+  abstract readers: R;
+  abstract parsers: P;
   readerOptions: ReaderOptions | IndexedReaderOptions = {};
   fetched: boolean = false;
   // source: Source;
@@ -91,43 +107,89 @@ export abstract class Client {
   }
 
   configure(params: ClientConfiguration) {
-    params?.resource && (this.resource = params.resource);
-    params?.readerOptions && (this.readerOptions = params.readerOptions);
-    params?.provider && (this.provider = params.provider);
+    if (params?.resource) {
+      this.resource = params.resource;
+    }
+    if (params?.readerOptions) {
+      this.readerOptions = params.readerOptions;
+    }
+    if (params?.provider) {
+      this.provider = params.provider;
+    }
 
-    params?.datetimeFormat && (this.datetimeFormat = params.datetimeFormat);
-    params?.timezone && (this.timezone = params.timezone);
-    params?.longFormat && (this.longFormat = params.longFormat);
+    if (params?.datetimeFormat) {
+      this.datetimeFormat = params.datetimeFormat;
+    }
+    if (params?.timezone) {
+      this.timezone = params.timezone;
+    }
+    if (params?.longFormat) {
+      this.longFormat = params.longFormat;
+    }
 
-    params?.reader && (this.reader = params.reader);
-    params?.parser && (this.parser = params.parser);
+    if (params?.reader) {
+      this.reader = params.reader;
+    }
+    if (params?.parser) {
+      this.parser = params.parser;
+    }
 
     // mapped data variables
-    params?.locationIdKey && (this.locationIdKey = params.locationIdKey);
-    params?.locationLabelKey &&
-      (this.locationLabelKey = params.locationLabelKey);
+    if (params?.locationIdKey) {
+      this.locationIdKey = params.locationIdKey;
+    }
+    if (params?.locationLabelKey) {
+      this.locationLabelKey = params.locationLabelKey;
+    }
     // these are used for long format
-    params?.parameterNameKey &&
-      (this.parameterNameKey = params.parameterNameKey);
-    params?.parameterValueKey &&
-      (this.parameterValueKey = params.parameterValueKey);
-    params?.yGeometryKey && (this.yGeometryKey = params.yGeometryKey);
-    params?.xGeometryKey && (this.xGeometryKey = params.xGeometryKey);
-    params?.geometryProjectionKey &&
-      (this.geometryProjectionKey = params.geometryProjectionKey);
-    params?.manufacturerKey && (this.manufacturerKey = params.manufacturerKey);
-    params?.modelKey && (this.modelKey = params.modelKey);
-    params?.ownerKey && (this.ownerKey = params.ownerKey);
-    params?.datetimeKey && (this.datetimeKey = params.datetimeKey);
-    params?.licenseKey && (this.licenseKey = params.licenseKey);
-    params?.isMobileKey && (this.isMobileKey = params.isMobileKey);
-    params?.loggingIntervalKey &&
-      (this.loggingIntervalKey = params.loggingIntervalKey);
-    params?.averagingIntervalKey &&
-      (this.averagingIntervalKey = params.averagingIntervalKey);
-    params?.sensorStatusKey && (this.sensorStatusKey = params.sensorStatusKey);
-    params?.parameters && (this.parameters = params.parameters);
-    params?.secrets && (this.secrets = params.secrets);
+    if (params?.parameterNameKey) {
+      this.parameterNameKey = params.parameterNameKey;
+    }
+    if (params?.parameterValueKey) {
+      this.parameterValueKey = params.parameterValueKey;
+    }
+    if (params?.yGeometryKey) {
+      this.yGeometryKey = params.yGeometryKey;
+    }
+    if (params?.xGeometryKey) {
+      this.xGeometryKey = params.xGeometryKey;
+    }
+    if (params?.geometryProjectionKey) {
+      this.geometryProjectionKey = params.geometryProjectionKey;
+    }
+    if (params?.manufacturerKey) {
+      this.manufacturerKey = params.manufacturerKey;
+    }
+    if (params?.modelKey) {
+      this.modelKey = params.modelKey;
+    }
+    if (params?.ownerKey) {
+      this.ownerKey = params.ownerKey;
+    }
+    if (params?.datetimeKey) {
+      this.datetimeKey = params.datetimeKey;
+    }
+    if (params?.licenseKey) {
+      this.licenseKey = params.licenseKey;
+    }
+    if (params?.isMobileKey) {
+      this.isMobileKey = params.isMobileKey;
+    }
+    if (params?.loggingIntervalKey) {
+      this.loggingIntervalKey = params.loggingIntervalKey;
+    }
+    if (params?.averagingIntervalKey) {
+      this.averagingIntervalKey = params.averagingIntervalKey;
+    }
+    if (params?.sensorStatusKey) {
+      this.sensorStatusKey = params.sensorStatusKey;
+    }
+    if (params?.parameters) {
+      this.parameters = params.parameters;
+    }
+    if (params?.secrets) {
+      this.secrets = params.secrets;
+    }
 
     // if we were able to pass more values in params we
     // could include the params in the postConfigure args

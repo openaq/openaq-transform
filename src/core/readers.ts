@@ -3,9 +3,9 @@ import { isIndexedReaderOptions, UrlReaderParameters, type IndexedReaderOptions,
 const log = debug('readers: v2')
 
 
-export function getReaderOptions(
+export function getReaderOptions<K extends keyof IndexedReaderOptions>(
   options: ReaderOptions | IndexedReaderOptions,
-  key: 'locations' | 'measurements' | 'meta'
+  key: K
 ): ReaderOptions {
   if (isIndexedReaderOptions(options)) {
     return options[key] ?? {};
@@ -58,6 +58,6 @@ export const apiReader = async ({
   }
 };
 
-export const textReader = ({text}: TextReaderParameters) : Promise<string> => {
+export const textReader = async ({text}: TextReaderParameters) : Promise<string> => {
   return Promise.resolve(text);
 }

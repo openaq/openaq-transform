@@ -1,6 +1,6 @@
 import debug from 'debug';
 import { isIndexedReaderOptions, UrlReaderParameters, type IndexedReaderOptions, type ReadAs, type ReaderOptions, type TextReaderParameters } from '../types/readers';
-const log = debug('readers: v2')
+const log = debug('openaq-transform readers: DEBUG')
 
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
@@ -40,7 +40,7 @@ export const apiReader = async ({
   if (!readAs) {
     // check headers to get return method, splits at semicolon to handle charset
     // e.g. application/json; charset=utf-8
-    const ctype = res.headers.get('Content-Type')?.split(';')[0]; 
+    const ctype = res.headers.get('Content-Type')?.split(';')[0];
     // fall back to json if type is not mapped
     readAs = contentTypeMap.get(ctype || '') ?? 'json';
   }

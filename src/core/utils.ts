@@ -1,7 +1,7 @@
 import debug from 'debug';
 import type { ParserMethods, IndexedParser } from '../types/parsers';
 import type { ReaderMethods } from '../types/readers';
-const log = debug('utils: v2')
+const log = debug('openaq-transform utils: DEBUG')
 
 export const stripNulls = <T extends object>(
   obj: T

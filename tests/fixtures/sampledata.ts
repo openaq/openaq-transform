@@ -16,6 +16,11 @@ export const widedata = {
       datetime: "2024-01-01T00:00:00-08:00",
       particulate_matter_25: 10,
       tempf: 80
+    },
+    {
+      station: "ts1",
+      datetime: "2024-01-01T01:00:00-08:00",
+      tempf: 80
     }
   ]
 }
@@ -49,8 +54,8 @@ export const measurementErrors = {
 
 export const csvdata = {
     locations: "station,site_name,latitude,longitude,averaging\n\"ts1\",\"test site #1\",45.56665, -123.12121, 3600",
-    measurements: "station,datetime,particulate_matter_25,tempf\n\"ts1\",\"2024-01-01T00:00:00-08:00\",10,80",
-    all: "station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,tempf\n\"ts1\",\"test site #1\",45.56665,-123.12121,3600,\"2024-01-01T00:00:00-08:00\",10,80"
+    measurements: "station,datetime,particulate_matter_25,tempf\n\"ts1\",\"2024-01-01T00:00:00-08:00\",10,80\n\"ts1\",\"2024-01-01T01:00:00-08:00\",,80",
+    all: "station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,tempf\n\"ts1\",\"test site #1\",45.56665,-123.12121,3600,\"2024-01-01T00:00:00-08:00\",10,80\n\"ts1\",\"test site #1\",45.56665,-123.12121,3600,\"2024-01-01T01:00:00-08:00\",,80"
 }
 
 
@@ -109,6 +114,11 @@ export const expectedOutput = {
     {
       key: "testing-ts1-temperature",
       timestamp: "2024-01-01T00:00:00-08:00",
+      value: tempf
+    },
+    {
+      key: "testing-ts1-temperature",
+      timestamp: "2024-01-01T01:00:00-08:00",
       value: tempf
     }
   ]

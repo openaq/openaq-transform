@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('locations: DEBUG');
+const log = debug('openaq-transform locations: DEBUG');
 
 import { BBox } from 'geojson';
 import { stripNulls } from './utils';
@@ -81,10 +81,18 @@ export class Location {
     this.#systems = new Map<string, System>();
   }
 
+  static createKey(data: LocationData): string {
+    const provider = data.provider;
+    const siteId = data.siteId;
+    if (!(provider && siteId)) {
+      throw new Error(`Both a provider and siteId value are required to build a location key: You provided ${provider} & ${siteId}`);
+    }
+    return `${provider}-${siteId}`
+  }
+
   get key(): string {
     // provider + location id
-    log('returning the location key', `${this.provider}-${this.siteId}`)
-    return `${this.provider}-${this.siteId}`;
+    return Location.createKey({ provider: this.provider, siteId: this.siteId });
   }
 
   get systems() {

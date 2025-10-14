@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('systems: v2');
+const log = debug('openaq-transform systems: DEBUG');
 
 import { stripNulls } from './utils';
 import { Sensor } from './sensor';

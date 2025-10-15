@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('sensor: v2');
+const log = debug('openaq-transform sensor: DEBUG');
 
 import { Flag } from './flag';
 import { Metric } from './metric';
@@ -35,7 +35,7 @@ export class Sensors {
 
 
 export class Sensor {
-  key: string;
+ // key: string;
   systemKey: string;
   metric: Metric;
   averagingIntervalSeconds: number;
@@ -46,14 +46,15 @@ export class Sensor {
   flags: IndexedFlags;
 
   constructor(data: SensorData) {
-    log(`Adding new sensor: ${data.key}`);
-    this.key = data.key;
+    log(`Adding new sensor`, data?.metric?.key);
+    //this.key = data.key;
     this.systemKey = data.systemKey;
     if (data.metric instanceof Metric) {
       this.metric = data.metric;
     } else {
       this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
     }
+    //this.system =
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
     this.loggingIntervalSeconds =
       data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
@@ -63,12 +64,35 @@ export class Sensor {
     this.flags = {};
   }
 
+  static createKey(data: SensorData): string {
+    let { metric, instance, versionDate, systemKey } = data;
+
+    const key = [metric.key]
+    if (!systemKey) {
+      throw new Error('System key is required to create a new sensor key')
+    }
+    if (instance) key.push(instance)
+    if (versionDate) key.push(versionDate)
+    //log('returning the sensor key', systemKey)
+    return `${systemKey}-${key.join(':')}`;
+
+  }
+
   add(data: FlagData) {
     data.key = this.key;
     const flag = new Flag(data);
     log(`adding flag (${flag.key}) to sensor (${this.key})`);
     this.flags[flag.key] = flag;
     return flag;
+  }
+
+  get key(): string {
+    // provider + location id
+    const key = [this.metric.key]
+    if (this.instance) key.push(this.instance)
+    if (this.versionDate) key.push(this.versionDate)
+    //log('returning the sensor key', this.systemKey)
+    return `${this.systemKey}-${key.join(':')}`;
   }
 
   json(): SensorJSON {

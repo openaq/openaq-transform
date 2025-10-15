@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('systems: v2');
+const log = debug('openaq-transform systems: DEBUG');
 
 import { stripNulls } from './utils';
 import { Sensor } from './sensor';
@@ -22,7 +22,6 @@ export class Systems {
 }
 
 export class System {
-  key: string;
   locationKey: string;
   manufacturerName: string;
   modelName: string;
@@ -30,7 +29,6 @@ export class System {
   #sensors: Map<string, Sensor>;
 
   constructor(data: SystemData) {
-    this.key = data.key;
     this.locationKey = data.locationKey;
     this.manufacturerName = data.manufacturerName ?? 'default';
     this.modelName = data.modelName ?? 'default';
@@ -40,6 +38,13 @@ export class System {
 
   get sensors() {
     return this.#sensors;
+  }
+
+  get key(): string {
+    const key = [this.locationKey]
+    if (this.manufacturerName != 'default') key.push(this.manufacturerName)
+    if (this.modelName != 'default') key.push(this.modelName)
+    return key.join('-');
   }
 
   add(sensor: Sensor): Sensor {

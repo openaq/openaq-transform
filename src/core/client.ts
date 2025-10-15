@@ -35,10 +35,7 @@ import type {
 } from '../types/readers';
 import { ClientParameters } from '../types/metric';
 
-debug.enable('*');
-
-const log1 = debug('client (core): v1');
-const log2 = debug('client (core): v2');
+const log = debug('openaq-transform client (core): DEBUG');
 
 export abstract class Client<
   R extends ReaderMethods = ReaderMethods,
@@ -199,7 +196,7 @@ export abstract class Client<
   postConfigure() {
     // this is an opportunity for the developer to do some customizing
     // this is where you would update any properties based on secrets or other values
-    log2('No post configuration provided');
+    log('No post configuration provided');
   }
 
   get measurements() {
@@ -207,101 +204,6 @@ export abstract class Client<
       this.#measurements = new Measurements(this.parameters);
     }
     return this.#measurements;
-  }
-
-  /**
-   * Provide a location based key
-   */
-  getLocationKey(data: DataDefinition): string {
-    const locationKey =
-      typeof this.locationIdKey === 'function'
-        ? this.locationIdKey(data)
-        : data[this.locationIdKey];
-    return `${this.provider}-${locationKey}`;
-  }
-
-  /**
-   * Provide a system based ingest id
-   */
-  getSystemKey(row: any): string {
-    const manufacturer = cleanKey(getValueFromKey(row, this.manufacturerKey));
-    const model = cleanKey(getValueFromKey(row, this.modelKey));
-    const locationKey = this.getLocationKey(row);
-    let key = '';
-    if (manufacturer && model) {
-      key = `-${manufacturer}:${model}`;
-    } else if (!manufacturer && !model) {
-      // key = 'default';
-    } else {
-      key = `-${manufacturer || model}`;
-    }
-    return `${locationKey}${key}`;
-  }
-
-  /**
-   * Provide a sensor based ingest id
-   *
-   * @param {object} row - data for building key
-   * @returns {string} - sensor id key
-   */
-  getSensorKey(row: any): string {
-    const locationKey = this.getLocationKey(row);
-    const measurand = row.metric;
-    const version = cleanKey(row.version_date);
-    const instance = cleanKey(row.instance);
-    if (!measurand) {
-      throw new Error(`Could not find measurand for ${row}`);
-    }
-    const key = [measurand.key];
-    if (instance) key.push(instance);
-    if (version) key.push(version);
-    return `${locationKey}-${key.join(':')}`;
-  }
-
-  /**
-   * Get location by key
-   *
-   * @param {(string|object)} key - key or data to build location
-   * @returns {object} - location object
-   */
-  getLocation(key: DataDefinition | string) {
-    let location: Location | undefined;
-    let data = {};
-    if (typeof key === 'object') {
-      data = { ...key };
-      key = this.getLocationKey(data);
-    }
-    location = this.#locations.get(key);
-    if (!location) {
-      location = this.addLocation({ key, ...data });
-    }
-
-    return location;
-  }
-
-  // getSecret() {
-
-  // }
-
-  /**
-   * Get sensor by key or by data needed to build a key
-   *
-   * @param {(string|object)} key - key or data to build sensor
-   * @returns {object} - sensor object
-   */
-  getSensor(key: string | object): Sensor | undefined {
-    let sensor: Sensor | undefined;
-    let data = {};
-    if (typeof key === 'object') {
-      data = { ...key };
-      key = this.getSensorKey(data);
-    }
-    if (this.#sensors.has(key)) {
-      sensor = this.#sensors.get(key);
-    } else {
-      sensor = this.addSensor(data);
-    }
-    return sensor;
   }
 
   /**
@@ -331,7 +233,7 @@ export abstract class Client<
    *
    */
   async loadResources() {
-    log1(`Loading resources`);
+    log(`Loading resources`);
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
@@ -344,7 +246,7 @@ export abstract class Client<
       let data: DataDefinition = {};
 
       for (const [key, resource] of Object.entries(this.resource)) {
-        log2(`Loading ${key} using ${resource}`);
+        log(`Loading ${key} using ${resource}`);
 
         const reader = getMethod(
           key as keyof IndexedResource,
@@ -383,11 +285,6 @@ export abstract class Client<
           data = d;
         }
 
-        // check to make sure the parser did something
-        // need a better check here
-        //if (typeof d !== 'object')
-        //  throw new Error('Parser did not return an object');
-        //data[key] = d;
       }
       return data;
     } else {
@@ -479,7 +376,7 @@ export abstract class Client<
   }
 
   process(data: DataDefinition) {
-    log2(`Processing data`, Object.keys(data), Array.isArray(data));
+    log(`Processing data`, Object.keys(data), Array.isArray(data));
     if (!data) {
       throw new Error('No data was returned from file');
     }
@@ -514,15 +411,18 @@ export abstract class Client<
   /**
    * Add a location to our list
    */
-  addLocation(data: DataDefinition) {
-    const key = this.getLocationKey(data);
-    const location = this.#locations.get(key);
+  getLocation(data: DataDefinition) {
+    const siteId = getValueFromKey(data, this.locationIdKey);
+    // BUILDING KEY
+    const key = Location.createKey({ provider: this.provider, siteId });
+    let location: Location | undefined = this.#locations.get(key);
 
     if (!location) {
       // process data through the location map
-      const l = new Location({
+      location = new Location({
         ...data, // if sommething like key is in here we want the key to override it
-        key: key,
+        //key: key,
+        provider: this.provider,
         siteId: getValueFromKey(data, this.locationIdKey),
         siteName: getValueFromKey(data, this.locationLabelKey),
         ismobile: getValueFromKey(data, this.isMobileKey),
@@ -544,8 +444,7 @@ export abstract class Client<
         owner: getValueFromKey(data, this.ownerKey),
         label: getValueFromKey(data, this.locationLabelKey),
       });
-      this.#locations.add(l);
-      return l;
+      this.#locations.add(location);
     }
     return location;
   }
@@ -554,10 +453,10 @@ export abstract class Client<
    * Process a list of locations
    */
   processLocationsData(locations: DataDefinition[]) {
-    log2(`Processing ${locations.length} locations`);
+    log(`Processing ${locations.length} locations`);
     for (const location of locations) {
       try {
-        this.addLocation(location);
+        this.getLocation(location);
       } catch (e: unknown) {
         if (e instanceof Error) {
           console.warn(`Error adding location: ${e.message}`);
@@ -572,21 +471,22 @@ export abstract class Client<
    * @param {array} sensors - list of sensor data
    */
   processSensorsData(sensors: DataDefinition[]) {
-    log2(`Processing ${sensors.length} sensors`);
+    log(`Processing ${sensors.length} sensors`);
     for (const sensor of sensors) {
-      this.addSensor(sensor);
+      this.getSensor(sensor);
     }
   }
 
-  private addSensor(data: DataDefinition): Sensor {
+  private getSensor(data: DataDefinition): Sensor {
     if (!data.metric) {
       let metricName = getValueFromKey(data, this.parameterNameKey);
       data.metric = this.measurements.metricFromProviderKey(metricName);
     }
 
-    const sensorKey = this.getSensorKey(data);
-    const systemKey = this.getSystemKey(data);
+    // get or add then get the location
+    let sensor: Sensor | undefined;
     const location = this.getLocation(data);
+
     // check for averaging data but fall back to the location values
     const averagingIntervalSeconds =
       getValueFromKey(data, this.averagingIntervalKey, true) ??
@@ -597,18 +497,41 @@ export abstract class Client<
     const status =
       getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
     // maintain a way to get the sensor back without traversing everything
-    const sensor = new Sensor({
-      key: sensorKey,
-      systemKey,
+
+    const manufacturer = cleanKey(getValueFromKey(data, this.manufacturerKey));
+    const model = cleanKey(getValueFromKey(data, this.modelKey));
+    const versionDate = cleanKey(data.version_date);
+    const instance = cleanKey(data.instance);
+
+
+    // now use the location to get or add system
+    const system = location.getSystem({ manufacturer, model });
+
+    // check if the sensor exists
+    const key = Sensor.createKey({
+      systemKey: system.key,
       metric: data.metric,
-      averagingIntervalSeconds,
-      loggingIntervalSeconds,
-      //versionDate,
-      //instance,
-      status,
-    });
-    location.add(sensor);
-    this.#sensors.add(sensor);
+      versionDate,
+      instance,
+    })
+
+
+    if (this.#sensors.has(key)) {
+      sensor = this.#sensors.get(key);
+    } else {
+      sensor =  new Sensor({
+        systemKey: system.key,
+        metric: data.metric,
+        averagingIntervalSeconds,
+        loggingIntervalSeconds,
+        versionDate,
+        instance,
+        status,
+      });
+      location.add(sensor);
+      this.#sensors.add(sensor);
+    }
+
     return sensor;
   }
 
@@ -618,7 +541,7 @@ export abstract class Client<
    * @param {array} measurements - list of measurement data
    */
   processMeasurementsData(measurements: any) {
-    console.debug(`Processing ${measurements.length} measurement(s)`);
+    log(`Processing ${measurements.length} measurement(s)`);
     // if we provided a parameter column key we use that
     // otherwise we use the list of parameters
     // the end goal is just an array of parameter names to loop through
@@ -626,16 +549,16 @@ export abstract class Client<
       ? [getValueFromKey(null, this.parameterNameKey)]
       : this.measurements.parameterKeys();
 
-    measurements.forEach((meas: any) => {
+    measurements.forEach((measurementRow: any) => {
       try {
-        const datetime = this.getDatetime(meas);
+        const datetime = this.getDatetime(measurementRow);
 
         params.map((p) => {
           let metric, value, metricName, valueName;
 
           if (this.longFormat) {
             // for long format data we will need to extract the parameter name from the field
-            metricName = getValueFromKey(meas, p);
+            metricName = getValueFromKey(measurementRow, p);
             valueName = this.parameterValueKey;
           } else {
             // for wide format they are both the same value
@@ -643,21 +566,26 @@ export abstract class Client<
             valueName = p;
           }
 
-          value = getValueFromKey(meas, valueName);
+          value = getValueFromKey(measurementRow, valueName);
 
-          if (value !== undefined) {
+          // for wide format data we will not assume that null is a real measurement
+          // but for long format data we will assume it is valid
+          if (value !== undefined && (value || this.longFormat)) {
+
             metric = this.measurements.metricFromProviderKey(metricName);
 
             if (!metric) {
               this.errorHandler(new UnsupportedParameterError(metricName));
               return;
             }
-            // get the approprate sensor, or create it
-            const sensor = this.getSensor({ ...meas, metric });
+
+            // get the approprate sensor from or reference list,
+            // or create it, which in turn with create the location and system
+            const sensor = this.getSensor({ ...measurementRow, metric });
 
             if (!sensor) {
               this.errorHandler(
-                new MissingAttributeError('sensor', { ...meas, metric })
+                new MissingAttributeError('sensor', { ...measurementRow, metric })
               );
               return;
             }
@@ -685,12 +613,12 @@ export abstract class Client<
    * @returns {*} -
    */
   processFlagsData(flags: Array<any>) {
-    console.debug(`Processing ${flags.length} flags`);
+    log(`Processing ${flags.length} flags`);
     flags.map((d: any) => {
       try {
+        const metric = getValueFromKey(d, this.parameterNameKey);
         const sensor = this.getSensor({
-          location: getValueFromKey(d, this.locationIdKey),
-          metric: getValueFromKey(d, this.parameterNameKey),
+          metric,
           ...d,
         });
 

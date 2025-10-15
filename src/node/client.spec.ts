@@ -4,6 +4,9 @@ import { setupServer } from 'msw/node';
 import { widedata, expectedOutput, measurementErrors }  from '../../tests/fixtures/sampledata.ts';
 import { NodeClient as Client } from './client.ts'
 
+import debug from 'debug';
+
+debug.enable('openaq*');
 
 // mock server
 const handlers = [
@@ -20,7 +23,8 @@ const handlers = [
   }),
   http.get("https://blah.org/test-provider/measurements", async () => {
     return HttpResponse.json([
-        { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 }
+        { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', particulate_matter_25: 10, tempf: 80 },
+        { station: 'ts1', datetime: '2024-01-01T01:00:00-08:00', tempf: 80 }
     ]);
   }),
   http.get("https://blah.org/long", async () => {
@@ -29,6 +33,7 @@ const handlers = [
       measurements: [
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', parameter: 'particulate_matter_25', value: 10 },
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', parameter: 'tempf', value: 80 },
+        { station: 'ts1', datetime: '2024-01-01T01:00:00-08:00', parameter: 'tempf', value: 80 },
       ]
     });
   }),
@@ -42,6 +47,7 @@ const handlers = [
       measurements: [
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', parameter: 'particulate_matter_25', value: 10 },
         { station: 'ts1', datetime: '2024-01-01T00:00:00-08:00', parameter: 'tempf', value: 80 },
+        { station: 'ts1', datetime: '2024-01-01T01:00:00-08:00', parameter: 'tempf', value: 80 },
       ]
     });
   }),
@@ -309,8 +315,14 @@ describe('Client with measurement errors', () => {
           value: 80
         },
         {
+          station: 'ts1',
+          datetime: '2024-01-01T01:00:00-08:00',
+          parameter: 'tempf',
+          value: 80
+        },
+        {
           station: "ts1",
-          datetime: "2024-01-01T01:00:00-08:00",
+          datetime: "2024-01-02T01:00:00-08:00",
           parameter: 'tempf',
           value: null, // missing value
         },
@@ -349,7 +361,7 @@ describe('Client with measurement errors', () => {
      ...expectedOutput.measurements,
       {
         key: "testing-ts1-temperature",
-        timestamp: "2024-01-01T01:00:00-08:00",
+        timestamp: "2024-01-02T01:00:00-08:00",
         value: null, // missing value
       },
       {
@@ -406,7 +418,10 @@ describe('Client with measurement errors', () => {
     const data = cln.data();
     const errors = cln.log.get('UnsupportedParameterError')
     // currently we are adding
-    expect(data.measurements.length).toBe(6)
+    //console.dir(data.measurements, { depth: null })
+    //console.dir(expected.measurements, { depth: null })
+    //console.dir(expected, { depth: null })
+    expect(data.measurements.length).toBe(7)
     expect(errors!.length).toBe(1)
     expect(data).toStrictEqual(expected);
   })

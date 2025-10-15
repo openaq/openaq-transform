@@ -1,6 +1,6 @@
 import debug from 'debug';
 import type { CsvParseFunction, ParserParameters } from '../types/parsers';
-const log = debug('parsers: v2');
+const log = debug('openaq-transform parsers: DEBUG');
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
   const csv = async ({ text }: ParserParameters) => {

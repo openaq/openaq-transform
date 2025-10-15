@@ -1,5 +1,5 @@
 import debug from 'debug';
-const log = debug('measurements: v2');
+const log = debug('openaq-transform measurements: DEBUG');
 
 import { Datetime } from './datetime';
 import { Sensor } from './sensor';

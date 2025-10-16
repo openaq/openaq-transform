@@ -12,19 +12,8 @@ export type ReadAs = 'json' | 'text' | 'blob' | 'response';
  * Parameters for reading from a plain text string source.
  */
 export interface TextReaderParameters {
-  /** Discriminator for text reader type */
-  type: 'text';
   /** The text content to read */
   text: string;
-}
-
-/**
- * Type guard to check if parameters are for a text reader.
- * @param params - The reader parameters to check
- * @returns True if params is TextReaderParameters
- */
-export function isTextReaderParameters(params: ReaderParameters): params is TextReaderParameters {
-  return 'type' in params && params.type === 'text';
 }
 
 /**
@@ -35,23 +24,12 @@ export function isTextReaderParameters(params: ReaderParameters): params is Text
  * If readAs is not specified, the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
-  /** Discriminator for URL reader type */
-  type: 'url';
   /** The URL to fetch data from */
   resource: string;
   /** How to parse the response data. If omitted, auto-detected from Content-Type header */
   readAs?: ReadAs;
   /** HTTP request options for the fetch */
   options: UrlReaderOptions;
-}
-
-/**
- * Type guard to check if parameters are for a URL reader.
- * @param params - The reader parameters to check
- * @returns True if params is UrlReaderParameters
- */
-export function isUrlReaderParameters(params: ReaderParameters): params is UrlReaderParameters {
-  return 'type' in params && params.type === 'url';
 }
 
 /**
@@ -68,36 +46,16 @@ export interface BlobReaderParameters {
 }
 
 /**
- * Type guard to check if parameters are for a blob reader.
- * @param params - The reader parameters to check
- * @returns True if params is BlobReaderParameters
- */
-export function isBlobReaderParameters(params: ReaderParameters): params is BlobReaderParameters {
-  return 'type' in params && params.type === 'blob';
-}
-
-/**
  * Parameters for reading from the file system.
  * @remarks
  * Used in Node.js environments for reading files from disk.
  * Not used in browser-based implementations.
  */
 export interface FileSystemReaderParameters {
-  /** Discriminator for filesystem reader type */
-  type: 'filesystem';
   /** The file path from which to read */
   path: string;
   /** Optional character encoding for reading the file */
   encoding?: BufferEncoding;
-}
-
-/**
- * Type guard to check if parameters are for a filesystem reader.
- * @param params - The reader parameters to check
- * @returns True if params is FileSystemReaderParameters
- */
-export function isFileSystemReaderParameters(params: ReaderParameters): params is FileSystemReaderParameters {
-  return 'type' in params && params.type === 'filesystem';
 }
 
 /**

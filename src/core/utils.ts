@@ -14,10 +14,6 @@ export const stripNulls = <T extends object>(
   );
 };
 
-export const truthy = (value: any): boolean => {
-  return [1, true, 'TRUE', 'T', 'True', 't', 'true'].includes(value);
-};
-
 
 export const getValueFromKey = (data: any, key: Function | string, asNumber: boolean = false) => {
   let value = null
@@ -43,10 +39,6 @@ export const cleanKey = (value: string): string => {
         .replace(/[^\w]/g, '')
         .toLowerCase()
   );
-};
-
-export const stripWhitespace = (value: string): string => {
-  return value.replace(/^[ ]+|[ ]+$/, '');
 };
 
 /**

@@ -1,4 +1,7 @@
 // @vitest-environment happy-dom
+import { DateTime, Settings } from 'luxon';
+const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
+Settings.now = () => expectedNow.toMillis();
 
 import { expect, test, describe } from 'vitest';
 import { BrowserClient as Client } from './client.ts';

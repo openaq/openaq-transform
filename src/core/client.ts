@@ -9,7 +9,6 @@ import {
 import { Measurement, Measurements } from './measurement';
 import { Location, Locations } from './location';
 import { Sensor, Sensors } from './sensor';
-import { System } from './system';
 import { PARAMETER_DEFAULTS } from './metric';
 import { Datetime } from './datetime';
 import { MissingAttributeError, UnsupportedParameterError } from './errors';
@@ -26,7 +25,9 @@ import {
   ParseFunction,
   Resource,
   Summary,
+  IngestMatchingMethod,
 } from '../types/client';
+import { SystemData } from '../types/system';
 import { ParserMethods } from '../types/parsers';
 import type {
   IndexedReaderOptions,
@@ -72,6 +73,7 @@ export abstract class Client<
   loggingIntervalKey: string | ParseFunction = 'logging_interval_seconds';
   averagingIntervalKey: string | ParseFunction = 'averaging_interval_seconds';
   sensorStatusKey: string | ParseFunction = 'status';
+  ingestMatchingMethod: IngestMatchingMethod = 'ingest-id'
 
   datasources: object = {};
   missingDatasources: string[] = [];
@@ -82,6 +84,8 @@ export abstract class Client<
   // transforming could be later
   parameters: ClientParameters = PARAMETER_DEFAULTS;
 
+  #startedOn?: Datetime
+  #finishedOn?: Datetime
   #measurements?: Measurements;
   #locations: Locations;
   #sensors: Sensors;
@@ -93,7 +97,6 @@ export abstract class Client<
     // update with config if the config was passed in
     // this will still behave oddly in our abstract/extend framework
     if (params) this.configure(params);
-
     // this should convert the clients set of expected parameter to something we can use
     // and include our transform methods
     //this._measurands = new Measurands(this.parameters)
@@ -180,6 +183,9 @@ export abstract class Client<
     }
     if (params?.sensorStatusKey) {
       this.sensorStatusKey = params.sensorStatusKey;
+    }
+    if (params?.ingestMatchingMethod) {
+      this.ingestMatchingMethod = params.ingestMatchingMethod;
     }
     if (params?.parameters) {
       this.parameters = params.parameters;
@@ -370,12 +376,17 @@ export abstract class Client<
    * @param {(string|file|object)} file - file path, object or file
    */
   async load() {
+    log(`Starting the load process`)
+    // start the fetch clock
+    this.#startedOn = Datetime.now()
     const data = await this.loadResources();
     this.process(data);
+    log(`Finished load + process`)
+    this.#finishedOn = Datetime.now()
     return this.data();
   }
 
-  process(data: DataDefinition) {
+  private process(data: DataDefinition) {
     log(`Processing data`, Object.keys(data), Array.isArray(data));
     if (!data) {
       throw new Error('No data was returned from file');
@@ -498,14 +509,14 @@ export abstract class Client<
       getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
     // maintain a way to get the sensor back without traversing everything
 
-    const manufacturer = cleanKey(getValueFromKey(data, this.manufacturerKey));
-    const model = cleanKey(getValueFromKey(data, this.modelKey));
+    const manufacturerName = cleanKey(getValueFromKey(data, this.manufacturerKey));
+    const modelName = cleanKey(getValueFromKey(data, this.modelKey));
     const versionDate = cleanKey(data.version_date);
     const instance = cleanKey(data.instance);
 
 
     // now use the location to get or add system
-    const system = location.getSystem({ manufacturer, model });
+    const system = location.getSystem({ manufacturerName, modelName } as SystemData);
 
     // check if the sensor exists
     const key = Sensor.createKey({
@@ -530,6 +541,10 @@ export abstract class Client<
       });
       location.add(sensor);
       this.#sensors.add(sensor);
+    }
+
+    if (!sensor) {
+      throw new Error(`Could not find or create sensor`)
     }
 
     return sensor;
@@ -634,23 +649,6 @@ export abstract class Client<
   }
 
   /**
-   * Method to dump data to format that we can ingest
-   *
-   * @returns {object} - data object formated for ingestion
-   */
-  data() {
-    return {
-      meta: {
-        schema: 'v0.1',
-        source: this.provider,
-        matching_method: 'ingest-id',
-      },
-      measurements: this.measurements.json(),
-      locations: this.#locations.json(),
-    };
-  }
-
-  /**
    * Dump a summary that we can pass back to the log
    */
   summary(): Summary {
@@ -660,34 +658,37 @@ export abstract class Client<
     });
     return {
       sourceName: this.provider,
-      locations: {
-        count: this.#locations.length,
-        bounds: this.#locations.bounds,
-      },
-      systems: Object.values(this.#locations)
-        .map((l: Location) => Object.values(l.systems).length)
-        .flat()
-        .reduce((d, i) => d + i),
-      sensors: Object.values(this.#locations)
-        .map((l: Location) =>
-          Object.values(l.systems).map(
-            (s: System) => Object.values(s.sensors).length
-          )
-        )
-        .flat()
-        .reduce((d, i) => d + i),
-      // taking advantage of the sensor object list
-      flags: Object.values(this.#sensors)
-        .map((s: Sensor) => Object.values(s.flags).length)
-        .flat()
-        .reduce((d, i) => d + i),
-      measures: this.measurements.length,
+      locations: this.#locations.length,
+      bounds: this.#locations.bounds,
+      systems: this.#locations.systemsLength,
+      sensors: this.#sensors.length,
+      flags: this.#sensors.flagsLength,
+      measurements: this.measurements.length,
+      datetimeFrom: this.measurements.from?.toString(),
+      datetimeTo: this.measurements.to?.toString(),
       errors: errorSummary,
-      measurements: {
-        count: this.measurements.length,
-        from: this.measurements.from?.toString(),
-        to: this.measurements.to?.toString(),
-      },
     };
   }
+
+  /**
+   * Method to dump data to format that we can ingest
+   *
+   * @returns {object} - data object formated for ingestion
+   */
+  data() {
+    return {
+      meta: {
+        schema: 'v0.1',
+        sourceName: this.provider,
+        ingestMatchingMethod: this.ingestMatchingMethod,
+        startedOn: this.#startedOn?.toString(),
+        finishedOn: this.#finishedOn?.toString(),
+        exportedOn: Datetime.now().toString(),
+        fetchSummary: this.summary(),
+      },
+      measurements: this.measurements.json(),
+      locations: this.#locations.json(),
+    };
+  }
+
 }

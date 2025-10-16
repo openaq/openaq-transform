@@ -30,26 +30,18 @@ export type DataDefinition = Record<string, any>;
 
 export type ErrorSummary = Record<string, number>;
 
-interface LocationsSummary {
-  count: number;
-  bounds: BBox | null;
-}
-
-interface MeasurementsSummary {
-  count: number;
-  from: string | null | undefined;
-  to: string | null | undefined;
-}
 
 export interface Summary {
   sourceName: string;
-  locations: LocationsSummary;
+  bounds: BBox | null;
+  locations: number;
   systems: number;
   sensors: number;
   flags: number;
-  measures: number;
+  measurements: number;
   errors: ErrorSummary;
-  measurements: MeasurementsSummary;
+  datetimeTo: string | undefined;
+  datetimeFrom: string | undefined
 }
 
 export interface LogEntry {
@@ -65,6 +57,8 @@ export interface IndexedResource {
   measurements: Resource;
   locations?: Resource;
 }
+
+export type IngestMatchingMethod = 'ingest-id' | 'source-spatial';
 
 export interface ClientConfiguration {
   resource?: Resource | IndexedResource;
@@ -100,6 +94,8 @@ export interface ClientConfiguration {
   datasources?: object;
   missingDatasources?: string[];
   parameters?: ClientParameters;
+  ingestMatchingMethod?: IngestMatchingMethod;
+
 }
 
 export type ClientParser = string | Function | IndexedParser;

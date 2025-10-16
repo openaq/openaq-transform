@@ -6,7 +6,7 @@ import { stripNulls } from './utils';
 import { System } from './system';
 import { Sensor } from './sensor';
 import { Coordinates, updateBounds } from './coordinates';
-import type { LocationData, LocationJSON } from '../types/location';
+import type { LocationData, LocationKeyData, LocationJSON } from '../types/location';
 import type { SystemData } from '../types/system';
 
 export class Locations {
@@ -35,6 +35,24 @@ export class Locations {
     return this.#locations.size;
   }
 
+  get systemsLength(): number {
+    let total = 0;
+    for (const location of this.#locations.values()) {
+      total += location.systems.size;
+    }
+    return total;
+  }
+
+  get sensorsLength(): number {
+    let total = 0;
+    for (const location of this.#locations.values()) {
+      for (const system of location.systems.values()) {
+        total += system.sensors.size;
+      }
+    }
+    return total;
+  }
+
   json() {
     return Array.from(this.#locations.values(), (l) => {
       return l.json();
@@ -43,7 +61,7 @@ export class Locations {
 }
 
 export class Location {
-  //key: string;
+  provider: string;
   siteId: string;
   siteName: string;
   owner: string | undefined;
@@ -81,7 +99,7 @@ export class Location {
     this.#systems = new Map<string, System>();
   }
 
-  static createKey(data: LocationData): string {
+  static createKey(data: LocationKeyData): string {
     const provider = data.provider;
     const siteId = data.siteId;
     if (!(provider && siteId)) {
@@ -114,12 +132,10 @@ export class Location {
     let key;
     if (data instanceof Sensor) {
       key = data.systemKey;
-    } else if (Object.keys(data).includes('key')){
-      key = data.key; // should remove this section once the new key methods are working
     } else {
       key = [this.key]
-      if (data.manufacturer) key.push(data.manufacturer)
-      if (data.model) key.push(data.model)
+      if (data.manufacturerName) key.push(data.manufacturerName)
+      if (data.modelName) key.push(data.modelName)
       key = key.join('-')
     }
 
@@ -130,7 +146,6 @@ export class Location {
 
       this.addSystem(
         new System({
-          //key: key,
           locationKey: this.key,
           modelName: 'modelName' in data ? data.modelName : 'default',
           manufacturerName:

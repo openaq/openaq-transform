@@ -61,9 +61,24 @@ export const csvdata = {
 
 export const expectedOutput = {
   meta: {
-    schema: "v0.1",
-    source: "testing",
-    matching_method: "ingest-id"
+    schema: 'v0.1',
+    sourceName: 'testing',
+    ingestMatchingMethod: 'ingest-id',
+    startedOn: '2025-06-01T01:00:00-04:00',
+    finishedOn: '2025-06-01T01:00:00-04:00',
+    exportedOn: '2025-06-01T01:00:00-04:00',
+    fetchSummary: {
+      sourceName: 'testing',
+      locations: 1,
+      bounds: [ -123.12121, 45.56665, -123.12121, 45.56665 ],
+      systems: 1,
+      sensors: 2,
+      flags: 0,
+      measurements: 3,
+      errors: {},
+      datetimeFrom: '2024-01-01T00:00:00-08:00',
+      datetimeTo: '2024-01-01T01:00:00-08:00'
+    }
   },
   locations: [
     {

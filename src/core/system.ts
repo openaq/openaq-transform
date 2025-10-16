@@ -5,22 +5,6 @@ import { stripNulls } from './utils';
 import { Sensor } from './sensor';
 import type { SystemData, SystemJSON } from '../types/system';
 
-export class Systems {
-  #systems: Map<string, System>;
-
-  constructor() {
-    this.#systems = new Map<string, System>();
-  }
-
-  add(system: System) {
-    this.#systems.set(system.key, system);
-  }
-
-  length() {
-    return this.#systems.size;
-  }
-}
-
 export class System {
   locationKey: string;
   manufacturerName: string;

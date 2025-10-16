@@ -4,8 +4,8 @@ const log = debug('openaq-transform sensor: DEBUG');
 import { Flag } from './flag';
 import { Metric } from './metric';
 import { stripNulls } from './utils';
-import type { FlagData, IndexedFlags } from '../types/flag';
-import type { SensorData, SensorJSON } from '../types/sensor';
+import type { FlagData } from '../types/flag';
+import type { SensorData, SensorKeyData, SensorJSON } from '../types/sensor';
 
 
 
@@ -28,9 +28,18 @@ export class Sensors {
     return this.#sensors.has(key);
   }
 
-  length(): number {
+  get length(): number {
     return this.#sensors.size;
   }
+
+  get flagsLength(): number {
+    let total = 0;
+    for (const sensor of this.#sensors.values()) {
+      total += sensor.flags.size;
+    }
+    return total;
+  }
+
 }
 
 
@@ -43,30 +52,31 @@ export class Sensor {
   status: string;
   versionDate: string | undefined;
   instance: string | undefined;
-  flags: IndexedFlags;
+  flags: Map<string, Flag>;
 
   constructor(data: SensorData) {
-    log(`Adding new sensor`, data?.metric?.key);
-    //this.key = data.key;
+    log(`Adding new sensor`, data?.metric);
     this.systemKey = data.systemKey;
     if (data.metric instanceof Metric) {
       this.metric = data.metric;
     } else {
       this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
     }
-    //this.system =
+
     this.averagingIntervalSeconds = data.averagingIntervalSeconds;
     this.loggingIntervalSeconds =
       data.loggingIntervalSeconds ?? data.averagingIntervalSeconds;
     this.versionDate = data.versionDate;
     this.instance = data.instance;
     this.status = data.status;
-    this.flags = {};
+    this.flags = new Map<string, Flag>()
   }
 
-  static createKey(data: SensorData): string {
+  static createKey(data: SensorKeyData): string {
     let { metric, instance, versionDate, systemKey } = data;
-
+    if (!(metric instanceof Metric)) {
+      metric = new Metric(metric?.parameter, metric?.unit);
+    }
     const key = [metric.key]
     if (!systemKey) {
       throw new Error('System key is required to create a new sensor key')
@@ -82,7 +92,8 @@ export class Sensor {
     data.key = this.key;
     const flag = new Flag(data);
     log(`adding flag (${flag.key}) to sensor (${this.key})`);
-    this.flags[flag.key] = flag;
+    //this.flags[flag.key] = flag;
+    this.flags.set(flag.key, flag)
     return flag;
   }
 
@@ -105,7 +116,7 @@ export class Sensor {
       units: this.metric.parameter.units,
       averaging_interval_secs: this.averagingIntervalSeconds,
       logging_interval_secs: this.loggingIntervalSeconds,
-      flags: Object.values(this.flags).map((s) => s.json()),
+      flags: Array.from(this.flags.values(), (f) => f.json()),
     });
   }
 }

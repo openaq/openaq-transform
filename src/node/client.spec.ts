@@ -4,6 +4,10 @@ import { setupServer } from 'msw/node';
 import { widedata, expectedOutput, measurementErrors }  from '../../tests/fixtures/sampledata.ts';
 import { NodeClient as Client } from './client.ts'
 
+import { DateTime, Settings } from 'luxon';
+const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
+Settings.now = () => expectedNow.toMillis();
+
 import debug from 'debug';
 
 debug.enable('openaq*');
@@ -128,6 +132,7 @@ describe('Client with data in wide format', () => {
   test('outputs correct format', async () => {
     const cln = new JsonClient()
     const data = await cln.load();
+    console.dir(data.meta, { depth: null })
     expect(data).toStrictEqual(expectedOutput);
   })
 
@@ -355,7 +360,28 @@ describe('Client with measurement errors', () => {
 
 
   const expected = {
-    meta: expectedOutput.meta,
+    meta: {
+      schema: 'v0.1',
+      sourceName: 'testing',
+      ingestMatchingMethod: 'ingest-id',
+      startedOn: '2025-06-01T01:00:00-04:00',
+      finishedOn: '2025-06-01T01:00:00-04:00',
+      exportedOn: '2025-06-01T01:00:00-04:00',
+      fetchSummary: {
+        sourceName: 'testing',
+        locations: 1,
+        bounds: [ -123.12121, 45.56665, -123.12121, 45.56665 ],
+        systems: 1,
+        sensors: 2,
+        flags: 0,
+        measurements: 7,
+        datetimeFrom: '2024-01-01T00:00:00-08:00',
+        datetimeTo: '2024-01-02T01:00:00-08:00',
+        errors: {
+          UnsupportedParameterError: 1,
+        },
+      }
+    },
     locations: expectedOutput.locations,
     measurements: [
      ...expectedOutput.measurements,
@@ -404,6 +430,9 @@ describe('Client with measurement errors', () => {
       tempf: { parameter: "temperature", unit: "f" },
     };
 
+    async loadResources() {
+      return rawdata
+    }
   }
 
   test('parameter check', () => {
@@ -413,9 +442,8 @@ describe('Client with measurement errors', () => {
 
   test('outputs correct format', async () => {
     const cln = new JsonClient()
-    cln.process(rawdata);
 
-    const data = cln.data();
+    const data = await cln.load();
     const errors = cln.log.get('UnsupportedParameterError')
     // currently we are adding
     //console.dir(data.measurements, { depth: null })

@@ -1,13 +1,8 @@
 import { PARAMETERS } from './metric'
 
-export const TRANSFORM_ERROR = Symbol('Transform error');
-
-export const READ_ERROR = Symbol('Read error');
-export const PARSE_ERROR = Symbol('Parse error');
-export const MEASUREMENT_ERROR = Symbol('Measurement error');
-export const LOCATION_ERROR = Symbol('Location error');
-export const ADAPTER_ERROR = Symbol('Adapter error');
-export const FETCHER_ERROR = Symbol('Fetcher error');
+const TRANSFORM_ERROR = Symbol('Transform error');
+const MEASUREMENT_ERROR = Symbol('Measurement error');
+const LOCATION_ERROR = Symbol('Location error');
 
 
 export class TransformError extends RangeError {
@@ -53,7 +48,7 @@ export class InvalidPrecisionError extends LocationError {
 }
 
 
-export class MeasurementError extends TransformError {
+class MeasurementError extends TransformError {
   constructor(message: string, value: any) {
     super(message, value)
     this.type = MEASUREMENT_ERROR;

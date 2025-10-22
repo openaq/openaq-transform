@@ -1,7 +1,14 @@
 import debug from 'debug';
 import type { ParserMethods, IndexedParser } from '../types/parsers';
 import type { ReaderMethods } from '../types/readers';
-const log = debug('openaq-transform utils: DEBUG')
+import {
+  isPathExpression,
+  type PathExpression,
+  supportedExpressionLanguagesArray,
+} from '../types/metric';
+import { search } from '@jmespath-community/jmespath';
+
+const log = debug('openaq-transform utils: DEBUG');
 
 export const stripNulls = <T extends object>(
   obj: T
@@ -14,18 +21,40 @@ export const stripNulls = <T extends object>(
   );
 };
 
-
-export const getValueFromKey = (data: any, key: Function | string, asNumber: boolean = false) => {
-  let value = null
+export const getValueFromKey = (
+  data: any,
+  key: Function | string | PathExpression,
+  asNumber: boolean = false
+) => {
+  let value = null;
+  if (isPathExpression(key)) {
+    if (key.type === 'jmespath') {
+      value = search(data, key.expression);
+    } else {
+      throw TypeError(
+        `TypeError: unsupported path expression type, supported syntaxes include: ${supportedExpressionLanguagesArray.join(
+          ', '
+        )}`
+      );
+    }
+  }
   if (typeof key === 'function') {
-    value = key(data);
+    try {
+      value = key(data);
+    } catch (error: unknown) {
+      if (error instanceof TypeError) {
+        throw new Error(
+          `TypeError in user defined function: ${error.message}. Use optional chaining (?.) to safely access nested properties.`
+        );
+      }
+    }
   } else if (typeof key === 'string') {
     value = data ? data[key] : key;
   }
   // the csv method reads everything in as strings
   // null values should remain null and not be converted to 0
-  if(value && asNumber && typeof(value) !== 'number') {
-    value = Number(value)
+  if (value && asNumber && typeof value !== 'number') {
+    value = Number(value);
   }
   return value;
 };
@@ -33,11 +62,11 @@ export const getValueFromKey = (data: any, key: Function | string, asNumber: boo
 export const cleanKey = (value: string): string => {
   return (
     value &&
-      value
-        .replace(/^\s+|\s+$/g, '')
-        .replace(/\s+/g, '_')
-        .replace(/[^\w]/g, '')
-        .toLowerCase()
+    value
+      .replace(/^\s+|\s+$/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/[^\w]/g, '')
+      .toLowerCase()
   );
 };
 
@@ -50,15 +79,17 @@ export function countDecimals(value: number) {
   return value.toString().split('.')[1].length || 0;
 }
 
-
 // temporary method
 export function isFile(obj: object) {
   return obj.constructor.name === 'File';
 }
 
-
 export function formatValueForLog(value: unknown): string {
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
     return String(value);
   }
   if (typeof value === 'function') {
@@ -80,7 +111,6 @@ export function formatValueForLog(value: unknown): string {
   return `[${typeof value}]`;
 }
 
-
 /**
  *  Method to determine which method we want to use to parse/read
  * the return value for this is a function
@@ -94,7 +124,11 @@ export function getMethod(
   methods: ParserMethods | ReaderMethods
 ): Function {
   let methodKeyOrFunction: string | Function;
-  log(`Getting method for '${String(key)}' from ${formatValueForLog(method)} and ${Object.keys(methods).join(', ')}`)
+  log(
+    `Getting method for '${String(key)}' from ${formatValueForLog(
+      method
+    )} and ${Object.keys(methods).join(', ')}`
+  );
 
   if (typeof key === 'function') {
     methodKeyOrFunction = key;
@@ -103,9 +137,9 @@ export function getMethod(
   if (key !== null) {
     if (
       typeof method === 'object' &&
-        ('measurements' in method || 'locations' in method || 'meta' in method)
-        && typeof key === 'string' &&
-        ['measurements', 'locations', 'meta'].includes(key)
+      ('measurements' in method || 'locations' in method || 'meta' in method) &&
+      typeof key === 'string' &&
+      ['measurements', 'locations', 'meta'].includes(key)
     ) {
       methodKeyOrFunction = method[key as keyof IndexedParser] as string;
     } else if (typeof method === 'string' || typeof method === 'function') {
@@ -125,18 +159,17 @@ export function getMethod(
 
   if (typeof methodKeyOrFunction === 'string') {
     if (!methods) {
-      throw new Error(
-        `No methods available`
-      );
+      throw new Error(`No methods available`);
     }
     if (!methods[methodKeyOrFunction]) {
       throw new Error(
-        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(methods).join(', ')}. `
+        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(
+          methods
+        ).join(', ')}. `
       );
     }
     return methods[methodKeyOrFunction];
   } else {
     return methodKeyOrFunction;
   }
-
 }

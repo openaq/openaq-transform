@@ -8,7 +8,7 @@ import { Coordinates, updateBounds } from './coordinates';
 import { PARAMETER_DEFAULTS, Metric } from './metric';
 
 import { TransformError, MissingAttributeError } from './errors';
-import type { ClientParameters } from '../types/metric';
+import type { ParameterKeyFunction, PathExpression,  ClientParameters } from '../types/metric';
 import type {
   MeasurementData,
   MeasurementJSON,
@@ -20,7 +20,7 @@ export class Measurements {
   from?: Datetime;
   to?: Datetime;
   bounds?: BBox | null;
-  parameters: Map<string, Metric>;
+  parameters: Map<(string | PathExpression | ParameterKeyFunction), Metric>;
 
   constructor(parameters: ClientParameters = PARAMETER_DEFAULTS) {
     this.#measurements = new Map<string, Measurement>();
@@ -33,14 +33,15 @@ export class Measurements {
     ];
     // build a map that goes from the client parameter key
     // to the api parameter
-    this.parameters = new Map();
-    Object.entries(parameters).forEach(([providerKey, { parameter, unit }]) => {
-      this.parameters.set(providerKey, new Metric(parameter, unit));
-    });
+    this.parameters = new Map<(string | PathExpression | ParameterKeyFunction), Metric>();
+    for (const p of parameters) {
+      const { parameter, unit, key } = p;
+      this.parameters.set(key, new Metric(parameter, unit))
+    }
   }
 
   parameterKeys() {
-    return Array.from(this.parameters.keys());
+    return Array.from(this.parameters.keys())
   }
 
   metricFromProviderKey(key: string) {

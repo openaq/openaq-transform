@@ -144,10 +144,10 @@ export const PARAMETERS: ParameterMap = {
 
 export const PROVIDER_VALUE_FLAGS: Array<any> = [-99, -999, '-99', '-999'];
 
-export const PARAMETER_DEFAULTS: ClientParameters = {
-  pm25: { parameter: 'pm_25', unit: 'ugm3' },
-  o3: { parameter: 'o_3', unit: 'ppm' },
-};
+export const PARAMETER_DEFAULTS: ClientParameters = [
+   { parameter: 'pm25', unit: 'ugm3', key: 'pm_25' },
+   { parameter: 'o_3', unit: 'ppm', key: 'o3' },
+];
 
 export class Metric {
   key: string;

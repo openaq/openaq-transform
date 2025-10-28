@@ -134,6 +134,25 @@ export interface ParameterMap {
   [key: string]: Parameter;
 }
 
+/**
+ * Parameter-unit pairing used for parameter specification.
+ * 
+ * @example
+ * ```ts
+ * const sensorParam: ParameterUnit = {
+ *   parameter: 'pm25',
+ *   unit: 'ug/m3'
+ * };
+ * ```
+ */
+export interface ParameterUnit {
+  /** The parameter name */
+  parameter: string;
+  
+  /** The unit for this parameter */
+  unit: string;
+}
+
 
 /**
  * 

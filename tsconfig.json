@@ -8,6 +8,8 @@
     "skipLibCheck": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "declaration": true,
+    "declarationMap": true,
 
     /* Bundler mode */
     "moduleResolution": "Bundler",

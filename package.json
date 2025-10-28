@@ -11,7 +11,7 @@
       "browser": {
         "types": "./dist/transform-browser/index.d.ts",
         "browser": "./dist/transform-browser/index.js",
-        "default": "./dist/browser/index.js"
+        "default": "./dist/transform-browser/index.js"
       },
       "node": null,
       "default": {

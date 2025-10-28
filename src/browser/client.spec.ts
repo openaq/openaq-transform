@@ -12,7 +12,6 @@ import {
   expectedOutput,
 } from '../../tests/fixtures/sampledata.ts';
 
-
 import { csv } from './parsers';
 import type { Reader } from '../types/readers.ts';
 
@@ -32,10 +31,10 @@ class CustomClient extends Client {
   projectionKey = () => 'WSG84';
   ownerKey = () => 'test_owner';
   isMobileKey = () => false;
-  parameters = {
-    particulate_matter_25: { parameter: 'pm25', unit: 'ug/m3' },
-    tempf: { parameter: 'temperature', unit: 'f' },
-  };
+  parameters = [
+    { parameter: 'pm25', unit: 'ug/m3', key: 'particulate_matter_25' },
+    { parameter: 'temperature', unit: 'f', key: 'tempf' },
+  ];
 }
 
 // a simple file reader to read in the file data

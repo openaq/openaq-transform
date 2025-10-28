@@ -5,6 +5,7 @@ import {
   getMethod,
   countDecimals,
 } from './utils.ts';
+import { PathExpression } from '../types/metric.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -32,6 +33,26 @@ test('getValueFromKey returns undefined when key does not exist', () => {
 
 test('getValueFromKey returns value when key exists', () => {
   expect(getValueFromKey({ pm25: null }, 'pm25')).toBe(null)
+});
+
+test('getValueFromKey returns value when using key function', () => {
+  expect(getValueFromKey({ pm25: 42 }, (o) => o.pm25)).toBe(42)
+});
+
+test('getValueFromKey throws for unsafe optional property access', () => {
+  expect(getValueFromKey({ pm25: null }, (o) => o.foo )).toThrow(Error)
+});
+
+test('getValueFromKey returns value when using jmespath expression', () => {
+  const pathExpression = { type: 'jmespath', expression: '$.measurements[0].pm25'} satisfies PathExpression;
+  expect(getValueFromKey({ measurements :  [{pm25: 42 }]}, pathExpression)).toBe(42)
+});
+
+test('getValueFromKey throws when unsupported expression type is passed', () => {
+  // @ts-expect-error Testing unsupported type value
+  const pathExpression = { type: 'xpath', expression: '/measurements[0]/pm25'} satisfies PathExpression;
+  // @ts-expect-error Testing unsupported type value
+  expect(() => getValueFromKey({ measurements :  [{pm25: 42 }]}, pathExpression)).toThrow(TypeError)
 });
 
 test('countDecimals returns the right value', () => {

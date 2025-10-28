@@ -34,7 +34,7 @@ import type {
   ReaderMethods,
   ReaderOptions,
 } from '../types/readers';
-import { ClientParameters } from '../types/metric';
+import { ClientParameters, ParameterKeyFunction, PathExpression } from '../types/metric';
 
 const log = debug('openaq-transform client (core): DEBUG');
 
@@ -54,25 +54,25 @@ export abstract class Client<
   // source: Source;
   timezone?: string;
   longFormat: boolean = false;
-  geometryProjectionKey: string | ParseFunction = 'projection';
+  geometryProjectionKey: string | PathExpression | ParseFunction = 'projection';
   datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 
   // mapped data variables
-  locationIdKey: string | ParseFunction = 'location';
-  locationLabelKey: string | ParseFunction = 'label';
-  parameterNameKey: string | ParseFunction = 'parameter';
-  parameterValueKey: string | ParseFunction = 'value';
-  yGeometryKey: string | ParseFunction = 'y';
-  xGeometryKey: string | ParseFunction = 'x';
-  manufacturerKey: string | ParseFunction = 'manufacturer_name';
-  modelKey: string | ParseFunction = 'model_name';
-  ownerKey: string | ParseFunction = 'owner_name';
-  datetimeKey: string | ParseFunction = 'datetime';
-  licenseKey: string | ParseFunction = 'license';
-  isMobileKey: string | ParseFunction = 'is_mobile';
-  loggingIntervalKey: string | ParseFunction = 'logging_interval_seconds';
-  averagingIntervalKey: string | ParseFunction = 'averaging_interval_seconds';
-  sensorStatusKey: string | ParseFunction = 'status';
+  locationIdKey: string | PathExpression | ParseFunction = 'location';
+  locationLabelKey: string | PathExpression | ParseFunction = 'label';
+  parameterNameKey: string | PathExpression | ParseFunction = 'parameter';
+  parameterValueKey: string | PathExpression | ParseFunction = 'value';
+  yGeometryKey: string | PathExpression | ParseFunction = 'y';
+  xGeometryKey: string | PathExpression | ParseFunction = 'x';
+  manufacturerKey: string | PathExpression | ParseFunction = 'manufacturer_name';
+  modelKey: string | PathExpression | ParseFunction = 'model_name';
+  ownerKey: string | PathExpression | ParseFunction = 'owner_name';
+  datetimeKey: string | PathExpression | ParseFunction = 'datetime';
+  licenseKey: string | PathExpression | ParseFunction = 'license';
+  isMobileKey: string | PathExpression | ParseFunction = 'is_mobile';
+  loggingIntervalKey: string | PathExpression | ParseFunction = 'logging_interval_seconds';
+  averagingIntervalKey: string | PathExpression | ParseFunction = 'averaging_interval_seconds';
+  sensorStatusKey: string | PathExpression | ParseFunction = 'status';
   ingestMatchingMethod: IngestMatchingMethod = 'ingest-id'
 
   datasources: object = {};
@@ -560,7 +560,7 @@ export abstract class Client<
     // if we provided a parameter column key we use that
     // otherwise we use the list of parameters
     // the end goal is just an array of parameter names to loop through
-    const params: Array<string> = this.longFormat
+    const params: Array<string | ParameterKeyFunction> = this.longFormat
       ? [getValueFromKey(null, this.parameterNameKey)]
       : this.measurements.parameterKeys();
 
@@ -570,7 +570,7 @@ export abstract class Client<
 
         params.map((p) => {
           let metric, value, metricName, valueName;
-
+ 
           if (this.longFormat) {
             // for long format data we will need to extract the parameter name from the field
             metricName = getValueFromKey(measurementRow, p);
@@ -581,14 +581,13 @@ export abstract class Client<
             valueName = p;
           }
 
+
           value = getValueFromKey(measurementRow, valueName);
 
           // for wide format data we will not assume that null is a real measurement
           // but for long format data we will assume it is valid
           if (value !== undefined && (value || this.longFormat)) {
-
             metric = this.measurements.metricFromProviderKey(metricName);
-
             if (!metric) {
               this.errorHandler(new UnsupportedParameterError(metricName));
               return;
@@ -597,7 +596,6 @@ export abstract class Client<
             // get the approprate sensor from or reference list,
             // or create it, which in turn with create the location and system
             const sensor = this.getSensor({ ...measurementRow, metric });
-
             if (!sensor) {
               this.errorHandler(
                 new MissingAttributeError('sensor', { ...measurementRow, metric })

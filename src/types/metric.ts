@@ -153,6 +153,134 @@ export interface ParameterUnit {
   unit: string;
 }
 
+
+/**
+ * 
+ */
+export type ParameterKeyFunction = (data?: any) => string | number
+
+
+/**
+ * Type guard to check if options are indexed reader options.
+ * @param obj - The object to check
+ * @returns True if obj is ParameterKeyFunction
+ */
+export function isParameterKeyFunction(value: unknown): value is ParameterKeyFunction {
+  if (typeof value !== 'function') {
+    return false;
+  }
+  
+  try {
+    const result = value(undefined);
+    return typeof result === 'string' || typeof result === 'number';
+  } catch {
+    return false;
+  }
+}
+
+
+export const supportedExpressionLanguagesArray = ['jmespath'] as const;
+
+/**
+ * Supported query languages for extracting data from structured objects.
+ * 
+ * Currently supports JMESPath, a query language for JSON to 
+ * specify how to extract elements from a JSON document.
+ * 
+ * @see {@link https://jmespath.org/specification.html JMESPath Specification}
+ */
+type SupportedExpressionLanguages = typeof supportedExpressionLanguagesArray[number]
+
+/**
+ * A path expression using a specific query language to extract data from objects.
+ * 
+ * @example
+ * ```ts
+ * // Extract a nested property using JMESPath
+ * const expr: PathExpression = {
+ *   type: 'jmespath',
+ *   expression: 'measurements.o3.value'
+ * }
+ * ```
+ */
+export interface PathExpression {
+  /** The query language used to interpret the expression */
+  type: SupportedExpressionLanguages
+
+  /** The query expression in the specified language syntax */
+  expression: string
+}
+
+
+/**
+ * Type guard to check if a value is a {@link PathExpression}.
+ * 
+ * @param value - The value to check
+ * @returns `true` if the value is a valid PathExpression, otherwise `false` 
+ * 
+ */
+export function isPathExpression(value: unknown): value is PathExpression {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    'expression' in value &&
+    typeof (value as PathExpression).type === 'string' &&
+    typeof (value as PathExpression).expression === 'string'
+  );
+}
+
+/**
+ * Configuration for extracting a parameter value from client data.
+ * 
+ * Defines how to identify and extract a specific measurement parameter from
+ * the data provided by a client, along with its unit of measurement.
+ * 
+ * @example
+ * ```ts
+ * // Using a string key
+ * const params: ClientParameter = {
+ *   parameter: 'o3',
+ *   unit: 'ppm',
+ *   key: 'o_3'
+ * }
+ * 
+ * // Using a path expression for nested data
+ * const params: ClientParameter = {
+ *   parameter: 'o3',
+ *   unit: 'ppm',
+ *   key: {
+ *     type: 'jmespath',
+ *     expression: 'measurements.o3.value'
+ *   }
+ * }
+ * 
+ * // Using a custom function
+ * const params: ClientParameter = {
+ *   parameter: 'o3',
+ *   unit: 'ppm',
+ *   key: (o) => o.measurements.find(x => x.parameter === 'o3')?.value
+ * }
+ * ```
+ */
+interface ClientParameter {
+  /** The name of the parameter being measured (e.g., 'o3', 'pm25') */
+  parameter: string;
+  
+  /** The unit of measurement for this parameter (e.g., 'ppm', 'c', 'ug/m3') */
+  unit: string;
+
+  /**
+   * How to extract the parameter value from the client data.
+   * 
+   * Can be:
+   * - A string for direct property access
+   * - A {@link PathExpression} for querying nested structures
+   * - A function for custom logic
+   */
+  key: string | PathExpression | ParameterKeyFunction
+}
+
 /**
  * Client-specific parameter configurations mapping client parameter names 
  * to their corresponding ParameterUnit definitions. Used to translate between
@@ -161,21 +289,11 @@ export interface ParameterUnit {
  * @example
  * ```ts
  * // Default mappings for common client naming conventions
- * const clientDefaults: ClientParameters = {
- *   'pm25': { parameter: 'pm_25', unit: 'ugm3' },
- *   'o3': { parameter: 'o_3', unit: 'ppm' },
- *   'temp': { parameter: 'temperature', unit: 'c' },
- *   'humidity': { parameter: 'rh', unit: '%' }
- * };
- * 
- * // Usage in client-specific data processing
- * const clientParam = clientDefaults['pm25']; // { parameter: 'pm_25', unit: 'ugm3' }
+ * const clientDefaults: ClientParameters = [
+ *    { parameter: 'pm25', unit: 'ugm3', key: 'pm_25' },
+ *    { parameter: 'o3', unit: 'ppm', key: 'o_3' },
+ *    { parameter: 'temp', unit: 'c', key: 'temperature' },
+ * ];
  * ```
  */
-export interface ClientParameters {
-  /** 
-   * Client parameter configurations keyed by client-specific parameter names.
-   * Values define how to map to standard parameters and units.
-   */
-  [key: string]: ParameterUnit;
-}
+export type ClientParameters = ClientParameter[];

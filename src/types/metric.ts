@@ -179,8 +179,6 @@ export function isParameterKeyFunction(value: unknown): value is ParameterKeyFun
 }
 
 
-export const supportedExpressionLanguagesArray = ['jmespath'] as const;
-
 /**
  * Supported query languages for extracting data from structured objects.
  * 
@@ -189,7 +187,7 @@ export const supportedExpressionLanguagesArray = ['jmespath'] as const;
  * 
  * @see {@link https://jmespath.org/specification.html JMESPath Specification}
  */
-type SupportedExpressionLanguages = typeof supportedExpressionLanguagesArray[number]
+type SupportedExpressionLanguages = 'jmespath'
 
 /**
  * A path expression using a specific query language to extract data from objects.

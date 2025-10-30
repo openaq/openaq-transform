@@ -33,8 +33,20 @@ export const apiReader = async ({
   options,
 }: UrlReaderParameters): Promise<Blob | string | Response> => {
   log(`Fetching ${readAs} data from ${resource}`)
-  const res = await fetch(resource, options);
-  if (res.status !== 200) {
+  const res = await fetch(resource, options, 15000);
+  if (res.status === 204) {
+    // should ignore any response but possibly issue a warning
+    if(this && this.errorHandler) {
+      this.errorHandler(new Error(res.statusText))
+    }
+    return;
+  } else if (res.status == 429) {
+
+  } else if (res.status >= 300) {
+    res.headers.forEach((value, key) => {
+      log(`${res.status}: ${key}: ${value}`);
+    });
+    return;
     throw Error(res.statusText)
   }
   if (!readAs) {
@@ -44,6 +56,7 @@ export const apiReader = async ({
     // fall back to json if type is not mapped
     readAs = contentTypeMap.get(ctype || '') ?? 'json';
   }
+
   if (readAs === 'json') {
     return res.json();
   } else if (readAs === 'text') {

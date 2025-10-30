@@ -4,7 +4,6 @@ import type { ReaderMethods } from '../types/readers';
 import {
   isPathExpression,
   type PathExpression,
-  supportedExpressionLanguagesArray,
 } from '../types/metric';
 import { search } from '@jmespath-community/jmespath';
 
@@ -32,9 +31,7 @@ export const getValueFromKey = (
       value = search(data, key.expression);
     } else {
       throw TypeError(
-        `TypeError: unsupported path expression type, supported syntaxes include: ${supportedExpressionLanguagesArray.join(
-          ', '
-        )}`
+        `TypeError: unsupported path expression type, supported syntaxes include: jmespath`
       );
     }
   }

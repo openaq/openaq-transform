@@ -20,8 +20,26 @@ const mgm3ToUgm3 = (mgm3: number | string) => +mgm3 * 1000;
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMap = {
+  'pm1:mass': {
+    name: 'pm1',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    },
+  },
   'pm25:mass': {
     name: 'pm25',
+    numeric: true,
+    units: 'ug/m3',
+    converters: {
+      'ug/m3': noConversion,
+      'mg/m3': mgm3ToUgm3,
+    },
+  },
+  'pm4:mass': {
+    name: 'pm4',
     numeric: true,
     units: 'ug/m3',
     converters: {
@@ -138,6 +156,18 @@ export const PARAMETERS: ParameterMap = {
     range: [0, 100],
     converters: {
       '%': noConversion,
+    },
+  },
+  pressure: {
+    name: 'pressure',
+    numeric: true,
+    units: 'hpa',
+    precision: 1,
+    range: [800, 1100],
+    converters: {
+      'hpa': noConversion,
+      'mb': noConversion,
+      'mbar': noConversion,
     },
   },
 };

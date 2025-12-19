@@ -16,6 +16,14 @@ test('resource with static parameters works', () => {
   ]);
 });
 
+test('resource with single static url works', () => {
+  const resource = new Resource('https://example.com/locations/2178');
+  const urls = resource.urls;
+  expect(urls).toStrictEqual([
+    { url: 'https://example.com/locations/2178' },
+  ]);
+});
+
 
 test('resource with parameters function that returns static values works', () => {
   const resource = new Resource('https://example.com/locations/:locationsId', () => [{"locationsId": 42},{"locationsId": 43},{"locationsId": 44}]);

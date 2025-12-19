@@ -3,6 +3,7 @@ import { isPathExpression } from '../types/metric';
 import type {  Body } from '../types/resource';
 import {type JSONValue, search } from '@jmespath-community/jmespath';
 
+
 export type Parameters = Record<string, any>;
 
 export type ParametersFunction = (data?: JSONValue) => Parameters[];
@@ -120,6 +121,11 @@ export class Resource {
           ...(body && { body: body }),
         });
       }
+    } else {
+        urls.push({
+          url: this.url,
+          ...(this.body && { body: this.body }),
+        });
     }
 
     return urls;

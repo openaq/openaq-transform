@@ -1,4 +1,4 @@
-import { PathExpression } from '../types';
+import type { PathExpression } from '../types';
 import { isPathExpression } from '../types/metric';
 import type {  Body } from '../types/resource';
 import {type JSONValue, search } from '@jmespath-community/jmespath';

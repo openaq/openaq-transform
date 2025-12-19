@@ -187,7 +187,7 @@ export function isParameterKeyFunction(value: unknown): value is ParameterKeyFun
  * 
  * @see {@link https://jmespath.org/specification.html JMESPath Specification}
  */
-type SupportedExpressionLanguages = 'jmespath'
+export type SupportedExpressionLanguages = 'jmespath'
 
 /**
  * A path expression using a specific query language to extract data from objects.

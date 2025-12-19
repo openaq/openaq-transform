@@ -1,7 +1,14 @@
 import debug from 'debug';
-import { isIndexedReaderOptions, UrlReaderParameters, type IndexedReaderOptions, type ReadAs, type ReaderOptions, type TextReaderParameters } from '../types/readers';
-const log = debug('openaq-transform readers: DEBUG')
-
+import {
+  isIndexedReaderOptions,
+  UrlReaderParameters,
+  type IndexedReaderOptions,
+  type ReadAs,
+  type ReaderOptions,
+  type TextReaderParameters,
+} from '../types/readers';
+import type { JSONValue } from '@jmespath-community/jmespath';
+const log = debug('openaq-transform readers: DEBUG');
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
   options: ReaderOptions | IndexedReaderOptions,
@@ -31,33 +38,52 @@ export const apiReader = async ({
   resource,
   readAs,
   options,
-}: UrlReaderParameters): Promise<Blob | string | Response> => {
-  log(`Fetching ${readAs} data from ${resource}`)
-  const res = await fetch(resource, options);
-  if (res.status !== 200) {
-    throw Error(res.statusText)
+  concurrency = 3,
+}: UrlReaderParameters, data: JSONValue): Promise<Array<Blob | string | Response>> => {
+  log(`Fetching ${readAs} data from ${resource}`);
+  resource.data = data
+  const urls = resource.urls;
+  const results: Array<Blob | string | Response> = [];
+
+  for (let i = 0; i < urls.length; i += concurrency) {
+    const batch = urls.slice(i, i + concurrency);
+
+    const batchResults = await Promise.all(
+      batch.map(async ({ url }) => {
+        const res = await fetch(url, options);
+        if (res.status !== 200) {
+          throw Error(res.statusText);
+        }
+        if (!readAs) {
+          // check headers to get return method, splits at semicolon to handle charset
+          // e.g. application/json; charset=utf-8
+          const ctype = res.headers.get('Content-Type')?.split(';')[0];
+          // fall back to json if type is not mapped
+          readAs = contentTypeMap.get(ctype || '') ?? 'json';
+        }
+        if (readAs === 'json') {
+          return res.json();
+        } else if (readAs === 'text') {
+          return res.text();
+        } else if (readAs === 'blob') {
+          return res.blob();
+        } else if (readAs === 'response') {
+          return res;
+        } else {
+          // default to json
+          return res.json();
+        }
+      })
+    );
+
+    results.push(...batchResults);
   }
-  if (!readAs) {
-    // check headers to get return method, splits at semicolon to handle charset
-    // e.g. application/json; charset=utf-8
-    const ctype = res.headers.get('Content-Type')?.split(';')[0];
-    // fall back to json if type is not mapped
-    readAs = contentTypeMap.get(ctype || '') ?? 'json';
-  }
-  if (readAs === 'json') {
-    return res.json();
-  } else if (readAs === 'text') {
-    return res.text();
-  } else if (readAs === 'blob') {
-    return res.blob();
-  } else if (readAs === 'response') {
-    return res;
-  } else {
-    // default to json
-    return res.json();
-  }
+
+  return results;
 };
 
-export const textReader = async ({text}: TextReaderParameters) : Promise<string> => {
+export const textReader = async ({
+  text,
+}: TextReaderParameters): Promise<string> => {
   return Promise.resolve(text);
-}
+};

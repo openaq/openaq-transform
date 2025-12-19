@@ -1,3 +1,5 @@
+import { Resource } from "../core/resource";
+
 /**
  * Specifies how a URL resource should be read and parsed.
  * @remarks
@@ -24,12 +26,14 @@ export interface TextReaderParameters {
  * If readAs is not specified, the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
-  /** The URL to fetch data from */
-  resource: string;
+  /** The Resource to fetch data from */
+  resource: Resource;
   /** How to parse the response data. If omitted, auto-detected from Content-Type header */
   readAs?: ReadAs;
   /** HTTP request options for the fetch */
   options: UrlReaderOptions;
+  /** Maximum number of concurrent fetches to allows */
+  concurrency: number;
 }
 
 /**

@@ -10,6 +10,7 @@
     "strictNullChecks": true,
     "declaration": true,
     "declarationMap": true,
+    "strictPropertyInitialization": false,
 
     /* Bundler mode */
     "moduleResolution": "Bundler",

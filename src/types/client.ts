@@ -2,6 +2,7 @@ import type { BBox } from "geojson";
 import type { IndexedReaderOptions, ReaderOptions } from "./readers";
 import type { IndexedParser } from "./parsers";
 import type { ClientParameters } from "./metric";
+import { Resource } from "../core/resource";
 
 interface Meta {
   locationIdKey: string;
@@ -51,17 +52,36 @@ export interface LogEntry {
 
 export type ParseFunction = (data?: any) => string | number | object | boolean;
 
-export type Resource = string | File;
-
 export interface IndexedResource {
   measurements: Resource;
   locations?: Resource;
 }
 
+
+
+export interface IndexedFile {
+  measurements: File;
+  locations?: File;
+}
+
+export function isFile(value: unknown): value is File {
+  return typeof File !== 'undefined' && value instanceof File;
+}
+
+export function isIndexed(resource: any): resource is IndexedResource | IndexedFile {
+  return (
+    typeof resource === 'object' &&
+    resource !== null &&
+    !isFile(resource) &&
+    !(resource instanceof Resource) &&
+    'measurements' in resource
+  );
+}
+
 export type IngestMatchingMethod = 'ingest-id' | 'source-spatial';
 
 export interface ClientConfiguration {
-  resource?: Resource | IndexedResource;
+  resource?: Resource | IndexedResource | File | IndexedFile;
   readerOptions?: ReaderOptions | IndexedReaderOptions;
   reader?: string;
   parser?: string;

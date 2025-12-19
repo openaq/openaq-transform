@@ -4,7 +4,6 @@ import type { ReaderMethods } from '../types/readers';
 import {
   isPathExpression,
   type PathExpression,
-  supportedExpressionLanguagesArray,
 } from '../types/metric';
 import { search } from '@jmespath-community/jmespath';
 
@@ -32,9 +31,7 @@ export const getValueFromKey = (
       value = search(data, key.expression);
     } else {
       throw TypeError(
-        `TypeError: unsupported path expression type, supported syntaxes include: ${supportedExpressionLanguagesArray.join(
-          ', '
-        )}`
+                    'TypeError: unsupported path expression type, supported syntaxes include: jmespath'
       );
     }
   }
@@ -79,9 +76,8 @@ export function countDecimals(value: number) {
   return value.toString().split('.')[1].length || 0;
 }
 
-// temporary method
-export function isFile(obj: object) {
-  return obj.constructor.name === 'File';
+export function isFile(value: unknown): value is File {
+  return typeof File !== 'undefined' && value instanceof File;
 }
 
 export function formatValueForLog(value: unknown): string {

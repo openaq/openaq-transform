@@ -1,37 +1,66 @@
 import { expect, test } from 'vitest';
 import { Resource } from './resource.ts';
 
-test('', () => {
-  const resource = new Resource(
-    'https://example.com',
-    [
-      { foo: 'bar', baz: 'boo' },
-      { foo: 'bar', baz: 'boo' },
-      { foo: 'bar', baz: 'boo' },
-    ],
-    ['this', 'that', 'other']
-  );
+
+test('resource with static parameters works', () => {
+  const resource = new Resource('https://example.com/locations/:locationsId', [
+    { locationsId: 42 },
+    { locationsId: 43 },
+    { locationsId: 44 },
+  ]);
   const urls = resource.urls;
   expect(urls).toStrictEqual([
-    { url: 'https://example.com/this?foo=bar&baz=boo' },
-    { url: 'https://example.com/that?foo=bar&baz=boo' },
-    { url: 'https://example.com/other?foo=bar&baz=boo' },
+    { url: 'https://example.com/locations/42' },
+    { url: 'https://example.com/locations/43' },
+    { url: 'https://example.com/locations/44' },
   ]);
 });
 
 
-test('', () => {
-  const resource = new Resource(
-    'https://example.com',
-    [
-      { foo: 'bar', baz: 'boo' },
-    ],
-    ['this', 'that', 'other']
-  );
+test('resource with parameters function that returns static values works', () => {
+  const resource = new Resource('https://example.com/locations/:locationsId', () => [{"locationsId": 42},{"locationsId": 43},{"locationsId": 44}]);
   const urls = resource.urls;
   expect(urls).toStrictEqual([
-    { url: 'https://example.com/this?foo=bar&baz=boo' },
-    { url: 'https://example.com/that' },
-    { url: 'https://example.com/other' },
+    { url: 'https://example.com/locations/42' },
+    { url: 'https://example.com/locations/43' },
+    { url: 'https://example.com/locations/44' },
   ]);
 });
+
+
+test('resource with dynamic function and data works', () => {
+  const data = [{"locations": [{"locationsId": 42},{"locationsId": 43},{"locationsId": 44}]}]
+  const parametersFunction = (d) => d[0].locations.map(o => o);
+  const resource = new Resource('https://example.com/locations/:locationsId', parametersFunction);
+  resource.data = data;
+  const urls = resource.urls;
+  expect(urls).toStrictEqual([
+    { url: 'https://example.com/locations/42' },
+    { url: 'https://example.com/locations/43' },
+    { url: 'https://example.com/locations/44' },
+  ]);
+});
+
+test('resource with jmespath and data works', () => {
+  const data = [{"locations": [{"locationsId": 42},{"locationsId": 43},{"locationsId": 44}]}]
+  const resource = new Resource('https://example.com/locations/:locationsId', { type: 'jmespath', expression: '[0].locations'});
+  resource.data = data;
+  const urls = resource.urls;
+  expect(urls).toStrictEqual([
+    { url: 'https://example.com/locations/42' },
+    { url: 'https://example.com/locations/43' },
+    { url: 'https://example.com/locations/44' },
+  ]);
+});
+
+
+
+
+
+// test('', () => {
+//   const locationResource = new Resource('http://localhost:8000/v3/locations/1');
+//   const measurementsResource = new Resource(
+//     'http://localhost:8000/v3/sensors/:sensorsId/measurements?limit=100',
+//     () => 
+//   );
+// });

@@ -1,6 +1,5 @@
 import {
   cleanKey,
-  isFile,
   getMethod,
   getValueFromKey,
   formatValueForLog,
@@ -23,9 +22,11 @@ import {
   IndexedResource,
   LogEntry,
   ParseFunction,
-  Resource,
   Summary,
   IngestMatchingMethod,
+  IndexedFile,
+  isIndexed,
+  isFile,
 } from '../types/client';
 import { SystemData } from '../types/system';
 import { ParserMethods } from '../types/parsers';
@@ -34,7 +35,12 @@ import type {
   ReaderMethods,
   ReaderOptions,
 } from '../types/readers';
-import { ClientParameters, ParameterKeyFunction, PathExpression } from '../types/metric';
+import {
+  ClientParameters,
+  ParameterKeyFunction,
+  PathExpression,
+} from '../types/metric';
+import { Resource } from './resource';
 
 const log = debug('openaq-transform client (core): DEBUG');
 
@@ -43,7 +49,7 @@ export abstract class Client<
   P extends ParserMethods = ParserMethods
 > {
   provider!: string;
-  resource?: Resource | IndexedResource;
+  resource?: Resource | IndexedResource | File | IndexedFile;
   secrets?: object;
   reader: ClientReader = 'api';
   parser: ClientParser = 'json';
@@ -60,20 +66,24 @@ export abstract class Client<
   // mapped data variables
   locationIdKey: string | PathExpression | ParseFunction = 'location';
   locationLabelKey: string | PathExpression | ParseFunction = 'label';
+  // if longFormat = false this value is ignored
   parameterNameKey: string | PathExpression | ParseFunction = 'parameter';
   parameterValueKey: string | PathExpression | ParseFunction = 'value';
   yGeometryKey: string | PathExpression | ParseFunction = 'y';
   xGeometryKey: string | PathExpression | ParseFunction = 'x';
-  manufacturerKey: string | PathExpression | ParseFunction = 'manufacturer_name';
+  manufacturerKey: string | PathExpression | ParseFunction =
+    'manufacturer_name';
   modelKey: string | PathExpression | ParseFunction = 'model_name';
   ownerKey: string | PathExpression | ParseFunction = 'owner_name';
   datetimeKey: string | PathExpression | ParseFunction = 'datetime';
   licenseKey: string | PathExpression | ParseFunction = 'license';
   isMobileKey: string | PathExpression | ParseFunction = 'is_mobile';
-  loggingIntervalKey: string | PathExpression | ParseFunction = 'logging_interval_seconds';
-  averagingIntervalKey: string | PathExpression | ParseFunction = 'averaging_interval_seconds';
+  loggingIntervalKey: string | PathExpression | ParseFunction =
+    'logging_interval_seconds';
+  averagingIntervalKey: string | PathExpression | ParseFunction =
+    'averaging_interval_seconds';
   sensorStatusKey: string | PathExpression | ParseFunction = 'status';
-  ingestMatchingMethod: IngestMatchingMethod = 'ingest-id'
+  ingestMatchingMethod: IngestMatchingMethod = 'ingest-id';
 
   datasources: object = {};
   missingDatasources: string[] = [];
@@ -84,8 +94,8 @@ export abstract class Client<
   // transforming could be later
   parameters: ClientParameters = PARAMETER_DEFAULTS;
 
-  #startedOn?: Datetime
-  #finishedOn?: Datetime
+  #startedOn?: Datetime;
+  #finishedOn?: Datetime;
   #measurements?: Measurements;
   #locations: Locations;
   #sensors: Sensors;
@@ -247,89 +257,97 @@ export abstract class Client<
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
-    if (typeof this.resource === 'object' && !isFile(this.resource)) {
-      // loop through all those keys to create the data object
-      let data: DataDefinition = {};
-
-      for (const [key, resource] of Object.entries(this.resource)) {
-        log(`Loading ${key} using ${resource}`);
-
-        const reader = getMethod(
-          key as keyof IndexedResource,
-          this.reader,
-          this.readers
-        );
-
-        const parser = getMethod(
-          key as keyof IndexedResource,
-          this.parser,
-          this.parsers
-        );
-
-        // we need a way to get the secrets injected here
-        const options = getReaderOptions(
-          this.readerOptions,
-          key as keyof IndexedReaderOptions
-        );
-
-        // pass existing data to the current resource
-        const text = await reader({ resource, options });
-        //const d = await parser({ text, data });
-        // we want to pass the current data object to the parsers in case they are needed
-        // and the parsers are expected to either build the data object
-        // which would mean we just overwrite the data object
-        // or it could be the more traditional method of returning an array
-        // so we need to do a check and
-        const d = await parser({ text, data });
-        if (Array.isArray(d)) {
-          // method returned a list and we need to index it
-          data[key] = d;
-        } else {
-          // method returned an object that should replace the old one
-          // we could check the keys (e.g. key in d) but I am not sure that it matters
-          // might be best to create a property of the client like `overwriteFetchedData`
-          data = d;
-        }
-
-      }
-      return data;
+    if (this.resource === undefined) {
+      throw new Error('No resource provided');
+    }
+    if (isIndexed(this.resource)) {
+      return await this.loadIndexedResources(this.resource);
     } else {
-      // assume is should just be passed to the reader method
-      let reader;
-      let parser;
-      let resource = this.resource;
-      if (typeof this.resource === 'object' && isFile(this.resource)) {
-        reader = getMethod('measurements', this.reader, this.readers);
-        parser = getMethod('measurements', this.parser, this.parsers);
-      } else {
-        resource = this.resource;
-        reader = getMethod(null, this.reader, this.readers);
-        parser = getMethod(null, this.parser, this.parsers);
-      }
-      const text = await reader({ resource });
-      const d = await parser({ text });
+      return await this.loadSingleResource(this.resource);
+    }
+  }
 
-      if (typeof d !== 'object')
-        throw new Error('Parser did not return an object');
+  private async loadIndexedResources(
+    resource: IndexedResource | IndexedFile
+  ): Promise<DataDefinition> {
+    let data: DataDefinition = {};
 
-      // at this point its possible that we dont have data in the format
-      //  {
-      //   measurements: ...,
-      //   locations: ...,
-      //   ...
-      //  }
-      const acceptedKeys = new Set([
-        'locations',
-        'sensors',
-        'measurements',
-        'flags',
-      ]);
-      if (!Object.keys(d).every((key) => acceptedKeys.has(key))) {
-        // assume that we have data in wide format that is not properly keyed
-        return { measurements: d };
+    const keys = ['locations', 'measurements'] as const;
+
+    for (const key of keys) {
+      const res = resource[key];
+      log(`Loading ${key} using ${res}`);
+
+      const reader = getMethod(
+        key as keyof IndexedResource,
+        this.reader,
+        this.readers
+      );
+      const parser = getMethod(
+        key as keyof IndexedResource,
+        this.parser,
+        this.parsers
+      );
+      const options = getReaderOptions(
+        this.readerOptions,
+        key as keyof IndexedReaderOptions
+      );
+
+      const text = await reader({ resource: res, options });
+      const d = await parser({ text, data });
+
+      if (Array.isArray(d)) {
+        // Parser returned an array - index it by key
+        data[key] = d;
       } else {
-        return d;
+        // Parser returned an object - replace entire data object
+        data = d;
       }
+    }
+
+    return data;
+  }
+
+  private async loadSingleResource(
+    resource: Resource | File
+  ): Promise<DataDefinition> {
+    let reader;
+    let parser;
+
+    if (isFile(resource)) {
+      // File object (uploaded binary file)
+      reader = getMethod('measurements', this.reader, this.readers);
+      parser = getMethod('measurements', this.parser, this.parsers);
+    } else {
+      // Resource class instance
+      reader = getMethod(null, this.reader, this.readers);
+      parser = getMethod(null, this.parser, this.parsers);
+    }
+
+    const text = await reader({ resource });
+    const d = await parser({ text });
+
+    if (typeof d !== 'object') {
+      throw new Error('Parser did not return an object');
+    }
+
+    return this.normalizeDataStructure(d);
+  }
+
+  private normalizeDataStructure(d: any): DataDefinition {
+    const acceptedKeys = new Set([
+      'locations',
+      'sensors',
+      'measurements',
+      'flags',
+    ]);
+
+    // Check if data is already in the expected indexed format
+    if (Object.keys(d).every((key) => acceptedKeys.has(key))) {
+      return d;
+    } else {
+      // Data is in wide format, wrap it as measurements
+      return { measurements: d };
     }
   }
 
@@ -376,13 +394,13 @@ export abstract class Client<
    * @param {(string|file|object)} file - file path, object or file
    */
   async load() {
-    log(`Starting the load process`)
+    log(`Starting the load process`);
     // start the fetch clock
-    this.#startedOn = Datetime.now()
+    this.#startedOn = Datetime.now();
     const data = await this.loadResources();
     this.process(data);
-    log(`Finished load + process`)
-    this.#finishedOn = Datetime.now()
+    log(`Finished load + process`);
+    this.#finishedOn = Datetime.now();
     return this.data();
   }
 
@@ -509,14 +527,18 @@ export abstract class Client<
       getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
     // maintain a way to get the sensor back without traversing everything
 
-    const manufacturerName = cleanKey(getValueFromKey(data, this.manufacturerKey));
+    const manufacturerName = cleanKey(
+      getValueFromKey(data, this.manufacturerKey)
+    );
     const modelName = cleanKey(getValueFromKey(data, this.modelKey));
     const versionDate = cleanKey(data.version_date);
     const instance = cleanKey(data.instance);
 
-
     // now use the location to get or add system
-    const system = location.getSystem({ manufacturerName, modelName } as SystemData);
+    const system = location.getSystem({
+      manufacturerName,
+      modelName,
+    } as SystemData);
 
     // check if the sensor exists
     const key = Sensor.createKey({
@@ -524,13 +546,12 @@ export abstract class Client<
       metric: data.metric,
       versionDate,
       instance,
-    })
-
+    });
 
     if (this.#sensors.has(key)) {
       sensor = this.#sensors.get(key);
     } else {
-      sensor =  new Sensor({
+      sensor = new Sensor({
         systemKey: system.key,
         metric: data.metric,
         averagingIntervalSeconds,
@@ -544,7 +565,7 @@ export abstract class Client<
     }
 
     if (!sensor) {
-      throw new Error(`Could not find or create sensor`)
+      throw new Error(`Could not find or create sensor`);
     }
 
     return sensor;
@@ -570,7 +591,7 @@ export abstract class Client<
 
         params.map((p) => {
           let metric, value, metricName, valueName;
- 
+
           if (this.longFormat) {
             // for long format data we will need to extract the parameter name from the field
             metricName = getValueFromKey(measurementRow, p);
@@ -580,7 +601,6 @@ export abstract class Client<
             metricName = p;
             valueName = p;
           }
-
 
           value = getValueFromKey(measurementRow, valueName);
 
@@ -598,7 +618,10 @@ export abstract class Client<
             const sensor = this.getSensor({ ...measurementRow, metric });
             if (!sensor) {
               this.errorHandler(
-                new MissingAttributeError('sensor', { ...measurementRow, metric })
+                new MissingAttributeError('sensor', {
+                  ...measurementRow,
+                  metric,
+                })
               );
               return;
             }
@@ -688,5 +711,4 @@ export abstract class Client<
       locations: this.#locations.json(),
     };
   }
-
 }

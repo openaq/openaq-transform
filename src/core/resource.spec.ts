@@ -52,15 +52,3 @@ test('resource with jmespath and data works', () => {
     { url: 'https://example.com/locations/44' },
   ]);
 });
-
-
-
-
-
-// test('', () => {
-//   const locationResource = new Resource('http://localhost:8000/v3/locations/1');
-//   const measurementsResource = new Resource(
-//     'http://localhost:8000/v3/sensors/:sensorsId/measurements?limit=100',
-//     () => 
-//   );
-// });

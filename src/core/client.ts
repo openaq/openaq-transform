@@ -293,7 +293,7 @@ export abstract class Client<
         key as keyof IndexedReaderOptions
       );
 
-      const text = await reader({ resource: res, options });
+      const text = await reader({ resource: res, options }, data);
       const d = await parser({ text, data });
 
       if (Array.isArray(d)) {

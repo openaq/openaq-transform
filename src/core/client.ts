@@ -449,10 +449,9 @@ export abstract class Client<
     if (!location) {
       // process data through the location map
       location = new Location({
-        ...data, // if sommething like key is in here we want the key to override it
-        //key: key,
+        ...data,
+        siteId,
         provider: this.provider,
-        siteId: getValueFromKey(data, this.locationIdKey),
         siteName: getValueFromKey(data, this.locationLabelKey),
         ismobile: getValueFromKey(data, this.isMobileKey),
         x: getValueFromKey(data, this.xGeometryKey),
@@ -643,17 +642,30 @@ export abstract class Client<
   // }
   processMeasurementsData(measurements: any) {
     log(`Processing ${measurements.length} measurement(s)`);
+    // if we provided a parameter column key we use that
+    // otherwise we use the list of parameters
+    // the end goal is just an array of parameter names to loop through
+    const params: Array<string | ParameterKeyFunction> = this.longFormat
+      // for long format we will just pass the parameter name key and use that each time
+      ? [this.parameterNameKey]
+      : this.measurements.parameterKeys();
 
     measurements.forEach((measurementRow: any) => {
       try {
         const datetime = this.getDatetime(measurementRow);
 
-        if (this.longFormat) {
-          const metricName: string = getValueFromKey(
-            measurementRow,
-            this.parameterNameKey
-          );
-          const value = getValueFromKey(measurementRow, this.parameterValueKey);
+        params.map((p) => {
+          let metric, value, metricName, valueName;
+
+          if (this.longFormat) {
+            // for long format data we will need to extract the parameter name from the field
+            metricName = getValueFromKey(measurementRow, p);
+            valueName = this.parameterValueKey;
+          } else {
+            // for wide format they are both the same value
+            metricName = p;
+            valueName = p;
+          }
 
           if (value !== undefined && (value || this.longFormat)) {
             const metric = this.measurements.metricFromProviderKey(metricName);

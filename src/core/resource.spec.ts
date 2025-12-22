@@ -13,6 +13,7 @@ test('resource with static parameters works', () => {
     { url: 'https://example.com/locations/42' },
     { url: 'https://example.com/locations/43' },
     { url: 'https://example.com/locations/44' },
+<<<<<<< HEAD
   ]);
 });
 
@@ -21,6 +22,8 @@ test('resource with single static url works', () => {
   const urls = resource.urls;
   expect(urls).toStrictEqual([
     { url: 'https://example.com/locations/2178' },
+=======
+>>>>>>> 2fdf080 (rebase')
   ]);
 });
 
@@ -60,3 +63,18 @@ test('resource with jmespath and data works', () => {
     { url: 'https://example.com/locations/44' },
   ]);
 });
+<<<<<<< HEAD
+=======
+
+
+
+
+
+// test('', () => {
+//   const locationResource = new Resource('http://localhost:8000/v3/locations/1');
+//   const measurementsResource = new Resource(
+//     'http://localhost:8000/v3/sensors/:sensorsId/measurements?limit=100',
+//     () => 
+//   );
+// });
+>>>>>>> 2fdf080 (rebase')

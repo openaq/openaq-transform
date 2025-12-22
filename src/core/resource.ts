@@ -3,7 +3,6 @@ import { isPathExpression } from '../types/metric';
 import type {  Body } from '../types/resource';
 import {type JSONValue, search } from '@jmespath-community/jmespath';
 
-
 export type Parameters = Record<string, any>;
 
 export type ParametersFunction = (data?: JSONValue) => Parameters[];

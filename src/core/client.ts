@@ -293,7 +293,11 @@ export abstract class Client<
         key as keyof IndexedReaderOptions
       );
 
+<<<<<<< HEAD
       const text = await reader({ resource: res, options }, data);
+=======
+      const text = await reader({ resource: res, options });
+>>>>>>> 2fdf080 (rebase')
       const d = await parser({ text, data });
 
       if (Array.isArray(d)) {
@@ -667,6 +671,13 @@ export abstract class Client<
             valueName = p;
           }
 
+<<<<<<< HEAD
+=======
+          value = getValueFromKey(measurementRow, valueName);
+
+          // for wide format data we will not assume that null is a real measurement
+          // but for long format data we will assume it is valid
+>>>>>>> 2fdf080 (rebase')
           if (value !== undefined && (value || this.longFormat)) {
             const metric = this.measurements.metricFromProviderKey(metricName);
             if (!metric) {

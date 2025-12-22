@@ -31,7 +31,7 @@ export const getValueFromKey = (
       value = search(data, key.expression);
     } else {
       throw TypeError(
-                    'TypeError: unsupported path expression type, supported syntaxes include: jmespath'
+        `TypeError: unsupported path expression type, supported syntaxes include: jmespath`
       );
     }
   }

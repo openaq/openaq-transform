@@ -575,14 +575,14 @@ export abstract class Client<
    *
    * @param {array} measurements - list of measurement data
    */
-   processMeasurementsData(measurements: any) {
+  processMeasurementsData(measurements: any) {
     log(`Processing ${measurements.length} measurement(s)`);
     // if we provided a parameter column key we use that
     // otherwise we use the list of parameters
     // the end goal is just an array of parameter names to loop through
     const params: Array<string | ParameterKeyFunction> = this.longFormat
-      // for long format we will just pass the parameter name key and use that each time
-      ? [this.parameterNameKey]
+      ? // for long format we will just pass the parameter name key and use that each time
+        [this.parameterNameKey]
       : this.measurements.parameterKeys();
 
     measurements.forEach((measurementRow: any) => {
@@ -607,12 +607,14 @@ export abstract class Client<
           // for wide format data we will not assume that null is a real measurement
           // but for long format data we will assume it is valid
           if (value !== undefined && (value || this.longFormat)) {
-            const metric = this.measurements.metricFromProviderKey(metricName);
+            metric = this.measurements.metricFromProviderKey(metricName);
             if (!metric) {
               this.errorHandler(new UnsupportedParameterError(metricName));
               return;
             }
 
+            // get the approprate sensor from or reference list,
+            // or create it, which in turn with create the location and system
             const sensor = this.getSensor({ ...measurementRow, metric });
             if (!sensor) {
               this.errorHandler(
@@ -623,7 +625,6 @@ export abstract class Client<
               );
               return;
             }
-
             this.measurements.add(
               new Measurement({
                 sensor: sensor,
@@ -632,48 +633,7 @@ export abstract class Client<
               })
             );
           }
-        } else {
-          const params = this.measurements.parameterKeys();
-
-          params.forEach((p) => {
-            let metric, value, metricName: string, valueName;
-
-            metricName =
-              typeof p === 'string'
-                ? p
-                : (p as ParameterKeyFunction).toString();
-            valueName = p;
-
-            value = getValueFromKey(measurementRow, valueName);
-
-            if (value !== undefined && value) {
-              metric = this.measurements.metricFromProviderKey(metricName);
-              if (!metric) {
-                this.errorHandler(new UnsupportedParameterError(metricName));
-                return;
-              }
-
-              const sensor = this.getSensor({ ...measurementRow, metric });
-              if (!sensor) {
-                this.errorHandler(
-                  new MissingAttributeError('sensor', {
-                    ...measurementRow,
-                    metric,
-                  })
-                );
-                return;
-              }
-
-              this.measurements.add(
-                new Measurement({
-                  sensor: sensor,
-                  timestamp: datetime,
-                  value: value,
-                })
-              );
-            }
-          });
-        }
+        });
       } catch (e: unknown) {
         if (e instanceof Error || typeof e === 'string') {
           this.errorHandler(e);
@@ -681,7 +641,6 @@ export abstract class Client<
       }
     });
   }
-  
 
   /**
    * PLACEHOLDER

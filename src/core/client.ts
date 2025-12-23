@@ -294,7 +294,7 @@ export abstract class Client<
       );
 
       const text = await reader({ resource: res, options }, data);
-      const d = await parser({ text, data });
+      const d = await Promise.all(text.map(t => parser({ t, data })));
 
       if (Array.isArray(d)) {
         // Parser returned an array - index it by key

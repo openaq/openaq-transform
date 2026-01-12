@@ -1,13 +1,14 @@
 import debug from 'debug';
 import {
+  DataContext,
   isIndexedReaderOptions,
+  UrlReaderOptions,
   UrlReaderParameters,
   type IndexedReaderOptions,
   type ReadAs,
   type ReaderOptions,
-  type TextReaderParameters,
 } from '../types/readers';
-import type { JSONValue } from '@jmespath-community/jmespath';
+import { Parser } from '../types/parsers';
 const log = debug('openaq-transform readers: DEBUG');
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
@@ -21,7 +22,6 @@ export function getReaderOptions<K extends keyof IndexedReaderOptions>(
   }
 }
 
-// Create the Map with proper typing
 const contentTypeMap = new Map<string | null | undefined, ReadAs>([
   ['application/json', 'json'],
   ['application/ld+json', 'text'],
@@ -34,14 +34,31 @@ const contentTypeMap = new Map<string | null | undefined, ReadAs>([
   [undefined, 'json'],
 ]);
 
+
+const httpFetcher = async({}) => {} // https:// or http://
+
+const s3Fetcher = async({}) => {} /// s3://
+
+const r2Fetch = async({}) => {} // rs://
+
+const googleStorageFetcher = async() => {} // gs://
+
 export const apiReader = async ({
   resource,
   readAs,
-  options,
+  options = { method: 'GET' },
   concurrency = 3,
-}: UrlReaderParameters, data: JSONValue): Promise<Array<Blob | string | Response>> => {
+}: UrlReaderParameters, parser: Parser, data: DataContext): Promise<object> => {
   log(`Fetching ${readAs} data from ${resource}`);
   resource.data = data
+
+
+  // overrides default if needed
+  const fetchOptions: UrlReaderOptions = {
+    method: 'GET',
+    ...options,
+  };
+
   const urls = resource.urls;
   const results: Array<Blob | string | Response> = [];
 
@@ -50,7 +67,7 @@ export const apiReader = async ({
 
     const batchResults = await Promise.all(
       batch.map(async ({ url }) => {
-        const res = await fetch(url, options);
+        const res = await fetch(url, fetchOptions);
         if (res.status !== 200) {
           throw Error(res.statusText);
         }
@@ -67,8 +84,8 @@ export const apiReader = async ({
           return res.text();
         } else if (readAs === 'blob') {
           return res.blob();
-        } else if (readAs === 'response') {
-          return res;
+        // } else if (readAs === 'response') {
+        //   return res;
         } else {
           // default to json
           return res.json();
@@ -78,12 +95,5 @@ export const apiReader = async ({
 
     results.push(...batchResults);
   }
-
-  return results;
-};
-
-export const textReader = async ({
-  text,
-}: TextReaderParameters): Promise<string> => {
-  return Promise.resolve(text);
+  return parser({content: results, data})
 };

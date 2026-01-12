@@ -1,3 +1,8 @@
+
+export const RESOURCE_KEYS = ['measurements', 'locations', 'meta', 'flags', 'sensors'] as const;
+
+export type ResourceKeys = typeof RESOURCE_KEYS[number];
+
 /**
  * Special Body type for Resource.
  * @remarks 

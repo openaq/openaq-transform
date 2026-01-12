@@ -1,27 +1,96 @@
 import type { PathExpression } from '../types';
 import { isPathExpression } from '../types/metric';
-import type {  Body } from '../types/resource';
-import {type JSONValue, search } from '@jmespath-community/jmespath';
+import { DataContext } from '../types/readers';
+import type { Body } from '../types/resource';
+import { search } from '@jmespath-community/jmespath';
 
 export type Parameters = Record<string, any>;
 
-export type ParametersFunction = (data?: JSONValue) => Parameters[];
+export type ParametersFunction = (data?: DataContext) => Parameters[];
 
 interface ResourceUrl {
   url: string;
   body?: Body;
 }
 
-export class Resource {
-  url: string;
-  parameters?: Parameters[] | ParametersFunction | PathExpression;
-  body?: Body;
-  #data: JSONValue;
+type ResourceConfig =
+  {
+      url: string;
+      file?: never;
+      parameters?: Parameters[] | ParametersFunction | PathExpression;
+      body?: Body;
+    }
+  | {
+      url?: never;
+      file: File;
+      parameters?: never;
+      body?: never;
+    };
 
-  constructor(url: string, parameters?: Parameters[] | ParametersFunction, body?: Body) {
-    this.url = url;
-    this.parameters = parameters;
-    this.body = body;
+
+export class Resource {
+  #file?: File | Array<File>;
+  #url?: string;
+  #parameters?: Parameters[] | ParametersFunction | PathExpression;
+  #body?: Body;
+  #data: DataContext;
+
+  constructor(config: ResourceConfig) {
+    this.validateConfig(config);
+
+    this.#file = config.file;
+    this.#url = config.url;
+    this.#parameters = config.parameters;
+    this.#body = config.body;
+  }
+
+  private validateConfig(config: any): asserts config is ResourceConfig {
+    const hasUrl = config.url !== undefined && config.url !== null;
+    const hasFile = config.file !== undefined && config.file !== null;
+
+    if (!hasUrl && !hasFile) {
+      throw new TypeError('Either "url" or "file" must be provided');
+    }
+
+    if (hasUrl && hasFile) {
+      throw new TypeError(
+        'Cannot provide both "url" and "file" they are mutually exclusive'
+      );
+    }
+
+    if (
+      hasFile &&
+      (config.parameters !== undefined || config.body !== undefined)
+    ) {
+      throw new TypeError(
+        '"parameters" and "body" can only be used with "url", not "file"'
+      );
+    }
+
+    if (hasUrl && typeof config.url !== 'string') {
+      throw new TypeError('"url" must be a string');
+    }
+
+    if (hasFile && !(config.file instanceof File)) {
+      throw new TypeError('"file" must be a File object');
+    }
+  }
+
+  isFileResource(): this is Resource & { file: File } {
+    return this.#file !== undefined;
+  }
+
+  isUrlResource(): this is Resource & { url: string } {
+    return this.#url !== undefined;
+  }
+
+  get protocol(): string {
+    const url = new URL(this.urls[0].url)
+    return url.protocol;
+  }
+
+  get files(): Array<File> | undefined {
+    return this.#file ? Array.isArray(this.#file) ? this.#file : [this.#file] : undefined;
   }
 
   private static replaceTemplateVariables(
@@ -35,7 +104,12 @@ export class Resource {
   }
 
   private buildUrl(parameters: Parameters): string {
-    const replaced = this.url.replace(/:(\w+)/g, (_match, key) => {
+    if (!this.#url) {
+      throw new TypeError(
+        'Cannot build URL: resource is file-based, not URL-based'
+      );
+    }
+    const replaced = this.#url.replace(/:(\w+)/g, (_match, key) => {
       const value = parameters[key];
       if (value === undefined) {
         throw new Error(`Missing required parameter: ${key}`);
@@ -48,7 +122,7 @@ export class Resource {
       return url.href;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(
+      throw new TypeError(
         `Invalid URL after template substitution: ${replaced}. ${message}`
       );
     }
@@ -98,22 +172,27 @@ export class Resource {
     return body;
   }
 
+  set data(data: DataContext) {
+    this.#data = JSON.parse(JSON.stringify(data));
+  }
 
-    set data(data: JSONValue) {
-        this.#data = data;
+  get urls(): ResourceUrl[] {
+    if (!this.#url) {
+      throw new TypeError(
+        'Cannot get URLs: resource is file-based, not URL-based'
+      );
     }
 
-    get urls(): ResourceUrl[] {
     let urls: ResourceUrl[] = [];
 
-    if (this.parameters !== undefined) {
+    if (this.#parameters !== undefined) {
       const parameters = this.resolveParameters();
-      
+
       for (const params of parameters) {
         const url = this.buildUrl(params);
         let body;
-        if (this.body !== undefined) {
-          body = Resource.buildBody(this.body, params);
+        if (this.#body !== undefined) {
+          body = Resource.buildBody(this.#body, params);
         }
         urls.push({
           url,
@@ -121,37 +200,35 @@ export class Resource {
         });
       }
     } else {
-        urls.push({
-          url: this.url,
-          ...(this.body && { body: this.body }),
-        });
+      urls.push({
+        url: this.#url,
+        ...(this.#body && { body: this.#body }),
+      });
     }
 
     return urls;
   }
 
-
   private resolveParameters(): Parameters[] {
-    if (!this.parameters) {
+    if (!this.#parameters) {
       return [];
     }
 
-    if (Array.isArray(this.parameters)) {
-      return this.parameters;
+    if (Array.isArray(this.#parameters)) {
+      return this.#parameters;
     }
 
-    if (isPathExpression(this.parameters)) {
-        if (this.parameters.type === 'jmespath') {
-            const value = search(this.#data, this.parameters.expression);
-            return value as Parameters[];
-        } else {
-            throw TypeError(
-            'TypeError: unsupported path expression type, supported syntaxes include: jmespath'
-            );
-        }
+    if (isPathExpression(this.#parameters)) {
+      if (this.#parameters.type === 'jmespath') {
+        const value = search(this.#data, this.#parameters.expression);
+        return value as Parameters[];
+      } else {
+        throw TypeError(
+          'TypeError: unsupported path expression type, supported syntaxes include: jmespath'
+        );
+      }
     }
-    
-    return this.parameters(this.#data);
+
+    return this.#parameters(this.#data);
   }
 }
-

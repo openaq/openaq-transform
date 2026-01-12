@@ -13,6 +13,7 @@ const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
 
 import debug from 'debug';
+import { Resource } from '../core/resource.ts';
 
 debug.enable('openaq*');
 
@@ -123,12 +124,12 @@ server.listen();
 
 describe('Simple client example', () => {
   class FakeClient extends Client {
-    resource: string = 'fake.resource';
+    resource = new Resource({ url : 'fake.resource'});
   }
 
   test('resource is updated', () => {
     const cln = new FakeClient();
-    expect(cln.resource).toBe('fake.resource');
+    expect(cln.resource.urls).toStrictEqual([{url:'fake.resource'}]);
   });
 
   test('abstract defaults persist', () => {
@@ -143,17 +144,17 @@ describe('Simple client example', () => {
   });
 
   test('resource cant be overidden', () => {
-    const resource = 'different.fake.resource';
+    const resource = new Resource({url:'different.fake.resource'});
     const provider = 'my-provider';
     const cln = new FakeClient({ resource, provider });
-    expect(cln.resource).toBe('fake.resource');
+    expect(cln.resource.urls).toStrictEqual([{url:'fake.resource'}]);
     expect(cln.provider).toBe(provider);
   });
 });
 
 describe('Client with data in wide format', () => {
   class JsonClient extends Client {
-    resource = 'https://blah.org/wide';
+    resource = new Resource({url:'https://blah.org/wide'});
     provider = 'testing';
     // mapping data
     xGeometryKey = 'longitude';
@@ -174,7 +175,7 @@ describe('Client with data in wide format', () => {
 
   test('Resource check', () => {
     const cln = new JsonClient();
-    expect(cln.resource).toBe('https://blah.org/wide');
+    expect(cln.resource.urls).toStrictEqual([{"url":'https://blah.org/wide'}]);
   });
 
   test('parameter check', () => {
@@ -196,9 +197,8 @@ describe('Client with data in wide format', () => {
 describe('Client with data split between two different resources', () => {
   class JsonClient extends Client {
     resource = {
-      // name of the node and then the src resource
-      locations: 'https://blah.org/test-provider/stations',
-      measurements: 'https://blah.org/test-provider/measurements',
+      locations: new Resource({url:'https://blah.org/test-provider/stations'}),
+      measurements: new Resource({url:'https://blah.org/test-provider/measurements'}),
     };
     provider = 'testing';
     // mapping data
@@ -226,7 +226,7 @@ describe('Client with data split between two different resources', () => {
 
 describe('Client with data in long format', () => {
   class JsonClient extends Client {
-    resource = 'https://blah.org/long';
+    resource = new Resource({url:'https://blah.org/long'});
     provider = 'testing';
     // mapping data
     longFormat = true;
@@ -254,7 +254,7 @@ describe('Client with data in long format', () => {
 
 describe('Provider that passes sensor data', () => {
   class JsonClient extends Client {
-    resource = 'https://blah.org/withsensors';
+    resource = new Resource({url:'https://blah.org/withsensors'});
     provider = 'testing';
     // mapping data
     longFormat = true;
@@ -282,7 +282,7 @@ describe('Provider that passes sensor data', () => {
 
 describe('Dynamic adapter that gets mapping from initial config', () => {
   class JsonClient extends Client {
-    resource = 'https://blah.org/withsensors';
+    resource = new Resource({url:'https://blah.org/withsensors'});
     provider = 'testing';
     longFormat = true;
     parameters = [
@@ -310,7 +310,7 @@ describe('Dynamic adapter that gets mapping from initial config', () => {
 
 describe('Dynamic adapter that gets mapping from delayed configure', () => {
   class JsonClient extends Client {
-    resource = 'https://blah.org/withsensors';
+    resource = new Resource({url:'https://blah.org/withsensors'});
     provider = 'testing';
     longFormat = true;
   }
@@ -455,7 +455,7 @@ describe('Client with measurement errors', () => {
   };
 
   class JsonClient extends Client {
-    resource = 'https://blah.org/wideerrors';
+    resource = new Resource({url:'https://blah.org/wideerrors'});
     provider = 'testing';
     strict = false;
     longFormat = true;

@@ -1,6 +1,5 @@
 import {
   cleanKey,
-  getMethod,
   getValueFromKey,
   formatValueForLog,
 } from './utils';
@@ -24,23 +23,22 @@ import {
   ParseFunction,
   Summary,
   IngestMatchingMethod,
-  IndexedFile,
   isIndexed,
-  isFile,
+  isIndexedClientReader,
+  isIndexedClientParser,
 } from '../types/client';
 import { SystemData } from '../types/system';
-import { ParserMethods } from '../types/parsers';
-import type {
-  IndexedReaderOptions,
-  ReaderMethods,
-  ReaderOptions,
-} from '../types/readers';
+import { isParser, Parser, ParserMethods } from '../types/parsers';
 import {
-  ClientParameters,
-  ParameterKeyFunction,
-  PathExpression,
-} from '../types/metric';
+  isReader,
+  type IndexedReaderOptions,
+  type Reader,
+  type ReaderMethods,
+  type ReaderOptions,
+} from '../types/readers';
+import { ClientParameters, PathExpression } from '../types/metric';
 import { Resource } from './resource';
+import { RESOURCE_KEYS, ResourceKeys } from '../types/resource';
 
 const log = debug('openaq-transform client (core): DEBUG');
 
@@ -49,12 +47,12 @@ export abstract class Client<
   P extends ParserMethods = ParserMethods
 > {
   provider!: string;
-  resource?: Resource | IndexedResource | File | IndexedFile;
+  resource?: Resource | IndexedResource;
   secrets?: object;
-  reader: ClientReader = 'api';
-  parser: ClientParser = 'json';
-  abstract readers: R;
-  abstract parsers: P;
+  reader: ClientReader<R> = 'api';
+  parser: ClientParser<P> = 'json';
+  protected readonly readers: R;
+  protected readonly parsers: P;
   readerOptions: ReaderOptions | IndexedReaderOptions = {};
   fetched: boolean = false;
   // source: Source;
@@ -230,6 +228,7 @@ export abstract class Client<
    */
   getDatetime(row: any) {
     const dtString: string = getValueFromKey(row, this.datetimeKey);
+    log(`getDatetime`, dtString, row, this.datetimeKey);
     if (!dtString) {
       throw new Error(
         `Missing date/time field. Looking in ${formatValueForLog(
@@ -268,67 +267,71 @@ export abstract class Client<
   }
 
   private async loadIndexedResources(
-    resource: IndexedResource | IndexedFile
+    indexedResource: IndexedResource
   ): Promise<DataDefinition> {
     let data: DataDefinition = {};
 
-    const keys = ['locations', 'measurements'] as const;
+    let reader: Reader;
+    let parser: Parser;
 
-    for (const key of keys) {
-      const res = resource[key];
-      log(`Loading ${key} using ${res}`);
+    for (const key of RESOURCE_KEYS) {
+      const resource = indexedResource[key];
+      log(`Loading ${key} using ${resource}`);
+      if (resource) {
+        if (isIndexedClientReader<R>(this.reader)) {
+          reader = this.getReaderMethod(this.reader, key);
+        } else {
+          reader = this.getReaderMethod(this.reader);
+        }
+        if (isIndexedClientParser<P>(this.parser)) {
+          parser = this.getParserMethod(this.parser, key)
+        } else {
+          parser = this.getParserMethod(this.parser);
+        }
+        const options = getReaderOptions(
+          this.readerOptions,
+          key as keyof IndexedReaderOptions
+        );
 
-      const reader = getMethod(
-        key as keyof IndexedResource,
-        this.reader,
-        this.readers
-      );
-      const parser = getMethod(
-        key as keyof IndexedResource,
-        this.parser,
-        this.parsers
-      );
-      const options = getReaderOptions(
-        this.readerOptions,
-        key as keyof IndexedReaderOptions
-      );
+        const d = await reader({ resource, options }, parser, data);
 
-      const text = await reader({ resource: res, options }, data);
-      const d = await Promise.all(text.map(t => parser({ t, data })));
-
-      if (Array.isArray(d)) {
-        // Parser returned an array - index it by key
-        data[key] = d;
-      } else {
-        // Parser returned an object - replace entire data object
-        data = d;
+        if (Array.isArray(d)) {
+          // Parser returned an array - index it by key
+          data[key] = d.flat();
+        } else {
+          // Parser returned an object - replace entire data object
+          data = d;
+        }
       }
     }
 
     return data;
   }
 
-  private async loadSingleResource(
-    resource: Resource | File
-  ): Promise<DataDefinition> {
-    let reader;
-    let parser;
 
-    if (isFile(resource)) {
-      // File object (uploaded binary file)
-      reader = getMethod('measurements', this.reader, this.readers);
-      parser = getMethod('measurements', this.parser, this.parsers);
+  // must return parsed data in keyed format
+  private async loadSingleResource(
+    resource: Resource
+  ): Promise<DataDefinition> {
+    let reader: Reader;
+    let parser: Parser;
+    let data: DataDefinition = {};
+    
+
+    if (resource.isFileResource()) {
+      // File Resource class instance (uploaded binary file)
+      reader = this.getReaderMethod(this.reader);
+      parser = this.getParserMethod(this.parser);
     } else {
-      // Resource class instance
-      reader = getMethod(null, this.reader, this.readers);
-      parser = getMethod(null, this.parser, this.parsers);
+      // URL Resource class instance
+      reader = this.getReaderMethod(this.reader);
+      parser = this.getParserMethod(this.parser);
     }
 
-    const text = await reader({ resource });
-    const d = await parser({ text });
+    const d = await reader({ resource }, parser, data);
 
     if (typeof d !== 'object') {
-      throw new Error('Parser did not return an object');
+      throw new Error('Reader did not return an object');
     }
 
     return this.normalizeDataStructure(d);
@@ -342,7 +345,7 @@ export abstract class Client<
       'flags',
     ]);
 
-    // Check if data is already in the expected indexed format
+    //Check if data is already in the expected indexed format
     if (Object.keys(d).every((key) => acceptedKeys.has(key))) {
       return d;
     } else {
@@ -580,7 +583,8 @@ export abstract class Client<
     // if we provided a parameter column key we use that
     // otherwise we use the list of parameters
     // the end goal is just an array of parameter names to loop through
-    const params: Array<string | ParameterKeyFunction> = this.longFormat
+    const params: Array<string | PathExpression | ParseFunction> = this
+      .longFormat
       ? // for long format we will just pass the parameter name key and use that each time
         [this.parameterNameKey]
       : this.measurements.parameterKeys();
@@ -669,6 +673,123 @@ export abstract class Client<
     });
   }
 
+  private getParserMethod(method: Parser): Parser;
+
+  private getParserMethod(method: keyof P): Parser;
+
+  private getParserMethod(
+    method: Partial<Record<ResourceKeys, keyof P | Parser>>,
+    key: ResourceKeys
+  ): Parser;
+
+  private getParserMethod(method: ClientParser<P>): Parser;
+
+  private getParserMethod(
+    method: ClientParser<P>,
+    key?: ResourceKeys
+  ): Parser {
+    if (isParser(method)) {
+      return method;
+    }
+
+    if (typeof method === 'string' && method in this.parsers) {
+      const parser = this.parsers[method];
+      if (!parser) {
+        throw new Error(`parser "${method}" is undefined`);
+      }
+      return parser;
+    }
+
+    if (key && isIndexedClientParser<R>(method)) {
+      const value = method[key];
+
+      if (!value) {
+        throw new Error(`No value found for key "${key}" in indexed reader`);
+      }
+
+      if (isParser(value)) {
+        return value;
+      }
+
+      if (typeof value === 'string' && value in this.parsers) {
+        const parser = this.parsers[value];
+        if (!parser) {
+          throw new Error(`Parser "${value}" is undefined`);
+        }
+        return parser;
+      }
+
+      throw new Error(
+        `Invalid value type for key "${key}": expected Reader or valid reader name`
+      );
+    }
+
+    throw new Error(
+      `Invalid reader method: ${JSON.stringify(method)}${
+        key ? ` with key "${key}"` : ''
+      }`
+    );
+  }
+
+  private getReaderMethod(method: Reader): Reader;
+
+  private getReaderMethod(method: keyof R): Reader;
+
+  private getReaderMethod(
+    method: Partial<Record<ResourceKeys, keyof R | Reader>>,
+    key: ResourceKeys
+  ): Reader;
+
+  private getReaderMethod(method: ClientReader<R>): Reader;
+
+
+  private getReaderMethod(
+    method: ClientReader<R>,
+    key?: ResourceKeys
+  ): Reader {
+    if (isReader(method)) {
+      return method;
+    }
+
+    if (typeof method === 'string' && method in this.readers) {
+      const reader = this.readers[method];
+      if (!reader) {
+        throw new Error(`Reader "${method}" is undefined`);
+      }
+      return reader;
+    }
+
+    if (key && isIndexedClientReader<R>(method)) {
+      const value = method[key];
+
+      if (!value) {
+        throw new Error(`No value found for key "${key}" in indexed reader`);
+      }
+
+      if (isReader(value)) {
+        return value;
+      }
+
+      if (typeof value === 'string' && value in this.readers) {
+        const reader = this.readers[value];
+        if (!reader) {
+          throw new Error(`Reader "${value}" is undefined`);
+        }
+        return reader;
+      }
+
+      throw new Error(
+        `Invalid value type for key "${key}": expected Reader or valid reader name`
+      );
+    }
+
+    throw new Error(
+      `Invalid reader method: ${JSON.stringify(method)}${
+        key ? ` with key "${key}"` : ''
+      }`
+    );
+  }
+
   /**
    * Dump a summary that we can pass back to the log
    */
@@ -712,3 +833,4 @@ export abstract class Client<
     };
   }
 }
+

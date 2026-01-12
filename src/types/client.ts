@@ -1,8 +1,9 @@
 import type { BBox } from "geojson";
-import type { IndexedReaderOptions, ReaderOptions } from "./readers";
-import type { IndexedParser } from "./parsers";
+import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
+import type { IndexedParser, Parser } from "./parsers";
 import type { ClientParameters } from "./metric";
 import { Resource } from "../core/resource";
+import { ResourceKeys } from "./resource";
 
 interface Meta {
   locationIdKey: string;
@@ -52,27 +53,18 @@ export interface LogEntry {
 
 export type ParseFunction = (data?: any) => string | number | object | boolean;
 
-export interface IndexedResource {
+export type IndexedResource = {
   measurements: Resource;
-  locations?: Resource;
-}
-
-
-
-export interface IndexedFile {
-  measurements: File;
-  locations?: File;
-}
+} & Partial<Record<Exclude<ResourceKeys, 'measurements'>, Resource>>;
 
 export function isFile(value: unknown): value is File {
   return typeof File !== 'undefined' && value instanceof File;
 }
 
-export function isIndexed(resource: any): resource is IndexedResource | IndexedFile {
+export function isIndexed(resource: any): resource is IndexedResource {
   return (
     typeof resource === 'object' &&
     resource !== null &&
-    !isFile(resource) &&
     !(resource instanceof Resource) &&
     'measurements' in resource
   );
@@ -81,7 +73,7 @@ export function isIndexed(resource: any): resource is IndexedResource | IndexedF
 export type IngestMatchingMethod = 'ingest-id' | 'source-spatial';
 
 export interface ClientConfiguration {
-  resource?: Resource | IndexedResource | File | IndexedFile;
+  resource?: Resource | IndexedResource;
   readerOptions?: ReaderOptions | IndexedReaderOptions;
   reader?: string;
   parser?: string;
@@ -118,11 +110,80 @@ export interface ClientConfiguration {
 
 }
 
-export type ClientParser = string | Function | IndexedParser;
+export type IndexedClientReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;
 
-interface IndexedClientReader {
-  measurements: string;
-  locations?: string;
+export function isIndexedClientReader<T>(value: unknown): value is IndexedClientReader<T> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  
+  const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
+  const allowedKeysSet = new Set(allowedKeys);
+  
+  const objectKeys = Object.keys(value);
+  
+  if (objectKeys.length === 0) {
+    return false;
+  }
+  
+  for (const key of objectKeys) {
+    if (!allowedKeysSet.has(key as ResourceKeys)) {
+      return false;
+    }
+  }
+  
+  for (const key of objectKeys) {
+    const val = (value as any)[key];
+    if (typeof val === 'string') {
+      continue;
+    }
+    if (typeof val === 'function' && val.length >= 2) {
+      continue; 
+    }
+    return false;
+  }
+  
+  return true;
 }
 
-export type ClientReader = string | Function | IndexedClientReader;
+export type IndexedClientParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
+
+export function isIndexedClientParser<T>(value: unknown): value is IndexedClientParser<T> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  
+  const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
+  const allowedKeysSet = new Set(allowedKeys);
+  
+  const objectKeys = Object.keys(value);
+  
+  if (objectKeys.length === 0) {
+    return false;
+  }
+  
+  for (const key of objectKeys) {
+    if (!allowedKeysSet.has(key as ResourceKeys)) {
+      return false;
+    }
+  }
+  
+  for (const key of objectKeys) {
+    const val = (value as any)[key];
+    if (typeof val === 'string') {
+      continue;
+    }
+    if (typeof val === 'function' && val.length === 1) {
+      continue; 
+    }
+    return false;
+  }
+  
+  return true;
+}
+
+export type ClientReader<T> = keyof T | Reader | IndexedClientReader<T>
+
+export type ClientParser<T> = keyof T | Parser | IndexedClientParser<T>
+
+

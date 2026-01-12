@@ -13,7 +13,7 @@ import { ResourceKeys } from "./resource";
  */
 export type ReadAs = 'json' | 'text' | 'blob' ;//| 'response';
 
-export type DataContext = JSONValue;
+export type DataContext = JSONValue; // TODO Should be indexed 
 
 
 /**

@@ -13,7 +13,7 @@ import { ResourceKeys } from "./resource";
  */
 export type ReadAs = 'json' | 'text' | 'blob' ;//| 'response';
 
-export type DataContext = JSONValue; // TODO Should be indexed 
+export type DataContext = JSONValue; // TODO Should be indexed
 
 
 /**
@@ -75,7 +75,7 @@ export interface TypedReader<TParams extends ReaderParameters, TResult = string 
 
 /**
  * Reader function for URL resources.
- * @remarks 
+ * @remarks
  * Returns string, Blob, or Response based on readAs option.
  * Auto-detects content type from response headers if readAs is not specified.
  * Used by the Client class when reader is set to 'api'.
@@ -85,7 +85,7 @@ export type UrlReader = TypedReader<UrlReaderParameters>;
 
 /**
  * Reader function for filesystem resources.
- * @remarks 
+ * @remarks
  * Always returns string content.
  * Used in Node.js environments for local file access.
  */
@@ -109,7 +109,7 @@ export function isReader(value: unknown): value is Reader {
 
 /**
  * Base interface for reader options.
- * @remarks 
+ * @remarks
  * Extended by specific reader option types.
  * Retrieved using getReaderOptions() helper function in the Client class.
  */
@@ -117,7 +117,7 @@ export interface ReaderOptions {}
 
 /**
  * Options for URL-based readers.
- * @remarks 
+ * @remarks
  * Extends standard RequestInit but restricts method to GET or POST.
  * Passed to the fetch API when making HTTP requests.
  * Can include headers, credentials, and other fetch options.
@@ -171,7 +171,7 @@ export interface ReaderMethods {
 
 /**
  * Typed map of specific reader methods.
- * @remarks 
+ * @remarks
  * Provides type-safe access to common reader implementations.
  */
 export type ReaderMethodMap = {

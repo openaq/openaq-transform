@@ -110,80 +110,47 @@ export interface ClientConfiguration {
 
 }
 
-export type IndexedClientReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;
+export type IndexedReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;
 
-export function isIndexedClientReader<T>(value: unknown): value is IndexedClientReader<T> {
+export function isIndexedReader<T>(value: unknown): value is IndexedReader<T> {
+
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
-  
+
   const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
   const allowedKeysSet = new Set(allowedKeys);
-  
+
   const objectKeys = Object.keys(value);
-  
+
   if (objectKeys.length === 0) {
     return false;
   }
-  
-  for (const key of objectKeys) {
-    if (!allowedKeysSet.has(key as ResourceKeys)) {
-      return false;
-    }
-  }
-  
-  for (const key of objectKeys) {
-    const val = (value as any)[key];
-    if (typeof val === 'string') {
-      continue;
-    }
-    if (typeof val === 'function' && val.length >= 2) {
-      continue; 
-    }
-    return false;
-  }
-  
+
   return true;
 }
 
-export type IndexedClientParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
+export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
 
-export function isIndexedClientParser<T>(value: unknown): value is IndexedClientParser<T> {
+export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
-  
+
   const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
   const allowedKeysSet = new Set(allowedKeys);
-  
+
   const objectKeys = Object.keys(value);
-  
+
   if (objectKeys.length === 0) {
     return false;
   }
-  
-  for (const key of objectKeys) {
-    if (!allowedKeysSet.has(key as ResourceKeys)) {
-      return false;
-    }
-  }
-  
-  for (const key of objectKeys) {
-    const val = (value as any)[key];
-    if (typeof val === 'string') {
-      continue;
-    }
-    if (typeof val === 'function' && val.length === 1) {
-      continue; 
-    }
-    return false;
-  }
-  
+
   return true;
 }
 
-export type ClientReader<T> = keyof T | Reader | IndexedClientReader<T>
+// I think it would be clearer if IndexedReader was called IndexedReader
+// then we have 'A ClientReader can be a key, a Reader, or an IndexedReader'
+export type ClientReader<T> = keyof T | Reader | IndexedReader<T>
 
-export type ClientParser<T> = keyof T | Parser | IndexedClientParser<T>
-
-
+export type ClientParser<T> = keyof T | Parser | IndexedParser<T>

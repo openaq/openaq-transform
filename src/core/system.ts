@@ -13,6 +13,7 @@ export class System {
   #sensors: Map<string, Sensor>;
 
   constructor(data: SystemData) {
+    log(`Adding new system`, data);
     this.locationKey = data.locationKey;
     this.manufacturerName = data.manufacturerName ?? 'default';
     this.modelName = data.modelName ?? 'default';

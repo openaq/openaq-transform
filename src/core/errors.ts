@@ -3,6 +3,8 @@ import { PARAMETERS } from './metric'
 const TRANSFORM_ERROR = Symbol('Transform error');
 const MEASUREMENT_ERROR = Symbol('Measurement error');
 const LOCATION_ERROR = Symbol('Location error');
+const FETCH_ERROR = Symbol('Fetch error');
+const PARSE_ERROR = Symbol('Parse error');
 
 
 export class TransformError extends RangeError {
@@ -113,5 +115,41 @@ export class LowValueError extends MeasurementError {
     super(`Value must be lower than ${maxValue}`, value)
     this.flag = 'LowValue'
     // leave the value alone
+  }
+}
+
+/**
+ * Error that occurs during data fetching (network issues, HTTP errors, etc.)
+ */
+export class FetchError extends Error {
+  name: string;
+  type: symbol;
+  url: string;
+  statusCode?: number;
+
+  constructor(message: string, url: string, statusCode?: number) {
+    super(message);
+    this.name = this.constructor.name;
+    this.type = FETCH_ERROR;
+    this.url = url;
+    this.statusCode = statusCode;
+  }
+}
+
+/**
+ * Error that occurs during data parsing (parser throws, invalid data format, etc.)
+ */
+export class ParseError extends Error {
+  name: string;
+  type: symbol;
+  url: string;
+  originalError?: Error;
+
+  constructor(message: string, url: string, originalError?: Error) {
+    super(message);
+    this.name = this.constructor.name;
+    this.type = PARSE_ERROR;
+    this.url = url;
+    this.originalError = originalError;
   }
 }

@@ -24,8 +24,8 @@ import {
   Summary,
   IngestMatchingMethod,
   isIndexed,
-  isIndexedClientReader,
-  isIndexedClientParser,
+  isIndexedReader,
+  isIndexedParser,
 } from '../types/client';
 import { SystemData } from '../types/system';
 import { isParser, Parser, ParserMethods } from '../types/parsers';
@@ -252,7 +252,8 @@ export abstract class Client<
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
-    // google://
+    // gs://
+    // rs://
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
@@ -274,18 +275,25 @@ export abstract class Client<
     let reader: Reader;
     let parser: Parser;
 
-    for (const key of RESOURCE_KEYS) {
-      const resource = indexedResource[key];
-      log(`Loading ${key} using ${resource}`);
+    // I think we should use the devs resource order here and just check to make sure the keys match
+    // this way the dev can control the order of the resource calls, for example, for clarity we
+    // need to hit the meta resource first
+    // I am indifferent to how we do it though, so feel free to change what I did
+    for (const [key, resource] of Object.entries(indexedResource)) {
+
       if (resource) {
-        if (isIndexedClientReader<R>(this.reader)) {
+        if (isIndexedReader<R>(this.reader)) {
+          log(`Loading ${key} using indexed reader`);
           reader = this.getReaderMethod(this.reader, key);
         } else {
+          log(`Loading ${key} using the sole reader`);
           reader = this.getReaderMethod(this.reader);
         }
-        if (isIndexedClientParser<P>(this.parser)) {
+        if (isIndexedParser<P>(this.parser)) {
+          log(`Parsing ${key} using indexed parser`);
           parser = this.getParserMethod(this.parser, key)
         } else {
+          log(`Parsing ${key} using the sole parser`);
           parser = this.getParserMethod(this.parser);
         }
         const options = getReaderOptions(
@@ -297,12 +305,15 @@ export abstract class Client<
 
         if (Array.isArray(d)) {
           // Parser returned an array - index it by key
-          data[key] = d.flat();
+          log(`Adding '${key}' to data object`)
+          data[key] = d;
         } else {
-          // Parser returned an object - replace entire data object
-          data = d;
+          // we might want an in between option of merging objects
+          // but only merge object keys that fit our resource keys
+          log(`Replacing the data object with results from '${key}'`)
+          data = d
         }
-      }
+      } // should we do something here if there is no resource?
     }
 
     return data;
@@ -316,7 +327,6 @@ export abstract class Client<
     let reader: Reader;
     let parser: Parser;
     let data: DataDefinition = {};
-    
 
     if (resource.isFileResource()) {
       // File Resource class instance (uploaded binary file)
@@ -700,7 +710,7 @@ export abstract class Client<
       return parser;
     }
 
-    if (key && isIndexedClientParser<R>(method)) {
+    if (key && isIndexedParser<R>(method)) {
       const value = method[key];
 
       if (!value) {
@@ -759,7 +769,7 @@ export abstract class Client<
       return reader;
     }
 
-    if (key && isIndexedClientReader<R>(method)) {
+    if (key && isIndexedReader<R>(method)) {
       const value = method[key];
 
       if (!value) {
@@ -833,4 +843,3 @@ export abstract class Client<
     };
   }
 }
-

@@ -252,7 +252,8 @@ export abstract class Client<
     // if its a non-json string it should be a string that represents a location
     // local://..
     // s3://
-    // google://
+    // gs://
+    // rs://
     // if its binary than it should be an uploaded file
     // if its an object then ...
 
@@ -274,18 +275,25 @@ export abstract class Client<
     let reader: Reader;
     let parser: Parser;
 
-    for (const key of RESOURCE_KEYS) {
-      const resource = indexedResource[key];
-      log(`Loading ${key} using ${resource}`);
+    // I think we should use the devs resource order here and just check to make sure the keys match
+    // this way the dev can control the order of the resource calls, for example, for clarity we
+    // need to hit the meta resource first
+    // I am indifferent to how we do it though, so feel free to change what I did
+    for (const [key, resource] of Object.entries(indexedResource)) { //RESOURCE_KEYS) {
+      //const resource = indexedResource[key];
       if (resource) {
         if (isIndexedClientReader<R>(this.reader)) {
+          log(`Loading ${key} using indexed reader`);
           reader = this.getReaderMethod(this.reader, key);
         } else {
+          log(`Loading ${key} using the sole reader`);
           reader = this.getReaderMethod(this.reader);
         }
         if (isIndexedClientParser<P>(this.parser)) {
+          log(`Parsing ${key} using indexed parser`);
           parser = this.getParserMethod(this.parser, key)
         } else {
+          log(`Parsing ${key} using the sole parser`);
           parser = this.getParserMethod(this.parser);
         }
         const options = getReaderOptions(
@@ -302,7 +310,7 @@ export abstract class Client<
           // Parser returned an object - replace entire data object
           data = d;
         }
-      }
+      } // should we do something here if there is no resource?
     }
 
     return data;

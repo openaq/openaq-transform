@@ -24,8 +24,8 @@ import {
   Summary,
   IngestMatchingMethod,
   isIndexed,
-  isIndexedClientReader,
-  isIndexedClientParser,
+  isIndexedReader,
+  isIndexedParser,
 } from '../types/client';
 import { SystemData } from '../types/system';
 import { isParser, Parser, ParserMethods } from '../types/parsers';
@@ -279,17 +279,17 @@ export abstract class Client<
     // this way the dev can control the order of the resource calls, for example, for clarity we
     // need to hit the meta resource first
     // I am indifferent to how we do it though, so feel free to change what I did
-    for (const [key, resource] of Object.entries(indexedResource)) { //RESOURCE_KEYS) {
-      //const resource = indexedResource[key];
+    for (const [key, resource] of Object.entries(indexedResource)) {
+
       if (resource) {
-        if (isIndexedClientReader<R>(this.reader)) {
+        if (isIndexedReader<R>(this.reader)) {
           log(`Loading ${key} using indexed reader`);
           reader = this.getReaderMethod(this.reader, key);
         } else {
           log(`Loading ${key} using the sole reader`);
           reader = this.getReaderMethod(this.reader);
         }
-        if (isIndexedClientParser<P>(this.parser)) {
+        if (isIndexedParser<P>(this.parser)) {
           log(`Parsing ${key} using indexed parser`);
           parser = this.getParserMethod(this.parser, key)
         } else {
@@ -305,10 +305,13 @@ export abstract class Client<
 
         if (Array.isArray(d)) {
           // Parser returned an array - index it by key
-          data[key] = d.flat();
+          log(`Adding '${key}' to data object`)
+          data[key] = d;
         } else {
-          // Parser returned an object - replace entire data object
-          data = d;
+          // we might want an in between option of merging objects
+          // but only merge object keys that fit our resource keys
+          log(`Replacing the data object with results from '${key}'`)
+          data = d
         }
       } // should we do something here if there is no resource?
     }
@@ -707,7 +710,7 @@ export abstract class Client<
       return parser;
     }
 
-    if (key && isIndexedClientParser<R>(method)) {
+    if (key && isIndexedParser<R>(method)) {
       const value = method[key];
 
       if (!value) {
@@ -766,7 +769,7 @@ export abstract class Client<
       return reader;
     }
 
-    if (key && isIndexedClientReader<R>(method)) {
+    if (key && isIndexedReader<R>(method)) {
       const value = method[key];
 
       if (!value) {

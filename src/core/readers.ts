@@ -57,7 +57,7 @@ const googleStorageFetcher = async() => {} // gs://
  * @param objects - Array of objects to merge
  * @returns Single merged object with concatenated arrays
  */
-function mergeObjects(objects: any[]): any {
+function mergeObjects(objects: object[]): object {
   if (objects.length === 0) return {};
   if (objects.length === 1) return objects[0];
 
@@ -149,7 +149,7 @@ export const apiReader = async ({
   };
 
   const urls = resource.urls;
-  const results: any[] = [];
+  const results: object[] = [];
 
   for (let i = 0; i < urls.length; i += concurrency) {
     const batch = urls.slice(i, i + concurrency);

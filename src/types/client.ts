@@ -110,9 +110,9 @@ export interface ClientConfiguration {
 
 }
 
-export type IndexedClientReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;
+export type IndexedReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;
 
-export function isIndexedClientReader<T>(value: unknown): value is IndexedClientReader<T> {
+export function isIndexedReader<T>(value: unknown): value is IndexedReader<T> {
 
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
@@ -127,41 +127,12 @@ export function isIndexedClientReader<T>(value: unknown): value is IndexedClient
     return false;
   }
 
-  // What is the validity of returning false here? At this point we know its an object with keys
-  // and so if one of the keys is not in our set I think we should throw an error here instead of false
-  // so that the client fails and explains why
-  for (const key of objectKeys) {
-    if (!allowedKeysSet.has(key as ResourceKeys)) {
-      // change to custom error
-      throw new Error(`${key} is a not a valid key for an indexed ClientReader`)
-      return false;
-    }
-  }
-
-  for (const key of objectKeys) {
-    const val = (value as any)[key];
-    if (typeof val === 'string') {
-      continue;
-    }
-    if (typeof val === 'function') {
-      // a function should have 2+ arguments or else its not valid
-      // do we really need 2+ arguments, wouldnt it be ok if a custom reader ignored parser and data?
-      // and what if it has more than 3? Should that throw an error?
-      if(val.length < 2) {
-        // change to custom error
-        throw new Error('Client reader functions should have more 2 or more arguments')
-      }
-      continue;
-    }
-    return false;
-  }
-
   return true;
 }
 
-export type IndexedClientParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
+export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
 
-export function isIndexedClientParser<T>(value: unknown): value is IndexedClientParser<T> {
+export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
@@ -175,28 +146,11 @@ export function isIndexedClientParser<T>(value: unknown): value is IndexedClient
     return false;
   }
 
-  for (const key of objectKeys) {
-    if (!allowedKeysSet.has(key as ResourceKeys)) {
-      return false;
-    }
-  }
-
-  for (const key of objectKeys) {
-    const val = (value as any)[key];
-    if (typeof val === 'string') {
-      continue;
-    }
-    if (typeof val === 'function' && val.length === 1) {
-      continue;
-    }
-    return false;
-  }
-
   return true;
 }
 
-// I think it would be clearer if IndexedClientReader was called IndexedReader
+// I think it would be clearer if IndexedReader was called IndexedReader
 // then we have 'A ClientReader can be a key, a Reader, or an IndexedReader'
-export type ClientReader<T> = keyof T | Reader | IndexedClientReader<T>
+export type ClientReader<T> = keyof T | Reader | IndexedReader<T>
 
-export type ClientParser<T> = keyof T | Parser | IndexedClientParser<T>
+export type ClientParser<T> = keyof T | Parser | IndexedParser<T>

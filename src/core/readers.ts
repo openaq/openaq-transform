@@ -84,8 +84,6 @@ export const apiReader = async ({
           return res.text();
         } else if (readAs === 'blob') {
           return res.blob();
-        // } else if (readAs === 'response') {
-        //   return res;
         } else {
           // default to json
           return res.json();
@@ -95,5 +93,6 @@ export const apiReader = async ({
 
     results.push(...batchResults);
   }
+
   return parser({content: results, data})
 };

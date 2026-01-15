@@ -73,6 +73,32 @@ const handlers = [
     }
     return HttpResponse.json([]);
   }),
+  // endpoints for error handling tests
+  http.get('https://api.test.com/error-data', async ({ request }) => {
+    const url = new URL(request.url);
+    const page = url.searchParams.get('page');
+    if (page === '1') {
+      return HttpResponse.json(sampleData.slice(0, 2));
+    } else if (page === '2') {
+      // Return an error status
+      return new HttpResponse(null, { status: 500, statusText: 'Internal Server Error' });
+    } else if (page === '3') {
+      return HttpResponse.json(sampleData.slice(2));
+    }
+    return HttpResponse.json([]);
+  }),
+  // endpoint that returns invalid JSON to trigger parse error
+  http.get('https://api.test.com/parse-error-data', async ({ request }) => {
+    const url = new URL(request.url);
+    const page = url.searchParams.get('page');
+    if (page === '1') {
+      return HttpResponse.json(sampleData.slice(0, 2));
+    } else if (page === '2') {
+      // Return valid data that will cause parser to throw
+      return HttpResponse.json(sampleData.slice(2));
+    }
+    return HttpResponse.json([]);
+  }),
 ];
 
 const server = setupServer(...handlers);
@@ -92,7 +118,7 @@ describe('apiReader', () => {
 
     // Call the apiReader
     const result = await apiReader(
-      { resource, readAs: 'json' },
+      { resource },
       async ({ content }: any) => content,
       {}
     );
@@ -118,7 +144,8 @@ describe('apiReader', () => {
     // Create a resource with URL template and parameters
     const resource = new Resource({
       url: 'https://api.test.com/data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }]
+      parameters: [{ page: 1 }, { page: 2 }],
+      output: 'array'
     });
 
     // Parser just passes content through
@@ -134,6 +161,7 @@ describe('apiReader', () => {
 
   test('multiple station URLs that each return an object should return array of objects', async () => {
     // Create a resource with URL template and parameters for different stations
+    // Default behavior (no output): multiple URLs return array of responses
     const resource = new Resource({
       url: 'https://api.test.com/stations/:station',
       parameters: [{ station: 'A' }, { station: 'B' }, { station: 'C' }]
@@ -145,13 +173,16 @@ describe('apiReader', () => {
       {}
     );
 
-    // Expect content to be an array of station objects
+    // Default: multiple URLs return array of their responses
     expect(result as any).toEqual(objectData.stations);
 
   });
 
   test('endpoint that returns object remains an object', async () => {
-    const resource = new Resource({ url: 'https://api.test.com/objects' });
+    const resource = new Resource({
+      url: 'https://api.test.com/objects',
+      output: 'object'
+    });
 
     const result = await apiReader(
       { resource },
@@ -167,7 +198,8 @@ describe('apiReader', () => {
     // this one might be overkill becaause I doubt we would run into this issue very often
     const resource = new Resource({
       url: 'https://api.test.com/pagedobjects?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }]
+      parameters: [{ page: 1 }, { page: 2 }],
+      output: 'object'
     });
 
 
@@ -180,6 +212,139 @@ describe('apiReader', () => {
     // Expect content to be an array of station objects
     expect(result as any).toEqual(objectData);
 
+  });
+
+  test('non-strict mode (default) continues on error and collects errors', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+      output: 'array',
+      strict: false // explicit, though this is the default
+    });
+
+    const result = await apiReader(
+      { resource },
+      async ({ content }: any) => content,
+      {}
+    );
+
+    // Should have data from page 1 and page 3 (page 2 failed)
+    expect(result).toEqual([
+      ...sampleData.slice(0, 2), // page 1
+      ...sampleData.slice(2)      // page 3
+    ]);
+
+    // Errors are stored on the resource
+    expect(resource.hasErrors).toBe(true);
+    expect(resource.errors).toHaveLength(1);
+    expect(resource.errors[0]).toHaveProperty('url');
+    expect(resource.errors[0]).toHaveProperty('error');
+    expect(resource.errors[0].url).toContain('page=2');
+  });
+
+  test('strict mode throws on first error', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+      output: 'array',
+      strict: true
+    });
+
+    await expect(async () => {
+      await apiReader(
+        { resource },
+        async ({ content }: any) => content,
+        {}
+      );
+    }).rejects.toThrow();
+  });
+
+  test('distinguishes between fetch errors and parse errors', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/parse-error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }],
+      output: 'array',
+      strict: false
+    });
+
+    // Parser that throws on page 2
+    const result = await apiReader(
+      { resource },
+      async ({ content }: any) => {
+        if (Array.isArray(content) && content.length > 0 && content[0].id === 3) {
+          throw new Error('Parser failed to process data');
+        }
+        return content;
+      },
+      {}
+    );
+
+    // Should have data from page 1 only (page 2 had parse error)
+    expect(result).toEqual(sampleData.slice(0, 2));
+
+    // Should have one parse error
+    expect(resource.hasErrors).toBe(true);
+    expect(resource.errors).toHaveLength(1);
+    expect(resource.errors[0].type).toBe('parse');
+    expect(resource.errors[0].url).toContain('page=2');
+    expect(resource.errors[0].error).toContain('Parser failed');
+  });
+
+  test('fetch errors include status code', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }],
+      output: 'array',
+      strict: false
+    });
+
+    await apiReader(
+      { resource },
+      async ({ content }: any) => content,
+      {}
+    );
+
+    // Should have one fetch error with status code
+    expect(resource.hasErrors).toBe(true);
+    expect(resource.errors).toHaveLength(1);
+    expect(resource.errors[0].type).toBe('fetch');
+    expect(resource.errors[0].statusCode).toBe(500);
+  });
+
+  test('default behavior (no output): single URL returns response directly', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/objects'
+    });
+
+    const result = await apiReader(
+      { resource },
+      async ({ content }: any) => content,
+      {}
+    );
+
+    // With no output specified, single URL returns the response directly
+    expect(result).toEqual(objectData);
+  });
+
+  test('default behavior (no output): multiple URLs return array of responses', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }]
+      // No output specified - should return array of responses
+    });
+
+    const result = await apiReader(
+      { resource },
+      async ({ content }: any) => content,
+      {}
+    );
+
+    // With no output specified, multiple URLs return array of their responses
+    // Each response is an array, so we get an array of arrays
+    expect(result).toEqual([
+      sampleData.slice(0, 2), // page 1 response
+      sampleData.slice(2)     // page 2 response
+    ]);
   });
 
 

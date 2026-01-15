@@ -21,12 +21,11 @@ export type DataContext = JSONValue; // TODO Should be indexed
  * @remarks
  * Used by the API reader to fetch data from remote endpoints.
  * Supports automatic content-type detection based on response headers.
- * If readAs is not specified, the reader checks the Content-Type header to determine the appropriate format.
+ * The readAs format is specified on the Resource object. If not specified,
+ * the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
   resource: Resource;
-  /** How to parse the response data. If omitted, auto-detected from Content-Type header */
-  readAs?: ReadAs;
   /** HTTP request options for the fetch */
   options?: UrlReaderOptions;
   /** Maximum number of concurrent fetches to allows */

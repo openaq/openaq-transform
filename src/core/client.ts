@@ -316,7 +316,6 @@ export abstract class Client<
     let reader: Reader;
     let parser: Parser;
     let data: DataDefinition = {};
-    
 
     if (resource.isFileResource()) {
       // File Resource class instance (uploaded binary file)
@@ -833,4 +832,3 @@ export abstract class Client<
     };
   }
 }
-

@@ -325,7 +325,6 @@ export abstract class Client<
     let parser: Parser;
     let data: DataDefinition = {};
 
-
     if (resource.isFileResource()) {
       // File Resource class instance (uploaded binary file)
       reader = this.getReaderMethod(this.reader);

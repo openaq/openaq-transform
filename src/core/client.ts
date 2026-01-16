@@ -228,7 +228,7 @@ export abstract class Client<
    */
   getDatetime(row: any) {
     const dtString: string = getValueFromKey(row, this.datetimeKey);
-    log(`getDatetime`, dtString, row, this.datetimeKey);
+    log(`getDatetime`, dtString);
     if (!dtString) {
       throw new Error(
         `Missing date/time field. Looking in ${formatValueForLog(
@@ -259,7 +259,11 @@ export abstract class Client<
 
     if (this.resource === undefined) {
       throw new Error('No resource provided');
+    } else if( typeof this.resource === 'string') {
+      // in development this can be a helpful check
+      throw new Error('A resource must use the resource class and not a string')
     }
+
     if (isIndexed(this.resource)) {
       return await this.loadIndexedResources(this.resource);
     } else {
@@ -329,11 +333,13 @@ export abstract class Client<
     let data: DataDefinition = {};
 
     if (resource.isFileResource()) {
+      log('loading single file resource')
       // File Resource class instance (uploaded binary file)
       reader = this.getReaderMethod(this.reader);
       parser = this.getParserMethod(this.parser);
     } else {
       // URL Resource class instance
+      log('loading single URL resource')
       reader = this.getReaderMethod(this.reader);
       parser = this.getParserMethod(this.parser);
     }
@@ -714,7 +720,7 @@ export abstract class Client<
       const value = method[key];
 
       if (!value) {
-        throw new Error(`No value found for key "${key}" in indexed reader`);
+        throw new Error(`No value found for key "${key}" in indexed parser`);
       }
 
       if (isParser(value)) {
@@ -730,12 +736,12 @@ export abstract class Client<
       }
 
       throw new Error(
-        `Invalid value type for key "${key}": expected Reader or valid reader name`
+        `Invalid value type for key "${key}": expected Parser or valid parser name`
       );
     }
 
     throw new Error(
-      `Invalid reader method: ${JSON.stringify(method)}${
+      `Invalid parser method: ${JSON.stringify(method)}${
         key ? ` with key "${key}"` : ''
       }`
     );

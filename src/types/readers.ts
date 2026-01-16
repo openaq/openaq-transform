@@ -103,7 +103,7 @@ export type Reader = (
 ) => Promise<object>;
 
 export function isReader(value: unknown): value is Reader {
-  return typeof value === 'function' && value.length >= 2;
+  return typeof value === 'function'
 }
 
 /**

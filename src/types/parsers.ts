@@ -15,7 +15,7 @@ export interface ParserParameters {
 export type Parser = (params: ParserParameters) => object;
 
 export function isParser(value: unknown): value is Parser {
-  return typeof value === 'function' && value.length ===1;
+  return typeof value === 'function';
 }
 
 export interface IndexedParser {

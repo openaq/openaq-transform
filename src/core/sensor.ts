@@ -55,7 +55,7 @@ export class Sensor {
   flags: Map<string, Flag>;
 
   constructor(data: SensorData) {
-    log(`Adding new sensor`, data?.metric);
+    log(`Adding new sensor`);
     this.systemKey = data.systemKey;
     if (data.metric instanceof Metric) {
       this.metric = data.metric;

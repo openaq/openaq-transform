@@ -162,7 +162,9 @@ export const apiReader = async ({
         // Step 1: Fetch and read content
         try {
           const res = await fetch(url, fetchOptions);
+
           if (res.status !== 200) {
+            console.log('i am about to throw an error', this)
             throw new FetchError(`${res.status} ${res.statusText}`, url, res.status);
           }
 

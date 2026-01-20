@@ -1,11 +1,13 @@
 import debug from 'debug';
-import type { ParserMethods, IndexedParser } from '../types/parsers';
-import type { ReaderMethods } from '../types/readers';
+import type { ParserMethods, IndexedParser, Parser } from '../types/parsers';
+import { isReader, type Reader, type ReaderMethods } from '../types/readers';
 import {
   isPathExpression,
   type PathExpression,
 } from '../types/metric';
 import { search } from '@jmespath-community/jmespath';
+import { ClientParser, ClientReader } from '../types/client';
+import { ResourceKeys } from '../types/resource';
 
 const log = debug('openaq-transform utils: DEBUG');
 
@@ -76,9 +78,8 @@ export function countDecimals(value: number) {
   return value.toString().split('.')[1].length || 0;
 }
 
-// temporary method
-export function isFile(obj: object) {
-  return obj.constructor.name === 'File';
+export function isFile(value: unknown): value is File {
+  return typeof File !== 'undefined' && value instanceof File;
 }
 
 export function formatValueForLog(value: unknown): string {
@@ -108,65 +109,3 @@ export function formatValueForLog(value: unknown): string {
   return `[${typeof value}]`;
 }
 
-/**
- *  Method to determine which method we want to use to parse/read
- * the return value for this is a function
- * key (string): an index to get a method from a set of methods
- * key (function): a function that is ready to be used
- * method (string)
- */
-export function getMethod(
-  key: 'measurements' | 'locations' | Function | null,
-  method: Function | string | IndexedParser,
-  methods: ParserMethods | ReaderMethods
-): Function {
-  let methodKeyOrFunction: string | Function;
-  log(
-    `Getting method for '${String(key)}' from ${formatValueForLog(
-      method
-    )} and ${Object.keys(methods).join(', ')}`
-  );
-
-  if (typeof key === 'function') {
-    methodKeyOrFunction = key;
-  }
-
-  if (key !== null) {
-    if (
-      typeof method === 'object' &&
-      ('measurements' in method || 'locations' in method || 'meta' in method) &&
-      typeof key === 'string' &&
-      ['measurements', 'locations', 'meta'].includes(key)
-    ) {
-      methodKeyOrFunction = method[key as keyof IndexedParser] as string;
-    } else if (typeof method === 'string' || typeof method === 'function') {
-      methodKeyOrFunction = method;
-    } else {
-      methodKeyOrFunction = key;
-    }
-  } else {
-    if (typeof method === 'string' || typeof method === 'function') {
-      methodKeyOrFunction = method;
-    } else {
-      throw new TypeError(
-        "Invalid 'method' type provided when 'key' is null. Expected string, function, or ClientParserObjectDefinition."
-      );
-    }
-  }
-
-  if (typeof methodKeyOrFunction === 'string') {
-    if (!methods) {
-      throw new Error(`No methods available`);
-    }
-    if (!methods[methodKeyOrFunction]) {
-      throw new Error(
-        `Could not find a method named '${methodKeyOrFunction}' in the available methods: ${Object.keys(
-          methods
-        ).join(', ')}. `
-      );
-    }
-    return methods[methodKeyOrFunction];
-  } else {
-    return methodKeyOrFunction;
-  }
-}

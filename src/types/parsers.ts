@@ -1,18 +1,22 @@
 import type { Options as CsvParseOptions } from 'csv-parse';
+import { DataContext } from './readers';
 
 export type CsvParseFunction = (
   input: string | Buffer,
   options?: CsvParseOptions
 ) => any;
 
-type ExistingData = Record<string, any>;
 
 export interface ParserParameters {
-  text: string;
-  data?: ExistingData;
+  content: string | Blob | object;
+  data?: DataContext;
 }
 
-type Parser = (params: ParserParameters) => object;
+export type Parser = (params: ParserParameters) => object;
+
+export function isParser(value: unknown): value is Parser {
+  return typeof value === 'function';
+}
 
 export interface IndexedParser {
   measurements: string;

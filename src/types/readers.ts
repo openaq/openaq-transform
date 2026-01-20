@@ -1,3 +1,8 @@
+import type { JSONValue } from "@jmespath-community/jmespath";
+import type { Resource } from "../core/resource";
+import type { Parser } from "./parsers";
+import { ResourceKeys } from "./resource";
+
 /**
  * Specifies how a URL resource should be read and parsed.
  * @remarks
@@ -6,43 +11,25 @@
  * - `'blob'` - Read response as binary Blob
  * - `'response'` - Return raw Response object
  */
-export type ReadAs = 'json' | 'text' | 'blob' | 'response';
+export type ReadAs = 'json' | 'text' | 'blob' ;//| 'response';
 
-/**
- * Parameters for reading from a plain text string source.
- */
-export interface TextReaderParameters {
-  /** The text content to read */
-  text: string;
-}
+export type DataContext = JSONValue; // TODO Should be indexed
+
 
 /**
  * Parameters for reading from a URL resource.
  * @remarks
  * Used by the API reader to fetch data from remote endpoints.
  * Supports automatic content-type detection based on response headers.
- * If readAs is not specified, the reader checks the Content-Type header to determine the appropriate format.
+ * The readAs format is specified on the Resource object. If not specified,
+ * the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
-  /** The URL to fetch data from */
-  resource: string;
-  /** How to parse the response data. If omitted, auto-detected from Content-Type header */
-  readAs?: ReadAs;
+  resource: Resource;
   /** HTTP request options for the fetch */
-  options: UrlReaderOptions;
-}
-
-/**
- * Parameters for reading from a Blob object.
- * @remarks
- * Commonly used for reading uploaded files in browser environments.
- * The file reader uses FileReader API to convert the Blob to a text string.
- */
-export interface BlobReaderParameters {
-  /** Discriminator for blob reader type */
-  type: 'blob';
-  /** The Blob object to read */
-  resource: Blob;
+  options?: UrlReaderOptions;
+  /** Maximum number of concurrent fetches to allows */
+  concurrency?: number;
 }
 
 /**
@@ -52,8 +39,7 @@ export interface BlobReaderParameters {
  * Not used in browser-based implementations.
  */
 export interface FileSystemReaderParameters {
-  /** The file path from which to read */
-  path: string;
+  resource: Resource;
   /** Optional character encoding for reading the file */
   encoding?: BufferEncoding;
 }
@@ -61,11 +47,14 @@ export interface FileSystemReaderParameters {
 /**
  * Union type of all possible reader parameter types.
  */
-export type ReaderParameters =
-  | UrlReaderParameters
-  | BlobReaderParameters
-  | FileSystemReaderParameters
-  | TextReaderParameters;
+// export type ReaderParameters =
+//   | UrlReaderParameters
+//   | FileSystemReaderParameters
+
+export interface ReaderParameters {
+  resource: Resource;
+  options?: ReaderOptions;
+}
 
 /**
  * Generic typed reader function interface.
@@ -85,38 +74,22 @@ export interface TypedReader<TParams extends ReaderParameters, TResult = string 
 
 /**
  * Reader function for URL resources.
- * @remarks 
+ * @remarks
  * Returns string, Blob, or Response based on readAs option.
  * Auto-detects content type from response headers if readAs is not specified.
  * Used by the Client class when reader is set to 'api'.
  */
 export type UrlReader = TypedReader<UrlReaderParameters>;
 
-/**
- * Reader function for Blob objects.
- * @remarks 
- * Always returns string representation using FileReader API.
- * Commonly used for uploaded files in browser environments.
- * Used by the Client class when reader is set to 'file'.
- */
-export type BlobReader = TypedReader<BlobReaderParameters, string>;
 
 /**
  * Reader function for filesystem resources.
- * @remarks 
+ * @remarks
  * Always returns string content.
  * Used in Node.js environments for local file access.
  */
 export type FileSystemReader = TypedReader<FileSystemReaderParameters, string>;
 
-/**
- * Reader function for plain text strings.
- * @remarks 
- * Always returns the input string wrapped in a Promise.
- * Useful for testing or when data is already in memory.
- * Used by the Client class when reader is set to 'text'.
- */
-export type TextReader = TypedReader<TextReaderParameters, string>;
 
 /**
  * Generic reader function that accepts any reader parameters.
@@ -126,12 +99,16 @@ export type TextReader = TypedReader<TextReaderParameters, string>;
  * Used internally by the Client class to handle different resource types dynamically.
  */
 export type Reader = (
-  params: ReaderParameters
-) => Promise<Blob | string | Response>;
+  params: ReaderParameters, parser: Parser, data: DataContext
+) => Promise<object>;
+
+export function isReader(value: unknown): value is Reader {
+  return typeof value === 'function'
+}
 
 /**
  * Base interface for reader options.
- * @remarks 
+ * @remarks
  * Extended by specific reader option types.
  * Retrieved using getReaderOptions() helper function in the Client class.
  */
@@ -139,14 +116,19 @@ export interface ReaderOptions {}
 
 /**
  * Options for URL-based readers.
- * @remarks 
+ * @remarks
  * Extends standard RequestInit but restricts method to GET or POST.
  * Passed to the fetch API when making HTTP requests.
  * Can include headers, credentials, and other fetch options.
  */
 export interface UrlReaderOptions extends ReaderOptions, Omit<RequestInit, 'method'> {
   /** HTTP method for the request. Only GET and POST are supported */
-  method: 'GET' | 'POST';
+  method?: 'GET' | 'POST';
+}
+
+export interface FileReaderParameters {
+  resource: Resource;
+  encoding?: string; // 'utf8', 'utf-16', etc.
 }
 
 /**
@@ -157,8 +139,8 @@ export interface UrlReaderOptions extends ReaderOptions, Omit<RequestInit, 'meth
  * The Client class uses this to configure separate options for measurements, locations, and metadata.
  * Common pattern: `{ measurements: {...}, locations: {...}, meta: {...} }`
  */
-export type IndexedReaderOptions<K extends string = 'measurements' | 'locations' | 'meta'> = {
-  [P in K]?: ReaderOptions;
+export type IndexedReaderOptions = {
+  [P in ResourceKeys]?: ReaderOptions;
 };
 
 /**
@@ -183,21 +165,17 @@ export function isIndexedReaderOptions(
  * Map of reader method names to their implementations.
  */
 export interface ReaderMethods {
-  [key: string]: (params: any) => Promise<Blob | string | Response >;
+  [key: string]: Reader;
 }
 
 /**
  * Typed map of specific reader methods.
- * @remarks 
+ * @remarks
  * Provides type-safe access to common reader implementations.
  */
 export type ReaderMethodMap = {
   /** Reader for API/URL resources */
   api: UrlReader;
-  /** Reader for file Blobs */
-  file: BlobReader;
-  /** Reader for plain text */
-  text: TextReader;
   /** Reader for filesystem paths */
   filesystem: FileSystemReader;
   /** Additional custom readers */

@@ -3,40 +3,40 @@ import type { CsvParseFunction, ParserParameters } from '../types/parsers';
 const log = debug('openaq-transform parsers: DEBUG');
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
-  const csv = async ({ text }: ParserParameters) => {
-    log(`Parsing ${typeof text} data using the csv method`);
-    if (typeof text === 'string') {
-      const data = parse(text, {
+  const csv = async ({ content }: ParserParameters) => {
+    log(`Parsing ${typeof content} data using the csv method`);
+    if (typeof content === 'string') {
+      const data = parse(content, {
         columns: true,
         skip_empty_lines: true,
       });
       return data;
     } else {
-      return text;
+      return content;
     }
   };
 
-  const tsv = async ({ text }: ParserParameters) => {
-    log(`Parsing ${typeof text} data using the tsv method`);
-    if (typeof text === 'string') {
-      return await parse(text, {
+  const tsv = async ({ content }: ParserParameters) => {
+    log(`Parsing ${typeof content} data using the tsv method`);
+    if (typeof content === 'string') {
+      return await parse(content, {
         delimiter: '\t',
         columns: true,
         skip_empty_lines: true,
       });
     } else {
-      return text;
+      return content;
     }
   };
 
   return { csv, tsv };
 };
 
-export const json = async ({ text }: ParserParameters) => {
-  log(`Parsing ${typeof text} data using the json method`);
-  if (typeof text === 'string') {
-    return JSON.parse(text);
+export const json = async ({ content }: ParserParameters) => {
+  log(`Parsing ${typeof content} data using the json method`);
+  if (typeof content === 'string') {
+    return JSON.parse(content);
   } else {
-    return text;
+    return content;
   }
 };

@@ -93,9 +93,10 @@ function mergeObjects(objects: object[]): object {
  *    - 'array': Flattens array responses, collects object responses → always returns array
  *    - 'object': Merges objects by concatenating nested arrays → always returns object
  *
- * 3. Error handling respects resource.strict:
- *    - strict=true: Throws on first error (development/debugging)
- *    - strict=false: Continues on error, stores failures in resource.errors (production)
+ * 3. Error handling passes resource.strict flag to errorHandler:
+ *    - Errors are always passed to errorHandler with the strict flag
+ *    - ErrorHandler decides whether to throw based on resource and client strict modes
+ *    - If no errorHandler is provided, falls back to console logging and throws if strict
  *
  * 4. Fetch and parse errors are distinguished:
  *    - Fetch errors (network, HTTP status): type='fetch', includes statusCode if available
@@ -103,7 +104,7 @@ function mergeObjects(objects: object[]): object {
  *    This separation helps identify whether issues are with data retrieval or data processing.
  *
  * 5. Return type is always clean (array, object, or response), never wrapped in {data, errors}.
- *    Errors are accessible via resource.errors/resource.hasErrors after reading.
+ *    Errors are handled by the provided errorHandler callback.
  *
  * @param resource - Resource configuration with URLs, output strategy, and error handling mode
  * @param parser - Function to transform raw content (text/blob/json) into structured data
@@ -125,22 +126,17 @@ function mergeObjects(objects: object[]): object {
  *   parameters: [{page: 1}, {page: 2}],
  *   output: 'array'
  * });
- * const result = await apiReader({ resource }, async ({content}) => content, {});
+ * const errorHandler = (err) => console.error('Fetch error:', err);
+ * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
- * if (resource.hasErrors) {
- *   const fetchErrors = resource.errors.filter(e => e.type === 'fetch');
- *   const parseErrors = resource.errors.filter(e => e.type === 'parse');
- *   console.log(`${fetchErrors.length} fetch errors, ${parseErrors.length} parse errors`);
- * }
  */
 export const apiReader = async ({
   resource,
   options = { method: 'GET' },
   concurrency = 3,
+  errorHandler,
 }: UrlReaderParameters, parser: Parser, data: DataContext): Promise<object> => {
   resource.data = data
-  // Clear any previous errors before starting
-  resource.clearErrors();
 
   // overrides default if needed
   const fetchOptions: UrlReaderOptions = {
@@ -150,11 +146,12 @@ export const apiReader = async ({
 
   const urls = resource.urls;
   const results: object[] = [];
+  let firstError: Error | null = null;
 
   for (let i = 0; i < urls.length; i += concurrency) {
     const batch = urls.slice(i, i + concurrency);
 
-    const batchResults = await Promise.allSettled(
+    await Promise.allSettled(
       batch.map(async ({ url }) => {
         let content: any;
         let readAsFormat: ReadAs | undefined;
@@ -164,7 +161,6 @@ export const apiReader = async ({
           const res = await fetch(url, fetchOptions);
 
           if (res.status !== 200) {
-            console.log('i am about to throw an error', this)
             throw new FetchError(`${res.status} ${res.statusText}`, url, res.status);
           }
 
@@ -191,101 +187,76 @@ export const apiReader = async ({
           }
         } catch (error) {
           // Fetch or read error
-          if (resource.strict) {
-            throw error;
-          }
           const fetchError = error instanceof FetchError
             ? error
             : new FetchError(
                 error instanceof Error ? error.message : String(error),
                 url
               );
-          return {
-            url,
-            error: fetchError.message,
-            errorType: 'fetch' as const,
-            statusCode: fetchError.statusCode,
-          };
+
+          // Track first error for strict mode
+          if (resource.strict && !firstError) {
+            firstError = fetchError;
+          }
+
+          // Handle error immediately
+          if (errorHandler) {
+            errorHandler(fetchError, resource.strict);
+          } else {
+            console.error(`Reader fetch error at ${url}:`, fetchError.message);
+          }
+          return; // Early return on fetch error
         }
 
         // Step 2: Parse content
+        let parsed: any;
         try {
-          const parsed = await parser({ content, data });
-          return { url, parsed };
+          parsed = await parser(content);
         } catch (error) {
           // Parse error
-          if (resource.strict) {
-            throw new ParseError(
-              error instanceof Error ? error.message : String(error),
-              url,
-              error instanceof Error ? error : undefined
-            );
-          }
-          return {
+          const parseError = new ParseError(
+            error instanceof Error ? error.message : String(error),
             url,
-            error: error instanceof Error ? error.message : String(error),
-            errorType: 'parse' as const,
-          };
+            error instanceof Error ? error : undefined
+          );
+
+          // Track first error for strict mode
+          if (resource.strict && !firstError) {
+            firstError = parseError;
+          }
+
+          // Handle error immediately
+          if (errorHandler) {
+            errorHandler(parseError, resource.strict);
+          } else {
+            console.error(`Reader parse error at ${url}:`, parseError.message);
+          }
+          return; // Early return on parse error
+        }
+
+        // Success - combine based on output strategy
+        if (resource.output === 'array') {
+          // Array output: flatten arrays, collect objects
+          if (Array.isArray(parsed)) {
+            // Array response - spread items into results
+            results.push(...parsed);
+          } else {
+            // Object/primitive response - collect as-is
+            results.push(parsed);
+          }
+        } else if (resource.output === 'object') {
+          // Object output: collect objects for merging
+          results.push(parsed);
+        } else {
+          // No output specified (default): return as-is, no transformation
+          results.push(parsed);
         }
       })
     );
 
-    // Process batch results
-    for (const result of batchResults) {
-      if (result.status === 'rejected') {
-        // This should only happen in strict mode or for unexpected errors
-        const error = result.reason;
-        if (resource.strict) {
-          throw error;
-        }
-        // Determine error type from the error instance
-        let errorType: 'fetch' | 'parse' | undefined;
-        let statusCode: number | undefined;
-        let errorMessage: string;
-
-        if (error instanceof FetchError) {
-          errorType = 'fetch';
-          statusCode = error.statusCode;
-          errorMessage = error.message;
-        } else if (error instanceof ParseError) {
-          errorType = 'parse';
-          errorMessage = error.message;
-        } else {
-          errorMessage = error instanceof Error ? error.message : String(error);
-        }
-
-        resource.addError('unknown', errorMessage, errorType, statusCode);
-      } else {
-        const value = result.value;
-        if ('error' in value) {
-          // Non-strict mode error - store on resource with type info
-          resource.addError(
-            value.url,
-            value.error,
-            value.errorType,
-            value.statusCode
-          );
-        } else {
-          // Success - combine based on output strategy
-          const parsed = value.parsed;
-          if (resource.output === 'array') {
-            // Array output: flatten arrays, collect objects
-            if (Array.isArray(parsed)) {
-              // Array response - spread items into results
-              results.push(...parsed);
-            } else {
-              // Object/primitive response - collect as-is
-              results.push(parsed);
-            }
-          } else if (resource.output === 'object') {
-            // Object output: collect objects for merging
-            results.push(parsed);
-          } else {
-            // No output specified (default): return as-is, no transformation
-            results.push(parsed);
-          }
-        }
-      }
+    // If we're in strict mode and an error occurred, throw it now
+    if (firstError) {
+      throw firstError;
     }
   }
 

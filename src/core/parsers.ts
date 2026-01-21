@@ -1,9 +1,9 @@
 import debug from 'debug';
-import type { CsvParseFunction, ParserParameters } from '../types/parsers';
+import type { CsvParseFunction } from '../types/parsers';
 const log = debug('openaq-transform parsers: DEBUG');
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
-  const csv = async ({ content }: ParserParameters) => {
+  const csv = async (content: string | Blob | Object) => {
     log(`Parsing ${typeof content} data using the csv method`);
     if (typeof content === 'string') {
       const data = parse(content, {
@@ -16,7 +16,7 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
     }
   };
 
-  const tsv = async ({ content }: ParserParameters) => {
+  const tsv = async (content: string | Blob | Object) => {
     log(`Parsing ${typeof content} data using the tsv method`);
     if (typeof content === 'string') {
       return await parse(content, {
@@ -32,7 +32,7 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
   return { csv, tsv };
 };
 
-export const json = async ({ content }: ParserParameters) => {
+export const json = async (content: string | Blob | Object) => {
   log(`Parsing ${typeof content} data using the json method`);
   if (typeof content === 'string') {
     return JSON.parse(content);

@@ -30,6 +30,8 @@ export interface UrlReaderParameters {
   options?: UrlReaderOptions;
   /** Maximum number of concurrent fetches to allows */
   concurrency?: number;
+  /** Optional error handler for fetch and parse errors */
+  errorHandler?: (err: string | Error, strict?: boolean) => void;
 }
 
 /**

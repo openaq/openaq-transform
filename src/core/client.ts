@@ -305,7 +305,11 @@ export abstract class Client<
           key as keyof IndexedReaderOptions
         );
 
-        const d = await reader({ resource, options }, parser, data);
+        const d = await reader(
+          { resource, options, errorHandler: this.errorHandler.bind(this) },
+          parser,
+          data
+        );
 
         if (Array.isArray(d)) {
           // Parser returned an array - index it by key
@@ -344,7 +348,11 @@ export abstract class Client<
       parser = this.getParserMethod(this.parser);
     }
 
-    const d = await reader({ resource }, parser, data);
+    const d = await reader(
+      { resource, errorHandler: this.errorHandler.bind(this) },
+      parser,
+      data
+    );
 
     if (typeof d !== 'object') {
       throw new Error('Reader did not return an object');
@@ -375,7 +383,7 @@ export abstract class Client<
   // fetching in production - log error and move on
   // fetching in upload tool - throw error if strict is on
   // developing - throw error
-  errorHandler(err: string | Error) {
+  errorHandler(err: string | Error, strict: boolean = false) {
     // types: error, warning, info
     // check if warning or error
     // if strict then throw error, otherwise just log for later
@@ -402,7 +410,7 @@ export abstract class Client<
 
     console.error(`** ERROR (${type}):`, message);
 
-    if (this.strict) {
+    if (strict || this.strict) {
       throw err;
     }
   }

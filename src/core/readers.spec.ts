@@ -119,7 +119,7 @@ describe('apiReader', () => {
     // Call the apiReader
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -132,7 +132,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -151,7 +151,7 @@ describe('apiReader', () => {
     // Parser just passes content through
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -169,7 +169,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -186,7 +186,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -205,7 +205,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -214,7 +214,7 @@ describe('apiReader', () => {
 
   });
 
-  test('non-strict mode (default) continues on error and collects errors', async () => {
+  test('non-strict mode (default) continues on error and calls errorHandler', async () => {
     const resource = new Resource({
       url: 'https://api.test.com/error-data?page=:page',
       parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
@@ -222,9 +222,14 @@ describe('apiReader', () => {
       strict: false // explicit, though this is the default
     });
 
+    const errors: Error[] = [];
+    const errorHandler = (err: Error | string) => {
+      errors.push(err instanceof Error ? err : new Error(err));
+    };
+
     const result = await apiReader(
-      { resource },
-      async ({ content }: any) => content,
+      { resource, errorHandler },
+      async (content: any) => content,
       {}
     );
 
@@ -234,12 +239,10 @@ describe('apiReader', () => {
       ...sampleData.slice(2)      // page 3
     ]);
 
-    // Errors are stored on the resource
-    expect(resource.hasErrors).toBe(true);
-    expect(resource.errors).toHaveLength(1);
-    expect(resource.errors[0]).toHaveProperty('url');
-    expect(resource.errors[0]).toHaveProperty('error');
-    expect(resource.errors[0].url).toContain('page=2');
+    // Errors are passed to errorHandler
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(Error);
+    expect(errors[0].message).toContain('500');
   });
 
   test('strict mode throws on first error', async () => {
@@ -253,10 +256,102 @@ describe('apiReader', () => {
     await expect(async () => {
       await apiReader(
         { resource },
-        async ({ content }: any) => content,
+        async (content: any) => content,
         {}
       );
     }).rejects.toThrow();
+  });
+
+  test('strict mode with errorHandler that does not throw still throws after batch', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+      output: 'array',
+      strict: true
+    });
+
+    const errors: Error[] = [];
+    // ErrorHandler that logs but doesn't throw (simulating client.strict=false)
+    const errorHandler = (err: Error | string, strict: boolean) => {
+      errors.push(err instanceof Error ? err : new Error(err));
+      // Not throwing here even though strict=true is passed
+    };
+
+    await expect(async () => {
+      await apiReader(
+        { resource, errorHandler },
+        async (content: any) => content,
+        {}
+      );
+    }).rejects.toThrow();
+
+    // ErrorHandler should have been called
+    expect(errors).toHaveLength(1);
+    expect(errors[0].name).toBe('FetchError');
+  });
+
+  test('errorHandler that throws still results in apiReader throwing', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+      output: 'array',
+      strict: true
+    });
+
+    const errors: Error[] = [];
+    // ErrorHandler that throws (simulating client.strict=true)
+    const errorHandler = (err: Error | string, strict: boolean) => {
+      const error = err instanceof Error ? err : new Error(err);
+      errors.push(error);
+      if (strict) {
+        throw error; // This gets caught by Promise.allSettled
+      }
+    };
+
+    await expect(async () => {
+      await apiReader(
+        { resource, errorHandler },
+        async (content: any) => content,
+        {}
+      );
+    }).rejects.toThrow();
+
+    // ErrorHandler should have been called before the throw
+    expect(errors).toHaveLength(1);
+    expect(errors[0].name).toBe('FetchError');
+  });
+
+  test('strict mode throws only the first error when multiple errors occur in batch', async () => {
+    const resource = new Resource({
+      url: 'https://api.test.com/error-data?page=:page',
+      parameters: [{ page: 2 }, { page: 2 }, { page: 2 }], // All three will fail
+      output: 'array',
+      strict: true
+    });
+
+    const errors: Error[] = [];
+    const errorHandler = (err: Error | string) => {
+      errors.push(err instanceof Error ? err : new Error(err));
+    };
+
+    let thrownError: Error | null = null;
+    try {
+      await apiReader(
+        { resource, errorHandler },
+        async (content: any) => content,
+        {}
+      );
+    } catch (error) {
+      thrownError = error as Error;
+    }
+
+    // Should throw an error
+    expect(thrownError).not.toBeNull();
+    expect(thrownError?.name).toBe('FetchError');
+
+    // ErrorHandler should have been called for all errors in the batch
+    // (since Promise.allSettled waits for all promises)
+    expect(errors.length).toBeGreaterThanOrEqual(1);
   });
 
   test('distinguishes between fetch errors and parse errors', async () => {
@@ -267,10 +362,15 @@ describe('apiReader', () => {
       strict: false
     });
 
+    const errors: Error[] = [];
+    const errorHandler = (err: Error | string) => {
+      errors.push(err instanceof Error ? err : new Error(err));
+    };
+
     // Parser that throws on page 2
     const result = await apiReader(
-      { resource },
-      async ({ content }: any) => {
+      { resource, errorHandler },
+      async (content: any) => {
         if (Array.isArray(content) && content.length > 0 && content[0].id === 3) {
           throw new Error('Parser failed to process data');
         }
@@ -283,11 +383,9 @@ describe('apiReader', () => {
     expect(result).toEqual(sampleData.slice(0, 2));
 
     // Should have one parse error
-    expect(resource.hasErrors).toBe(true);
-    expect(resource.errors).toHaveLength(1);
-    expect(resource.errors[0].type).toBe('parse');
-    expect(resource.errors[0].url).toContain('page=2');
-    expect(resource.errors[0].error).toContain('Parser failed');
+    expect(errors).toHaveLength(1);
+    expect(errors[0].name).toBe('ParseError');
+    expect(errors[0].message).toContain('Parser failed');
   });
 
   test('fetch errors include status code', async () => {
@@ -298,17 +396,21 @@ describe('apiReader', () => {
       strict: false
     });
 
+    const errors: any[] = [];
+    const errorHandler = (err: Error | string) => {
+      errors.push(err instanceof Error ? err : new Error(err));
+    };
+
     await apiReader(
-      { resource },
-      async ({ content }: any) => content,
+      { resource, errorHandler },
+      async (content: any) => content,
       {}
     );
 
     // Should have one fetch error with status code
-    expect(resource.hasErrors).toBe(true);
-    expect(resource.errors).toHaveLength(1);
-    expect(resource.errors[0].type).toBe('fetch');
-    expect(resource.errors[0].statusCode).toBe(500);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].name).toBe('FetchError');
+    expect(errors[0].statusCode).toBe(500);
   });
 
   test('default behavior (no output): single URL returns response directly', async () => {
@@ -318,7 +420,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 
@@ -335,7 +437,7 @@ describe('apiReader', () => {
 
     const result = await apiReader(
       { resource },
-      async ({ content }: any) => content,
+      async (content: any) => content,
       {}
     );
 

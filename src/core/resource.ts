@@ -62,21 +62,6 @@ type ResourceConfig =
 
 
 /**
- * Represents an error that occurred while fetching a URL.
- * Stored on the Resource instance for caller inspection after reading.
- */
-export interface ResourceError {
-  /** The URL that failed */
-  url: string;
-  /** Error message describing what went wrong */
-  error: string;
-  /** Type of error (fetch vs parse) for distinguishing failure modes */
-  type?: 'fetch' | 'parse';
-  /** HTTP status code if this was a fetch error with server response */
-  statusCode?: number;
-}
-
-/**
  * Represents a data source (URL or file) with configuration for how it should be fetched and processed.
  *
  * The Resource class serves as the central configuration point for data fetching, containing:
@@ -84,11 +69,10 @@ export interface ResourceError {
  * - How to parse responses (readAs: json/text/blob with auto-detection fallback)
  * - How to combine multiple responses (output: array/object)
  * - Error handling strategy (strict: fail-fast vs resilient)
- * - Error collection (stores failures for caller inspection)
  *
  * Design rationale:
  * - Consolidates all fetch configuration in one place for clarity
- * - Mutates during operation (sets data context, collects errors) to avoid polluting return types
+ * - Mutates during operation (sets data context) to avoid polluting return types
  * - Used by readers as both input configuration and output state container
  */
 export class Resource {
@@ -100,7 +84,6 @@ export class Resource {
   #output?: ResourceOutput;
   #readAs?: ReadAs;
   #strict: boolean;
-  #errors: ResourceError[] = [];
 
   constructor(config: ResourceConfig) {
     this.validateConfig(config);
@@ -185,52 +168,13 @@ export class Resource {
 
   /**
    * When true, fails immediately on first error (development mode).
-   * When false (default), continues on error and collects failures (production mode).
+   * When false (default), errors are handled by the provided errorHandler (production mode).
    *
    * Non-strict mode enables resilient data collection where partial results
    * are still valuable even if some URLs fail.
    */
   get strict(): boolean {
     return this.#strict;
-  }
-
-  /**
-   * Returns array of errors that occurred during the last fetch operation.
-   * Only populated in non-strict mode; strict mode throws immediately.
-   */
-  get errors(): ResourceError[] {
-    return this.#errors;
-  }
-
-  /**
-   * Convenience method to check if any errors occurred during the last fetch.
-   */
-  get hasErrors(): boolean {
-    return this.#errors.length > 0;
-  }
-
-  /**
-   * Adds an error to the collection. Called by readers when fetch fails in non-strict mode.
-   *
-   * Design note: Errors are stored on Resource (rather than returned from reader)
-   * to keep the reader's return type clean and consistent. The Resource acts as
-   * a mutable state container for the fetch operation.
-   *
-   * @param url - The URL that failed
-   * @param error - Error message
-   * @param type - Type of error ('fetch' for network/HTTP errors, 'parse' for data parsing errors)
-   * @param statusCode - HTTP status code if applicable (fetch errors only)
-   */
-  addError(url: string, error: string, type?: 'fetch' | 'parse', statusCode?: number): void {
-    this.#errors.push({ url, error, type, statusCode });
-  }
-
-  /**
-   * Clears all stored errors. Called automatically by readers before starting a new fetch.
-   * Can also be called manually to reuse a Resource instance.
-   */
-  clearErrors(): void {
-    this.#errors = [];
   }
 
   private static replaceTemplateVariables(

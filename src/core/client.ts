@@ -319,7 +319,7 @@ export abstract class Client<
           // we might want an in between option of merging objects
           // but only merge object keys that fit our resource keys
           log(`Replacing the data object with results from '${key}'`)
-          data = d
+           data[key] = d;
         }
       } // should we do something here if there is no resource?
     }
@@ -471,6 +471,7 @@ export abstract class Client<
     const siteId = getValueFromKey(data, this.locationIdKey);
     // BUILDING KEY
     const key = Location.createKey({ provider: this.provider, siteId });
+
     let location: Location | undefined = this.#locations.get(key);
 
     if (!location) {
@@ -500,9 +501,10 @@ export abstract class Client<
         label: getValueFromKey(data, this.locationLabelKey),
       });
       this.#locations.add(location);
-    }
+    } 
     return location;
   }
+
 
   /**
    * Process a list of locations

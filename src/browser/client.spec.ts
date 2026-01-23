@@ -39,8 +39,8 @@ class CustomClient extends Client {
 }
 
 // a simple file reader to read in the file data
-const read = async ({ resource }) => {
-  return await new Promise((resolve, reject) => {
+const read = async ({ resource }, parser) => {
+  const content = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       resolve(e.target!.result);
@@ -48,8 +48,9 @@ const read = async ({ resource }) => {
     reader.onerror = (e) => {
       reject(e);
     };
-    reader.readAsText(resource.file);
+    reader.readAsText(resource.files[0]);
   });
+  return parser(content);
 };
 
 // all the rest of these are just testing the different ways to provide
@@ -60,15 +61,13 @@ describe('reading one json file', () => {
   });
 
   class UploadClient extends CustomClient {
-    reader = 'file';
-    readers = {
-      file: read as Reader,
-    };
+    reader = read;
+    parser = 'json';
   }
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: new Resource({file}) });
+    client.configure({ resource: new Resource({ file }) });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -84,13 +83,13 @@ describe('reading one csv file', () => {
       file: read as Reader,
     };
     parsers = {
-      csv: csv
+      csv: csv,
     };
   }
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: new Resource({file}) });
+    client.configure({ resource: new Resource({ file }) });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -108,7 +107,7 @@ describe('reading one json file v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: new Resource({file}) });
+    client.configure({ resource: new Resource({ file }) });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -133,7 +132,12 @@ describe('different files with the same parser', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file:locations}), measurements: new Resource({file: measurements}) } });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -156,7 +160,12 @@ describe('different files with different parsers', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file: locations}), measurements: new Resource({file: measurements}) } });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -183,7 +192,12 @@ describe('different files with different custom readers', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file: locations}), measurements: new Resource({file: measurements}) } });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -206,7 +220,12 @@ describe('different files with different custom readers v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file: locations}), measurements: new Resource({file: measurements}) } });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -221,8 +240,12 @@ describe('different files with custom parser and library parser', () => {
   let measurements = new File([csvdata.measurements], 'measurements.csv', {
     type: 'text/csv',
   });
-  let json2 = ({ text }) => {
-    return JSON.parse(text);
+  let json2 = (content) => {
+    if (typeof content === 'string') {
+      return JSON.parse(content);
+    } else {
+      return content;
+    }
   };
 
   class UploadClient extends CustomClient {
@@ -234,7 +257,12 @@ describe('different files with custom parser and library parser', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file: locations}), measurements : new Resource({file:measurements})} });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });
@@ -249,8 +277,12 @@ describe('different files with custom parser and library parser v2', () => {
   let measurements = new File([csvdata.measurements], 'measurements.csv', {
     type: 'text/csv',
   });
-  let json2 = ({ text }) => {
-    return JSON.parse(text);
+  let json2 = (content) => {
+    if (typeof content === 'string') {
+      return JSON.parse(content);
+    } else {
+      return content;
+    }
   };
 
   class UploadClient extends CustomClient {
@@ -263,7 +295,12 @@ describe('different files with custom parser and library parser v2', () => {
 
   test('parses file data', async () => {
     const client = new UploadClient();
-    client.configure({ resource: { locations: new Resource({file: locations}), measurements: new Resource({file:measurements}) } });
+    client.configure({
+      resource: {
+        locations: new Resource({ file: locations }),
+        measurements: new Resource({ file: measurements }),
+      },
+    });
     const data = await client.load();
     expect(data).toStrictEqual(expectedOutput);
   });

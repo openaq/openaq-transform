@@ -197,8 +197,10 @@ describe('Client with data in wide format', () => {
 describe('Client with data split between two different resources', () => {
   class JsonClient extends Client {
     resource = {
-      locations: new Resource({url:'https://blah.org/test-provider/stations'}),
-      measurements: new Resource({url:'https://blah.org/test-provider/measurements'}),
+      locations: new Resource({url:'https://blah.org/test-provider/stations',
+        output: 'array'
+      }),
+      measurements: new Resource({url:'https://blah.org/test-provider/measurements', output: 'array'}),
     };
     provider = 'testing';
     // mapping data

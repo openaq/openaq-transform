@@ -34,6 +34,18 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 
 export const json = async (content: string | Blob | Object) => {
   log(`Parsing ${typeof content} data using the json method`);
+  if (Array.isArray(content)) {
+    // Parse each string in the array
+    const parsed = content.map(item => {
+      if (typeof item === 'string') {
+        return JSON.parse(item);
+      }
+      return item;
+    });
+    // If single item, return it unwrapped; otherwise return array
+    return parsed.length === 1 ? parsed[0] : parsed;
+  }
+  
   if (typeof content === 'string') {
     return JSON.parse(content);
   } else {

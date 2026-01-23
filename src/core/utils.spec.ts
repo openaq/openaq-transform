@@ -2,7 +2,6 @@ import { expect, test } from 'vitest';
 import {
   cleanKey,
   getValueFromKey,
-  getMethod,
   countDecimals,
 } from './utils.ts';
 import { PathExpression } from '../types/metric.ts';

@@ -9,12 +9,12 @@ import { ResourceKeys } from "./resource";
  * - `'json'` - Parse response as JSON object
  * - `'text'` - Read response as text string
  * - `'blob'` - Read response as binary Blob
- * - `'response'` - Return raw Response object
  */
-export type ReadAs = 'json' | 'text' | 'blob' ;//| 'response';
+export type ReadAs = 'json' | 'text' | 'blob' ;
 
 export type DataContext = JSONValue; // TODO Should be indexed
 
+export type ErrorHandler = (err: string | Error, strict?: boolean) => void;
 
 /**
  * Parameters for reading from a URL resource.
@@ -31,7 +31,7 @@ export interface UrlReaderParameters {
   /** Maximum number of concurrent fetches to allows */
   concurrency?: number;
   /** Optional error handler for fetch and parse errors */
-  errorHandler?: (err: string | Error, strict?: boolean) => void;
+  errorHandler?: ErrorHandler;
 }
 
 /**
@@ -44,6 +44,7 @@ export interface FileSystemReaderParameters {
   resource: Resource;
   /** Optional character encoding for reading the file */
   encoding?: BufferEncoding;
+  errorHandler: ErrorHandler;
 }
 
 /**
@@ -52,10 +53,10 @@ export interface FileSystemReaderParameters {
 // export type ReaderParameters =
 //   | UrlReaderParameters
 //   | FileSystemReaderParameters
-
 export interface ReaderParameters {
   resource: Resource;
   options?: ReaderOptions;
+  errorHandler?: ErrorHandler;
 }
 
 /**

@@ -283,8 +283,8 @@ export abstract class Client<
     // this way the dev can control the order of the resource calls, for example, for clarity we
     // need to hit the meta resource first
     // I am indifferent to how we do it though, so feel free to change what I did
-    for (const [key, resource] of Object.entries(indexedResource)) {
-
+    for (const key of Object.keys(indexedResource) as Array<keyof typeof indexedResource>) {
+      const resource = indexedResource[key];
       if (resource) {
         if (isIndexedReader<R>(this.reader)) {
           log(`Loading ${key} using indexed reader`);

@@ -51,35 +51,61 @@ const googleStorageFetcher = async() => {} // gs://
  * For example, merging {locations: [a,b], measurements: [1,2]} with {locations: [c], measurements: [3]}
  * produces {locations: [a,b,c], measurements: [1,2,3]}.
  *
- * Design: Arrays with the same key are concatenated; non-array values are overwritten (last wins).
+ * Arrays with the same key are concatenated; non-array values are overwritten (last wins).
  * This enables paginated APIs that return container objects to be treated as a single logical result.
  *
  * @param objects - Array of objects to merge
  * @returns Single merged object with concatenated arrays
  */
-function mergeObjects(objects: object[]): object {
-  if (objects.length === 0) return {};
-  if (objects.length === 1) return objects[0];
+export function mergeObjects<T = unknown>(objects: unknown[]): T {
+  if (objects.length === 0) return {} as T;
+  if (objects.length === 1) return objects[0] as T;
 
-  const merged: any = {};
+  const merged: Record<string, unknown> = {};
 
   for (const obj of objects) {
-    for (const key in obj) {
-      if (!merged.hasOwnProperty(key)) {
-        // First time seeing this key
-        merged[key] = obj[key];
-      } else if (Array.isArray(merged[key]) && Array.isArray(obj[key])) {
-        // Both are arrays - concatenate
-        merged[key] = [...merged[key], ...obj[key]];
-      } else {
-        // Not arrays or mismatched types - overwrite (last wins)
-        merged[key] = obj[key];
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+      continue;
+    }
+
+    const record = obj as Record<string, unknown>;
+    
+    for (const key in record) {
+      if (Object.prototype.hasOwnProperty.call(record, key)) {
+        const newValue = record[key];
+        
+        if (!(key in merged)) {
+          merged[key] = newValue;
+        } else if (Array.isArray(merged[key]) && Array.isArray(newValue)) {
+          merged[key] = [...(merged[key] as unknown[]), ...newValue];
+        } else {
+          merged[key] = newValue;
+        }
       }
     }
   }
 
-  return merged;
+  return merged as T;
 }
+
+
+export async function apiReader(
+  params: UrlReaderParameters & { resource: { output: 'object' } },
+  parser: Parser,
+  data: DataContext
+): Promise<Record<string, unknown>>;
+
+export async function apiReader(
+  params: UrlReaderParameters & { resource: { output: 'array' } },
+  parser: Parser,
+  data: DataContext
+): Promise<unknown[]>;
+
+export async function apiReader(
+  params: UrlReaderParameters,
+  parser: Parser,
+  data: DataContext
+): Promise<unknown | unknown[]>;
 
 /**
  * Fetches data from URL-based resources with support for pagination, error handling, and flexible output formats.
@@ -129,13 +155,11 @@ function mergeObjects(objects: object[]): object {
  * const errorHandler = (err) => console.error('Fetch error:', err);
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
- */
-export const apiReader = async ({
-  resource,
-  options = { method: 'GET' },
-  concurrency = 3,
-  errorHandler,
-}: UrlReaderParameters, parser: Parser, data: DataContext): Promise<object> => {
+ */export async function apiReader(
+  { resource, options = { method: 'GET' }, concurrency = 3, errorHandler }: UrlReaderParameters,
+  parser: Parser,
+  data: DataContext
+): Promise<unknown | unknown[] | Record<string, unknown>> {
   resource.data = data
 
   // overrides default if needed

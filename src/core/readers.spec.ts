@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { apiReader } from './readers';
+import { apiReader, mergeObjects } from './readers';
 import { Resource } from './resource';
 
 // Sample test data
@@ -451,3 +451,11 @@ describe('apiReader', () => {
 
 
 });
+
+test('mergeObjects works', async () => {
+  const input = [{locations: ['a','b'], measurements: [1,2]}, {locations: ['c'], measurements: [3]}]
+  const expected = {locations: ['a','b','c'], measurements: [1,2,3]}
+  
+  expect(mergeObjects(input)).toEqual(expected);
+});
+

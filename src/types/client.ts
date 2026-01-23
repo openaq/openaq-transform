@@ -130,7 +130,6 @@ export function isIndexedReader<T>(value: unknown): value is IndexedReader<T> {
   return true;
 }
 
-export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
 
 export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {

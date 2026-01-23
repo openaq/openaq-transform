@@ -1,4 +1,5 @@
 import type { Options as CsvParseOptions } from 'csv-parse';
+import { ResourceKeys } from './resource';
 
 export type CsvParseFunction = (
   input: string | Buffer,
@@ -11,10 +12,7 @@ export function isParser(value: unknown): value is Parser {
   return typeof value === 'function';
 }
 
-export interface IndexedParser {
-  measurements: string;
-  locations?: string;
-  meta?: string;
-}
+export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
+
 
 export type ParserMethods = Record<string, Parser>;

@@ -59,21 +59,6 @@ export interface ReaderParameters {
   errorHandler?: ErrorHandler;
 }
 
-/**
- * Generic typed reader function interface.
- * @template TParams - The specific reader parameters type
- * @template TResult - The return type of the reader (default: string | Blob | Response)
- * @remarks
- * All readers follow this pattern: accept typed parameters and return a Promise of the read data.
- */
-export interface TypedReader<TParams extends ReaderParameters, TResult = string | Blob | Response> {
-  /**
-   * Reads data using the provided parameters.
-   * @param params - The reader-specific parameters
-   * @returns Promise resolving to the read data
-   */
-  (params: TParams): Promise<TResult>;
-}
 
 /**
  * Reader function for URL resources.
@@ -82,7 +67,7 @@ export interface TypedReader<TParams extends ReaderParameters, TResult = string 
  * Auto-detects content type from response headers if readAs is not specified.
  * Used by the Client class when reader is set to 'api'.
  */
-export type UrlReader = TypedReader<UrlReaderParameters>;
+export type UrlReader = Reader<UrlReaderParameters, unknown | unknown[] | Record<string, unknown>>;
 
 
 /**
@@ -91,7 +76,15 @@ export type UrlReader = TypedReader<UrlReaderParameters>;
  * Always returns string content.
  * Used in Node.js environments for local file access.
  */
-export type FileSystemReader = TypedReader<FileSystemReaderParameters, string>;
+export type FileSystemReader = Reader<FileSystemReaderParameters, unknown>;
+
+/**
+ * Reader function for File resources.
+ * @remarks
+ * Always returns string content.
+ * Used in Node.js environments for local file access.
+ */
+export type BrowserFileReader = Reader<FileReaderParameters, unknown>;
 
 
 /**
@@ -101,9 +94,11 @@ export type FileSystemReader = TypedReader<FileSystemReaderParameters, string>;
  * @remarks
  * Used internally by the Client class to handle different resource types dynamically.
  */
-export type Reader = (
-  params: ReaderParameters, parser: Parser, data: DataContext
-) => Promise<object>;
+export type Reader<TParams = any, TResult = unknown> = (
+  params: TParams, 
+  parser: Parser, 
+  data: DataContext
+) => Promise<TResult>;
 
 export function isReader(value: unknown): value is Reader {
   return typeof value === 'function'
@@ -132,6 +127,7 @@ export interface UrlReaderOptions extends ReaderOptions, Omit<RequestInit, 'meth
 export interface FileReaderParameters {
   resource: Resource;
   encoding?: string; // 'utf8', 'utf-16', etc.
+  errorHandler: ErrorHandler;
 }
 
 /**
@@ -168,7 +164,7 @@ export function isIndexedReaderOptions(
  * Map of reader method names to their implementations.
  */
 export interface ReaderMethods {
-  [key: string]: Reader;
+  [key: string]: Reader<any, any>;
 }
 
 /**
@@ -182,5 +178,5 @@ export type ReaderMethodMap = {
   /** Reader for filesystem paths */
   filesystem: FileSystemReader;
   /** Additional custom readers */
-  [key: string]: TypedReader<any, any>;
+  [key: string]: Reader<any, any>;
 }

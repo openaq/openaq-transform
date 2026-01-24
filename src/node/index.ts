@@ -1,2 +1,1 @@
-
-export { NodeClient } from './client';
+export { NodeClient } from "./client";

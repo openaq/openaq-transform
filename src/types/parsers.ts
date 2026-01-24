@@ -1,21 +1,17 @@
-import type { Options as CsvParseOptions } from 'csv-parse';
-import type { ResourceKeys } from './resource';
-
+import type { Options as CsvParseOptions } from "csv-parse";
+import type { ResourceKeys } from "./resource";
 
 export type CsvParseFunction = (
-  input: string | Buffer,
-  options?: CsvParseOptions
+	input: string | Buffer,
+	options?: CsvParseOptions,
 ) => any;
-
-
 
 export type Parser = (content: string | Blob | object) => Promise<object>;
 
 export function isParser(value: unknown): value is Parser {
-  return typeof value === 'function';
+	return typeof value === "function";
 }
 
 export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
-
 
 export type ParserMethods = Record<string, Parser>;

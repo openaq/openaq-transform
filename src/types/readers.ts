@@ -10,7 +10,7 @@ import type { ResourceKeys } from "./resource";
  * - `'text'` - Read response as text string
  * - `'blob'` - Read response as binary Blob
  */
-export type ReadAs = 'json' | 'text' | 'blob' ;
+export type ReadAs = "json" | "text" | "blob";
 
 export type DataContext = JSONValue; // TODO Should be indexed
 
@@ -25,13 +25,13 @@ export type ErrorHandler = (err: string | Error, strict?: boolean) => void;
  * the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
-  resource: Resource;
-  /** HTTP request options for the fetch */
-  options?: UrlReaderOptions;
-  /** Maximum number of concurrent fetches to allows */
-  concurrency?: number;
-  /** Optional error handler for fetch and parse errors */
-  errorHandler?: ErrorHandler;
+	resource: Resource;
+	/** HTTP request options for the fetch */
+	options?: UrlReaderOptions;
+	/** Maximum number of concurrent fetches to allows */
+	concurrency?: number;
+	/** Optional error handler for fetch and parse errors */
+	errorHandler?: ErrorHandler;
 }
 
 /**
@@ -41,10 +41,10 @@ export interface UrlReaderParameters {
  * Not used in browser-based implementations.
  */
 export interface FileSystemReaderParameters {
-  resource: Resource;
-  /** Optional character encoding for reading the file */
-  encoding?: BufferEncoding;
-  errorHandler: ErrorHandler;
+	resource: Resource;
+	/** Optional character encoding for reading the file */
+	encoding?: BufferEncoding;
+	errorHandler: ErrorHandler;
 }
 
 /**
@@ -54,11 +54,10 @@ export interface FileSystemReaderParameters {
 //   | UrlReaderParameters
 //   | FileSystemReaderParameters
 export interface ReaderParameters {
-  resource: Resource;
-  options?: ReaderOptions;
-  errorHandler?: ErrorHandler;
+	resource: Resource;
+	options?: ReaderOptions;
+	errorHandler?: ErrorHandler;
 }
-
 
 /**
  * Reader function for URL resources.
@@ -67,8 +66,10 @@ export interface ReaderParameters {
  * Auto-detects content type from response headers if readAs is not specified.
  * Used by the Client class when reader is set to 'api'.
  */
-export type UrlReader = Reader<UrlReaderParameters, unknown | unknown[] | Record<string, unknown>>;
-
+export type UrlReader = Reader<
+	UrlReaderParameters,
+	unknown | unknown[] | Record<string, unknown>
+>;
 
 /**
  * Reader function for filesystem resources.
@@ -86,7 +87,6 @@ export type FileSystemReader = Reader<FileSystemReaderParameters, unknown>;
  */
 export type BrowserFileReader = Reader<FileReaderParameters, unknown>;
 
-
 /**
  * Generic reader function that accepts any reader parameters.
  * @param params - Any valid reader parameters
@@ -95,13 +95,13 @@ export type BrowserFileReader = Reader<FileReaderParameters, unknown>;
  * Used internally by the Client class to handle different resource types dynamically.
  */
 export type Reader<TParams = any, TResult = unknown> = (
-  params: TParams, 
-  parser: Parser, 
-  data: DataContext
+	params: TParams,
+	parser: Parser,
+	data: DataContext,
 ) => Promise<TResult>;
 
 export function isReader(value: unknown): value is Reader {
-  return typeof value === 'function'
+	return typeof value === "function";
 }
 
 /**
@@ -110,7 +110,7 @@ export function isReader(value: unknown): value is Reader {
  * Extended by specific reader option types.
  * Retrieved using getReaderOptions() helper function in the Client class.
  */
-export type ReaderOptions = {}
+export type ReaderOptions = {};
 
 /**
  * Options for URL-based readers.
@@ -119,15 +119,17 @@ export type ReaderOptions = {}
  * Passed to the fetch API when making HTTP requests.
  * Can include headers, credentials, and other fetch options.
  */
-export interface UrlReaderOptions extends ReaderOptions, Omit<RequestInit, 'method'> {
-  /** HTTP method for the request. Only GET and POST are supported */
-  method?: 'GET' | 'POST';
+export interface UrlReaderOptions
+	extends ReaderOptions,
+		Omit<RequestInit, "method"> {
+	/** HTTP method for the request. Only GET and POST are supported */
+	method?: "GET" | "POST";
 }
 
 export interface FileReaderParameters {
-  resource: Resource;
-  encoding?: string; // 'utf8', 'utf-16', etc.
-  errorHandler: ErrorHandler;
+	resource: Resource;
+	encoding?: string; // 'utf8', 'utf-16', etc.
+	errorHandler: ErrorHandler;
 }
 
 /**
@@ -139,7 +141,7 @@ export interface FileReaderParameters {
  * Common pattern: `{ measurements: {...}, locations: {...}, meta: {...} }`
  */
 export type IndexedReaderOptions = {
-  [P in ResourceKeys]?: ReaderOptions;
+	[P in ResourceKeys]?: ReaderOptions;
 };
 
 /**
@@ -151,20 +153,20 @@ export type IndexedReaderOptions = {
  * or return the flat options object.
  */
 export function isIndexedReaderOptions(
-  obj: ReaderOptions | IndexedReaderOptions
+	obj: ReaderOptions | IndexedReaderOptions,
 ): obj is IndexedReaderOptions {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    ('locations' in obj || 'measurements' in obj || 'meta' in obj)
-  );
+	return (
+		typeof obj === "object" &&
+		obj !== null &&
+		("locations" in obj || "measurements" in obj || "meta" in obj)
+	);
 }
 
 /**
  * Map of reader method names to their implementations.
  */
 export interface ReaderMethods {
-  [key: string]: Reader<any, any>;
+	[key: string]: Reader<any, any>;
 }
 
 /**
@@ -173,10 +175,10 @@ export interface ReaderMethods {
  * Provides type-safe access to common reader implementations.
  */
 export type ReaderMethodMap = {
-  /** Reader for API/URL resources */
-  api: UrlReader;
-  /** Reader for filesystem paths */
-  filesystem: FileSystemReader;
-  /** Additional custom readers */
-  [key: string]: Reader<any, any>;
-}
+	/** Reader for API/URL resources */
+	api: UrlReader;
+	/** Reader for filesystem paths */
+	filesystem: FileSystemReader;
+	/** Additional custom readers */
+	[key: string]: Reader<any, any>;
+};

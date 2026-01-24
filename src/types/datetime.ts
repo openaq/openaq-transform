@@ -4,29 +4,29 @@
  * @example
  * ```ts
  *
- * const options: DatetimeOptions = { 
- *     format: 'yyyy-MM-dd HH:mm', 
- *     timezone: 'UTC', 
- *     locationTimezone: 'Africa/Banjul' 
+ * const options: DatetimeOptions = {
+ *     format: 'yyyy-MM-dd HH:mm',
+ *     timezone: 'UTC',
+ *     locationTimezone: 'Africa/Banjul'
  * };
  * ```
  */
 export interface DatetimeOptions {
-  /**
-   * The format of the timestamp string if the input was a string and a format was provided.
-   * Follows the conventions set by Luxon: https://moment.github.io/luxon/#/parsing.
-   */
-  format?: string;
-  /**
-   * The IANA timezone identifier representing the timezone of the timestamp string
-   * as it was interpreted during parsing. e.g.: 'UTC' or 'America/Denver'.
-   */
-  timezone?: string;
-  /**
-   * The IANA timezone identifier representing the timezone of the measurement location.
-   * This defaults to `timezone` if not explicitly set, or 'UTC' if `input` was a number.
-   */
-  locationTimezone?: string;
+	/**
+	 * The format of the timestamp string if the input was a string and a format was provided.
+	 * Follows the conventions set by Luxon: https://moment.github.io/luxon/#/parsing.
+	 */
+	format?: string;
+	/**
+	 * The IANA timezone identifier representing the timezone of the timestamp string
+	 * as it was interpreted during parsing. e.g.: 'UTC' or 'America/Denver'.
+	 */
+	timezone?: string;
+	/**
+	 * The IANA timezone identifier representing the timezone of the measurement location.
+	 * This defaults to `timezone` if not explicitly set, or 'UTC' if `input` was a number.
+	 */
+	locationTimezone?: string;
 }
 
 /**
@@ -45,12 +45,12 @@ export interface DatetimeOptions {
  * ```
  */
 export interface TimeOffset {
-  /** The number of minutes to offset */
-  minutes?: number;
-  /** The number of days to offset */
-  days?: number;
-  /** The number of hours to offset */
-  hours?: number;
+	/** The number of minutes to offset */
+	minutes?: number;
+	/** The number of days to offset */
+	days?: number;
+	/** The number of hours to offset */
+	hours?: number;
 }
 
 /**
@@ -80,13 +80,13 @@ export interface TimeOffset {
  * ```
  */
 export function isTimeOffset(obj: any): obj is TimeOffset {
-  return (
-    obj &&
-    typeof obj === 'object' &&
-    !Array.isArray(obj) &&
-    ('minutes' in obj || 'days' in obj || 'hours' in obj) &&
-    (obj.minutes === undefined || typeof obj.minutes === 'number') &&
-    (obj.days === undefined || typeof obj.days === 'number') &&
-    (obj.hours === undefined || typeof obj.hours === 'number')
-  );
+	return (
+		obj &&
+		typeof obj === "object" &&
+		!Array.isArray(obj) &&
+		("minutes" in obj || "days" in obj || "hours" in obj) &&
+		(obj.minutes === undefined || typeof obj.minutes === "number") &&
+		(obj.days === undefined || typeof obj.days === "number") &&
+		(obj.hours === undefined || typeof obj.hours === "number")
+	);
 }

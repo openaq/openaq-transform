@@ -1,40 +1,40 @@
-import debug from 'debug';
+import debug from "debug";
+import type { Parser } from "../types/parsers";
 import {
-  DataContext,
-  isIndexedReaderOptions,
-  UrlReaderOptions,
-  UrlReaderParameters,
-  type IndexedReaderOptions,
-  type ReadAs,
-  type ReaderOptions,
-} from '../types/readers';
-import { Parser } from '../types/parsers';
-import { FetchError, ParseError } from './errors';
-const log = debug('openaq-transform readers: DEBUG');
+	type DataContext,
+	type IndexedReaderOptions,
+	isIndexedReaderOptions,
+	type ReadAs,
+	type ReaderOptions,
+	type UrlReaderOptions,
+	type UrlReaderParameters,
+} from "../types/readers";
+import { FetchError, ParseError } from "./errors";
+
+const log = debug("openaq-transform readers: DEBUG");
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
-  options: ReaderOptions | IndexedReaderOptions,
-  key: K
+	options: ReaderOptions | IndexedReaderOptions,
+	key: K,
 ): ReaderOptions {
-  if (isIndexedReaderOptions(options)) {
-    return options[key] ?? {};
-  } else {
-    return options;
-  }
+	if (isIndexedReaderOptions(options)) {
+		return options[key] ?? {};
+	} else {
+		return options;
+	}
 }
 
 const contentTypeMap = new Map<string | null | undefined, ReadAs>([
-  ['application/json', 'json'],
-  ['application/ld+json', 'text'],
-  ['text/plain', 'text'],
-  ['text/csv', 'text'],
-  ['text/zip', 'blob'],
-  ['application/zip', 'blob'],
-  ['application/octet-stream', 'blob'],
-  [null, 'json'],
-  [undefined, 'json'],
+	["application/json", "json"],
+	["application/ld+json", "text"],
+	["text/plain", "text"],
+	["text/csv", "text"],
+	["text/zip", "blob"],
+	["application/zip", "blob"],
+	["application/octet-stream", "blob"],
+	[null, "json"],
+	[undefined, "json"],
 ]);
-
 
 // const httpFetcher = async({}) => {} // https:// or http://
 
@@ -58,53 +58,52 @@ const contentTypeMap = new Map<string | null | undefined, ReadAs>([
  * @returns Single merged object with concatenated arrays
  */
 export function mergeObjects<T = unknown>(objects: unknown[]): T {
-  if (objects.length === 0) return {} as T;
-  if (objects.length === 1) return objects[0] as T;
+	if (objects.length === 0) return {} as T;
+	if (objects.length === 1) return objects[0] as T;
 
-  const merged: Record<string, unknown> = {};
+	const merged: Record<string, unknown> = {};
 
-  for (const obj of objects) {
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-      continue;
-    }
+	for (const obj of objects) {
+		if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+			continue;
+		}
 
-    const record = obj as Record<string, unknown>;
-    
-    for (const key in record) {
-      if (Object.prototype.hasOwnProperty.call(record, key)) {
-        const newValue = record[key];
-        
-        if (!(key in merged)) {
-          merged[key] = newValue;
-        } else if (Array.isArray(merged[key]) && Array.isArray(newValue)) {
-          merged[key] = [...(merged[key] as unknown[]), ...newValue];
-        } else {
-          merged[key] = newValue;
-        }
-      }
-    }
-  }
+		const record = obj as Record<string, unknown>;
 
-  return merged as T;
+		for (const key in record) {
+			if (Object.hasOwn(record, key)) {
+				const newValue = record[key];
+
+				if (!(key in merged)) {
+					merged[key] = newValue;
+				} else if (Array.isArray(merged[key]) && Array.isArray(newValue)) {
+					merged[key] = [...(merged[key] as unknown[]), ...newValue];
+				} else {
+					merged[key] = newValue;
+				}
+			}
+		}
+	}
+
+	return merged as T;
 }
 
-
 export async function apiReader(
-  params: UrlReaderParameters & { resource: { output: 'object' } },
-  parser: Parser,
-  data: DataContext
+	params: UrlReaderParameters & { resource: { output: "object" } },
+	parser: Parser,
+	data: DataContext,
 ): Promise<Record<string, unknown>>;
 
 export async function apiReader(
-  params: UrlReaderParameters & { resource: { output: 'array' } },
-  parser: Parser,
-  data: DataContext
+	params: UrlReaderParameters & { resource: { output: "array" } },
+	parser: Parser,
+	data: DataContext,
 ): Promise<unknown[]>;
 
 export async function apiReader(
-  params: UrlReaderParameters,
-  parser: Parser,
-  data: DataContext
+	params: UrlReaderParameters,
+	parser: Parser,
+	data: DataContext,
 ): Promise<unknown | unknown[]>;
 
 /**
@@ -155,149 +154,158 @@ export async function apiReader(
  * const errorHandler = (err) => console.error('Fetch error:', err);
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
- */export async function apiReader(
-  { resource, options = { method: 'GET' }, concurrency = 3, errorHandler }: UrlReaderParameters,
-  parser: Parser,
-  data: DataContext
+ */ export async function apiReader(
+	{
+		resource,
+		options = { method: "GET" },
+		concurrency = 3,
+		errorHandler,
+	}: UrlReaderParameters,
+	parser: Parser,
+	data: DataContext,
 ): Promise<unknown | unknown[] | Record<string, unknown>> {
-  resource.data = data
+	resource.data = data;
 
-  // overrides default if needed
-  const fetchOptions: UrlReaderOptions = {
-    method: 'GET',
-    ...options,
-  };
+	// overrides default if needed
+	const fetchOptions: UrlReaderOptions = {
+		method: "GET",
+		...options,
+	};
 
-  const urls = resource.urls;
-  const results: object[] = [];
-  let firstError: Error | null = null;
-  log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
+	const urls = resource.urls;
+	const results: object[] = [];
+	let firstError: Error | null = null;
+	log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
 
+	for (let i = 0; i < urls.length; i += concurrency) {
+		const batch = urls.slice(i, i + concurrency);
 
-  for (let i = 0; i < urls.length; i += concurrency) {
-    const batch = urls.slice(i, i + concurrency);
+		await Promise.allSettled(
+			batch.map(async ({ url }) => {
+				let content: any;
+				let readAsFormat: ReadAs | undefined;
 
-    await Promise.allSettled(
-      batch.map(async ({ url }) => {
-        let content: any;
-        let readAsFormat: ReadAs | undefined;
+				// Step 1: Fetch and read content
+				try {
+					log(`fetching ${url}...`);
+					const res = await fetch(url, fetchOptions);
 
-        // Step 1: Fetch and read content
-        try {
-          log(`fetching ${url}...`);
-          const res = await fetch(url, fetchOptions);
+					if (res.status !== 200) {
+						throw new FetchError(
+							`${res.status} ${res.statusText}`,
+							url,
+							res.status,
+						);
+					}
+					log(`fetching ${url} received HTTP 200`);
 
-          if (res.status !== 200) {
-            throw new FetchError(`${res.status} ${res.statusText}`, url, res.status);
-          }
-          log(`fetching ${url} received HTTP 200`);
+					// Determine readAs format: use resource.readAs if set, otherwise auto-detect
+					readAsFormat = resource.readAs;
+					if (!readAsFormat) {
+						// check headers to get return method, splits at semicolon to handle charset
+						// e.g. application/json; charset=utf-8
+						const ctype = res.headers.get("Content-Type")?.split(";")[0];
+						// fall back to json if type is not mapped
+						readAsFormat = contentTypeMap.get(ctype || "");
+					}
 
-          // Determine readAs format: use resource.readAs if set, otherwise auto-detect
-          readAsFormat = resource.readAs;
-          if (!readAsFormat) {
-            // check headers to get return method, splits at semicolon to handle charset
-            // e.g. application/json; charset=utf-8
-            const ctype = res.headers.get('Content-Type')?.split(';')[0];
-            // fall back to json if type is not mapped
-            readAsFormat = contentTypeMap.get(ctype || '');
-          }
+					// Read as specified format
+					if (readAsFormat === "json") {
+						content = await res.json();
+					} else if (readAsFormat === "text") {
+						content = await res.text();
+					} else if (readAsFormat === "blob") {
+						content = await res.blob();
+					} else {
+						// default to json
+						content = await res.json();
+					}
+				} catch (error) {
+					// Fetch or read error
+					const fetchError =
+						error instanceof FetchError
+							? error
+							: new FetchError(
+									error instanceof Error ? error.message : String(error),
+									url,
+								);
 
-          // Read as specified format
-          if (readAsFormat === 'json') {
-            content = await res.json();
-          } else if (readAsFormat === 'text') {
-            content = await res.text();
-          } else if (readAsFormat === 'blob') {
-            content = await res.blob();
-          } else {
-            // default to json
-            content = await res.json();
-          }
-        } catch (error) {
-          // Fetch or read error
-          const fetchError = error instanceof FetchError
-            ? error
-            : new FetchError(
-                error instanceof Error ? error.message : String(error),
-                url
-              );
+					// Track first error for strict mode
+					if (resource.strict && !firstError) {
+						firstError = fetchError;
+					}
 
-          // Track first error for strict mode
-          if (resource.strict && !firstError) {
-            firstError = fetchError;
-          }
+					// Handle error immediately
+					if (errorHandler) {
+						errorHandler(fetchError, resource.strict);
+					} else {
+						console.error(`Reader fetch error at ${url}:`, fetchError.message);
+					}
+					return; // Early return on fetch error
+				}
 
-          // Handle error immediately
-          if (errorHandler) {
-            errorHandler(fetchError, resource.strict);
-          } else {
-            console.error(`Reader fetch error at ${url}:`, fetchError.message);
-          }
-          return; // Early return on fetch error
-        }
+				// Step 2: Parse content
+				let parsed: any;
+				try {
+					parsed = await parser(content);
+				} catch (error) {
+					// Parse error
+					const parseError = new ParseError(
+						error instanceof Error ? error.message : String(error),
+						url,
+						error instanceof Error ? error : undefined,
+					);
 
-        // Step 2: Parse content
-        let parsed: any;
-        try {
-          parsed = await parser(content);
-        } catch (error) {
-          // Parse error
-          const parseError = new ParseError(
-            error instanceof Error ? error.message : String(error),
-            url,
-            error instanceof Error ? error : undefined
-          );
+					// Track first error for strict mode
+					if (resource.strict && !firstError) {
+						firstError = parseError;
+					}
 
-          // Track first error for strict mode
-          if (resource.strict && !firstError) {
-            firstError = parseError;
-          }
+					// Handle error immediately
+					if (errorHandler) {
+						errorHandler(parseError, resource.strict);
+					} else {
+						console.error(`Reader parse error at ${url}:`, parseError.message);
+					}
+					return; // Early return on parse error
+				}
 
-          // Handle error immediately
-          if (errorHandler) {
-            errorHandler(parseError, resource.strict);
-          } else {
-            console.error(`Reader parse error at ${url}:`, parseError.message);
-          }
-          return; // Early return on parse error
-        }
+				// Success - combine based on output strategy
+				if (resource.output === "array") {
+					// Array output: flatten arrays, collect objects
+					if (Array.isArray(parsed)) {
+						// Array response - spread items into results
+						results.push(...parsed);
+					} else {
+						// Object/primitive response - collect as-is
+						results.push(parsed);
+					}
+				} else if (resource.output === "object") {
+					// Object output: collect objects for merging
+					results.push(parsed);
+				} else {
+					// No output specified (default): return as-is, no transformation
+					results.push(parsed);
+				}
+			}),
+		);
 
-        // Success - combine based on output strategy
-        if (resource.output === 'array') {
-          // Array output: flatten arrays, collect objects
-          if (Array.isArray(parsed)) {
-            // Array response - spread items into results
-            results.push(...parsed);
-          } else {
-            // Object/primitive response - collect as-is
-            results.push(parsed);
-          }
-        } else if (resource.output === 'object') {
-          // Object output: collect objects for merging
-          results.push(parsed);
-        } else {
-          // No output specified (default): return as-is, no transformation
-          results.push(parsed);
-        }
-      })
-    );
+		// If we're in strict mode and an error occurred, throw it now
+		if (firstError) {
+			throw firstError;
+		}
+	}
 
-    // If we're in strict mode and an error occurred, throw it now
-    if (firstError) {
-      throw firstError;
-    }
-  }
-
-  // Handle output strategy
-  if (resource.output === 'object') {
-    // Merge all objects by concatenating nested arrays
-    return mergeObjects(results);
-  } else if (resource.output === 'array') {
-    // Already flattened/collected during processing
-    return results;
-  } else {
-    // No output specified (default): return as-is
-    // Single URL returns the response directly; multiple URLs return array
-    return results.length === 1 ? results[0] : results;
-  }
-};
+	// Handle output strategy
+	if (resource.output === "object") {
+		// Merge all objects by concatenating nested arrays
+		return mergeObjects(results);
+	} else if (resource.output === "array") {
+		// Already flattened/collected during processing
+		return results;
+	} else {
+		// No output specified (default): return as-is
+		// Single URL returns the response directly; multiple URLs return array
+		return results.length === 1 ? results[0] : results;
+	}
+}

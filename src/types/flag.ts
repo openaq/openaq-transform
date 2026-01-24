@@ -13,26 +13,26 @@
  * ```
  */
 export interface FlagData {
-  /** key of the sensor this flag applies to */
-  sensorKey: string;
+	/** key of the sensor this flag applies to */
+	sensorKey: string;
 
-  /**
-   * Optional custom flag key. If not provided, will be auto-generated
-   * using the pattern: `{sensorKey}-{flag}::{starts}`
-   */
-  key?: string;
+	/**
+	 * Optional custom flag key. If not provided, will be auto-generated
+	 * using the pattern: `{sensorKey}-{flag}::{starts}`
+	 */
+	key?: string;
 
-  /** The start datetime of the flag period as an ISO string */
-  starts: string;
+	/** The start datetime of the flag period as an ISO string */
+	starts: string;
 
-  /** The end datetime of the flag period as an ISO string */
-  ends: string;
+	/** The end datetime of the flag period as an ISO string */
+	ends: string;
 
-  /** The flag type or category name */
-  flag: string;
+	/** The flag type or category name */
+	flag: string;
 
-  /** Additional notes or description for this flag */
-  note: string;
+	/** Additional notes or description for this flag */
+	note: string;
 }
 
 /**
@@ -62,19 +62,19 @@ export interface FlagData {
  * Represents the structure returned by the Flag.json() method.
  *
  */
-export interface  FlagJSON {
-    /** The key of the flag */
-    key: string;
+export interface FlagJSON {
+	/** The key of the flag */
+	key: string;
 
-    /** The start datetime of the flag period as an ISO string */
-    datetime_from: string;
+	/** The start datetime of the flag period as an ISO string */
+	datetime_from: string;
 
-    /** The end datetime of the flag period as an ISO string */
-    datetime_to: string;
+	/** The end datetime of the flag period as an ISO string */
+	datetime_to: string;
 
-    /** The flag type or category name */
-    flag_name: string;
+	/** The flag type or category name */
+	flag_name: string;
 
-    /** Additional notes or description for this flag */
-    note: string;
+	/** Additional notes or description for this flag */
+	note: string;
 }

@@ -1,5 +1,5 @@
-import type { CoordinatesJSON } from './coordinates';
-import type { SystemJSON } from './system';
+import type { CoordinatesJSON } from "./coordinates";
+import type { SystemJSON } from "./system";
 
 /**
  * Input data structure for instantiating the Location class.
@@ -37,50 +37,50 @@ import type { SystemJSON } from './system';
  * ```
  */
 export interface LocationData {
-  /** Optional provider value for building key */
-  provider: string;
+	/** Optional provider value for building key */
+	provider: string;
 
-  /** Identifier for the site this location belongs to */
-  siteId: string;
+	/** Identifier for the site this location belongs to */
+	siteId: string;
 
-  /** Human-readable name of the site */
-  siteName: string;
+	/** Human-readable name of the site */
+	siteName: string;
 
-  /** Organization or entity that owns this location */
-  owner: string;
+	/** Organization or entity that owns this location */
+	owner: string;
 
-  /** Optional descriptive label for this specific location */
-  label: string;
+	/** Optional descriptive label for this specific location */
+	label: string;
 
-  /** X coordinate (longitude for geographic projections) */
-  x: number;
+	/** X coordinate (longitude for geographic projections) */
+	x: number;
 
-  /** Y coordinate (latitude for geographic projections) */
-  y: number;
+	/** Y coordinate (latitude for geographic projections) */
+	y: number;
 
-  /**
-   * Optional coordinate reference system identifier (e.g., "EPSG:4326" for WGS84).
-   * valid values are defined by proj4 {@link https://github.com/proj4js/proj4js}.
-   */
-  projection?: string;
+	/**
+	 * Optional coordinate reference system identifier (e.g., "EPSG:4326" for WGS84).
+	 * valid values are defined by proj4 {@link https://github.com/proj4js/proj4js}.
+	 */
+	projection?: string;
 
-  /** Whether this location represents a mobile monitoring unit */
-  ismobile: boolean;
+	/** Whether this location represents a mobile monitoring unit */
+	ismobile: boolean;
 
-  /** Current operational status of the location (e.g., "active", "inactive", "deployed") */
-  status: string;
+	/** Current operational status of the location (e.g., "active", "inactive", "deployed") */
+	status: string;
 
-  /**
-   * Optional default time interval in seconds over which sensor values are averaged
-   * at this location. Can be overridden by individual sensors.
-   */
-  averagingIntervalSeconds?: number;
+	/**
+	 * Optional default time interval in seconds over which sensor values are averaged
+	 * at this location. Can be overridden by individual sensors.
+	 */
+	averagingIntervalSeconds?: number;
 
-  /**
-   * Optional default time interval in seconds at which sensor data is logged
-   * at this location. Defaults to averagingIntervalSeconds if not provided.
-   */
-  loggingIntervalSeconds?: number;
+	/**
+	 * Optional default time interval in seconds at which sensor data is logged
+	 * at this location. Defaults to averagingIntervalSeconds if not provided.
+	 */
+	loggingIntervalSeconds?: number;
 }
 
 /**
@@ -88,10 +88,10 @@ export interface LocationData {
  *
  */
 export interface LocationKeyData {
-  /** Required provider value for building key */
-  provider: string;
+	/** Required provider value for building key */
+	provider: string;
 
-  siteId: string
+	siteId: string;
 }
 
 /**
@@ -100,21 +100,21 @@ export interface LocationKeyData {
  *
  */
 export interface LocationJSON {
-  /** key for the location */
-  key: string;
+	/** key for the location */
+	key: string;
 
-  /** Identifier for the site this location belongs to */
-  site_id: string;
+	/** Identifier for the site this location belongs to */
+	site_id: string;
 
-  /** Human-readable name of the site */
-  site_name: string;
+	/** Human-readable name of the site */
+	site_name: string;
 
-  /** Processed coordinate information including projection details */
-  coordinates: CoordinatesJSON;
+	/** Processed coordinate information including projection details */
+	coordinates: CoordinatesJSON;
 
-  /** Whether this location represents a mobile monitoring unit */
-  ismobile: boolean;
+	/** Whether this location represents a mobile monitoring unit */
+	ismobile: boolean;
 
-  /** Array of systems associated with this location in JSON format */
-  systems: SystemJSON[];
+	/** Array of systems associated with this location in JSON format */
+	systems: SystemJSON[];
 }

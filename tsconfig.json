@@ -1,33 +1,31 @@
 {
-  "outDir": "dist/",
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "declaration": true,
-    "declarationMap": true,
-    "strictPropertyInitialization": false,
+	"outDir": "dist/",
+	"compilerOptions": {
+		"target": "ES2020",
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"lib": ["ES2020", "DOM", "DOM.Iterable"],
+		"skipLibCheck": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"declaration": true,
+		"declarationMap": true,
+		"strictPropertyInitialization": false,
 
-    /* Bundler mode */
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
+		/* Bundler mode */
+		"moduleResolution": "Bundler",
+		"allowImportingTsExtensions": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"noEmit": true,
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
-  },
-  "include": ["src"],
-  "exclude": [
-        "**/*.spec.ts"
-    ]
+		/* Linting */
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": true
+	},
+	"include": ["src"],
+	"exclude": ["**/*.spec.ts"]
 }

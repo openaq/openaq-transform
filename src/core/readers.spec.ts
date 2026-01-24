@@ -1,461 +1,459 @@
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
-import { apiReader, mergeObjects } from './readers';
-import { Resource } from './resource';
+import { HttpResponse, http } from "msw";
+import { setupServer } from "msw/node";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { apiReader, mergeObjects } from "./readers";
+import { Resource } from "./resource";
 
 // Sample test data
 const sampleData = [
-  { id: 1, name: 'Station A', temperature: 20.5 },
-  { id: 2, name: 'Station B', temperature: 22.3 },
-  { id: 3, name: 'Station C', temperature: 19.8 },
+	{ id: 1, name: "Station A", temperature: 20.5 },
+	{ id: 2, name: "Station B", temperature: 22.3 },
+	{ id: 3, name: "Station C", temperature: 19.8 },
 ];
 
 const objectData = {
-  stations: [
-    { id: 1, name: 'Station A'},
-    { id: 2, name: 'Station B'},
-    { id: 3, name: 'Station C'},
-  ],
-  measurements: [
-    { id: 1, temperature: 20.5 },
-    { id: 2, temperature: 22.3 },
-    { id: 3, temperature: 19.8 },
-  ]
-}
+	stations: [
+		{ id: 1, name: "Station A" },
+		{ id: 2, name: "Station B" },
+		{ id: 3, name: "Station C" },
+	],
+	measurements: [
+		{ id: 1, temperature: 20.5 },
+		{ id: 2, temperature: 22.3 },
+		{ id: 3, temperature: 19.8 },
+	],
+};
 
 // Mock server setup
 const handlers = [
-  // endpoint that returns simple array (array)
-  http.get('https://api.test.com/stations', async () => {
-    return HttpResponse.json(sampleData);
-  }),
-  // endpoint that returns object with arrays (object)
-  http.get('https://api.test.com/objects', async () => {
-    return HttpResponse.json(objectData);
-  }),
-  // api that returns one page of data at a time (array)
-  http.get('https://api.test.com/data', async ({ request }) => {
-    const url = new URL(request.url);
-    const page = url.searchParams.get('page');
-    if (page === '1') {
-      return HttpResponse.json(sampleData.slice(0,2));
-    } else if (page === '2') {
-      return HttpResponse.json(sampleData.slice(2));
-    }
-    return HttpResponse.json([]);
-  }),
-  // api that returns one station object at a time (object)
-  http.get('https://api.test.com/stations/:station', async ({ params }) => {
-    const { station } = params;
-    if (station === 'A') {
-      return HttpResponse.json(objectData.stations[0]);
-    } else if (station === 'B') {
-      return HttpResponse.json(objectData.stations[1]);
-    } else if (station === 'C') {
-      return HttpResponse.json(objectData.stations[2]);
-    }
-  }),
-  // this is a weird edge case I think
-  http.get('https://api.test.com/pagedobjects', async ({ request }) => {
-    const url = new URL(request.url);
-    const page = url.searchParams.get('page');
-    if (page === '1') {
-      return HttpResponse.json({
-        stations: objectData.stations.slice(0,2),
-        measurements: objectData.measurements.slice(0,2)
-      });
-    } else if (page === '2') {
-      return HttpResponse.json({
-        stations: objectData.stations.slice(2),
-        measurements: objectData.measurements.slice(2)
-      });
-    }
-    return HttpResponse.json([]);
-  }),
-  // endpoints for error handling tests
-  http.get('https://api.test.com/error-data', async ({ request }) => {
-    const url = new URL(request.url);
-    const page = url.searchParams.get('page');
-    if (page === '1') {
-      return HttpResponse.json(sampleData.slice(0, 2));
-    } else if (page === '2') {
-      // Return an error status
-      return new HttpResponse(null, { status: 500, statusText: 'Internal Server Error' });
-    } else if (page === '3') {
-      return HttpResponse.json(sampleData.slice(2));
-    }
-    return HttpResponse.json([]);
-  }),
-  // endpoint that returns invalid JSON to trigger parse error
-  http.get('https://api.test.com/parse-error-data', async ({ request }) => {
-    const url = new URL(request.url);
-    const page = url.searchParams.get('page');
-    if (page === '1') {
-      return HttpResponse.json(sampleData.slice(0, 2));
-    } else if (page === '2') {
-      // Return valid data that will cause parser to throw
-      return HttpResponse.json(sampleData.slice(2));
-    }
-    return HttpResponse.json([]);
-  }),
+	// endpoint that returns simple array (array)
+	http.get("https://api.test.com/stations", async () => {
+		return HttpResponse.json(sampleData);
+	}),
+	// endpoint that returns object with arrays (object)
+	http.get("https://api.test.com/objects", async () => {
+		return HttpResponse.json(objectData);
+	}),
+	// api that returns one page of data at a time (array)
+	http.get("https://api.test.com/data", async ({ request }) => {
+		const url = new URL(request.url);
+		const page = url.searchParams.get("page");
+		if (page === "1") {
+			return HttpResponse.json(sampleData.slice(0, 2));
+		} else if (page === "2") {
+			return HttpResponse.json(sampleData.slice(2));
+		}
+		return HttpResponse.json([]);
+	}),
+	// api that returns one station object at a time (object)
+	http.get("https://api.test.com/stations/:station", async ({ params }) => {
+		const { station } = params;
+		if (station === "A") {
+			return HttpResponse.json(objectData.stations[0]);
+		} else if (station === "B") {
+			return HttpResponse.json(objectData.stations[1]);
+		} else if (station === "C") {
+			return HttpResponse.json(objectData.stations[2]);
+		}
+	}),
+	// this is a weird edge case I think
+	http.get("https://api.test.com/pagedobjects", async ({ request }) => {
+		const url = new URL(request.url);
+		const page = url.searchParams.get("page");
+		if (page === "1") {
+			return HttpResponse.json({
+				stations: objectData.stations.slice(0, 2),
+				measurements: objectData.measurements.slice(0, 2),
+			});
+		} else if (page === "2") {
+			return HttpResponse.json({
+				stations: objectData.stations.slice(2),
+				measurements: objectData.measurements.slice(2),
+			});
+		}
+		return HttpResponse.json([]);
+	}),
+	// endpoints for error handling tests
+	http.get("https://api.test.com/error-data", async ({ request }) => {
+		const url = new URL(request.url);
+		const page = url.searchParams.get("page");
+		if (page === "1") {
+			return HttpResponse.json(sampleData.slice(0, 2));
+		} else if (page === "2") {
+			// Return an error status
+			return new HttpResponse(null, {
+				status: 500,
+				statusText: "Internal Server Error",
+			});
+		} else if (page === "3") {
+			return HttpResponse.json(sampleData.slice(2));
+		}
+		return HttpResponse.json([]);
+	}),
+	// endpoint that returns invalid JSON to trigger parse error
+	http.get("https://api.test.com/parse-error-data", async ({ request }) => {
+		const url = new URL(request.url);
+		const page = url.searchParams.get("page");
+		if (page === "1") {
+			return HttpResponse.json(sampleData.slice(0, 2));
+		} else if (page === "2") {
+			// Return valid data that will cause parser to throw
+			return HttpResponse.json(sampleData.slice(2));
+		}
+		return HttpResponse.json([]);
+	}),
 ];
 
 const server = setupServer(...handlers);
 
 beforeAll(() => {
-  server.listen();
+	server.listen();
 });
 
 afterAll(() => {
-  server.close();
+	server.close();
 });
 
-describe('apiReader', () => {
-  test('fetches and parses JSON data from a simple endpoint', async () => {
-    // Create a resource pointing to our mock endpoint
-    const resource = new Resource({ url: 'https://api.test.com/stations' });
+describe("apiReader", () => {
+	test("fetches and parses JSON data from a simple endpoint", async () => {
+		// Create a resource pointing to our mock endpoint
+		const resource = new Resource({ url: "https://api.test.com/stations" });
 
-    // Call the apiReader
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+		// Call the apiReader
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-    // Verify the result
-    expect(result as any).toEqual(sampleData);
-  });
+		// Verify the result
+		expect(result as any).toEqual(sampleData);
+	});
 
-  test('auto-detects JSON content type when readAs is not specified', async () => {
-    const resource = new Resource({ url: 'https://api.test.com/stations' });
+	test("auto-detects JSON content type when readAs is not specified", async () => {
+		const resource = new Resource({ url: "https://api.test.com/stations" });
 
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-    expect(result as any).toEqual(sampleData);
-  });
+		expect(result as any).toEqual(sampleData);
+	});
 
+	test("paginated endpoint with multiple URLs that each return arrays should flatten into single array", async () => {
+		// Create a resource with URL template and parameters
+		const resource = new Resource({
+			url: "https://api.test.com/data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "array",
+		});
 
-  test('paginated endpoint with multiple URLs that each return arrays should flatten into single array', async () => {
-    // Create a resource with URL template and parameters
-    const resource = new Resource({
-      url: 'https://api.test.com/data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }],
-      output: 'array'
-    });
+		// Parser just passes content through
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-    // Parser just passes content through
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+		// Expect content to be a flattened array of all items from both pages
+		expect(result as any).toEqual(sampleData);
+	});
 
-    // Expect content to be a flattened array of all items from both pages
-    expect(result as any).toEqual(sampleData);
-  });
+	test("multiple station URLs that each return an object should return array of objects", async () => {
+		// Create a resource with URL template and parameters for different stations
+		// Default behavior (no output): multiple URLs return array of responses
+		const resource = new Resource({
+			url: "https://api.test.com/stations/:station",
+			parameters: [{ station: "A" }, { station: "B" }, { station: "C" }],
+		});
 
-  test('multiple station URLs that each return an object should return array of objects', async () => {
-    // Create a resource with URL template and parameters for different stations
-    // Default behavior (no output): multiple URLs return array of responses
-    const resource = new Resource({
-      url: 'https://api.test.com/stations/:station',
-      parameters: [{ station: 'A' }, { station: 'B' }, { station: 'C' }]
-    });
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+		// Default: multiple URLs return array of their responses
+		expect(result as any).toEqual(objectData.stations);
+	});
 
-    // Default: multiple URLs return array of their responses
-    expect(result as any).toEqual(objectData.stations);
+	test("endpoint that returns object remains an object", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/objects",
+			output: "object",
+		});
 
-  });
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-  test('endpoint that returns object remains an object', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/objects',
-      output: 'object'
-    });
+		expect(result as any).toEqual(objectData);
+	});
 
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+	test("endpoint that returns paginated object remains an object", async () => {
+		// this one might be overkill becaause I doubt we would run into this issue very often
+		const resource = new Resource({
+			url: "https://api.test.com/pagedobjects?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "object",
+		});
 
-    expect(result as any).toEqual(objectData);
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-  });
+		// Expect content to be an array of station objects
+		expect(result as any).toEqual(objectData);
+	});
 
-  test('endpoint that returns paginated object remains an object', async () => {
-    // this one might be overkill becaause I doubt we would run into this issue very often
-    const resource = new Resource({
-      url: 'https://api.test.com/pagedobjects?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }],
-      output: 'object'
-    });
+	test("non-strict mode (default) continues on error and calls errorHandler", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+			output: "array",
+			strict: false, // explicit, though this is the default
+		});
 
+		const errors: Error[] = [];
+		const errorHandler = (err: Error | string) => {
+			errors.push(err instanceof Error ? err : new Error(err));
+		};
 
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
+		const result = await apiReader(
+			{ resource, errorHandler },
+			async (content: any) => content,
+			{},
+		);
 
-    // Expect content to be an array of station objects
-    expect(result as any).toEqual(objectData);
+		// Should have data from page 1 and page 3 (page 2 failed)
+		expect(result).toEqual([
+			...sampleData.slice(0, 2), // page 1
+			...sampleData.slice(2), // page 3
+		]);
 
-  });
+		// Errors are passed to errorHandler
+		expect(errors).toHaveLength(1);
+		expect(errors[0]).toBeInstanceOf(Error);
+		expect(errors[0].message).toContain("500");
+	});
 
-  test('non-strict mode (default) continues on error and calls errorHandler', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
-      output: 'array',
-      strict: false // explicit, though this is the default
-    });
+	test("strict mode throws on first error", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+			output: "array",
+			strict: true,
+		});
 
-    const errors: Error[] = [];
-    const errorHandler = (err: Error | string) => {
-      errors.push(err instanceof Error ? err : new Error(err));
-    };
+		await expect(async () => {
+			await apiReader({ resource }, async (content: any) => content, {});
+		}).rejects.toThrow();
+	});
 
-    const result = await apiReader(
-      { resource, errorHandler },
-      async (content: any) => content,
-      {}
-    );
+	test("strict mode with errorHandler that does not throw still throws after batch", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+			output: "array",
+			strict: true,
+		});
 
-    // Should have data from page 1 and page 3 (page 2 failed)
-    expect(result).toEqual([
-      ...sampleData.slice(0, 2), // page 1
-      ...sampleData.slice(2)      // page 3
-    ]);
+		const errors: Error[] = [];
+		// ErrorHandler that logs but doesn't throw (simulating client.strict=false)
+		const errorHandler = (err: Error | string, strict: boolean) => {
+			errors.push(err instanceof Error ? err : new Error(err));
+			// Not throwing here even though strict=true is passed
+		};
 
-    // Errors are passed to errorHandler
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toBeInstanceOf(Error);
-    expect(errors[0].message).toContain('500');
-  });
+		await expect(async () => {
+			await apiReader(
+				{ resource, errorHandler },
+				async (content: any) => content,
+				{},
+			);
+		}).rejects.toThrow();
 
-  test('strict mode throws on first error', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
-      output: 'array',
-      strict: true
-    });
+		// ErrorHandler should have been called
+		expect(errors).toHaveLength(1);
+		expect(errors[0].name).toBe("FetchError");
+	});
 
-    await expect(async () => {
-      await apiReader(
-        { resource },
-        async (content: any) => content,
-        {}
-      );
-    }).rejects.toThrow();
-  });
+	test("errorHandler that throws still results in apiReader throwing", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
+			output: "array",
+			strict: true,
+		});
 
-  test('strict mode with errorHandler that does not throw still throws after batch', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
-      output: 'array',
-      strict: true
-    });
+		const errors: Error[] = [];
+		// ErrorHandler that throws (simulating client.strict=true)
+		const errorHandler = (err: Error | string, strict: boolean) => {
+			const error = err instanceof Error ? err : new Error(err);
+			errors.push(error);
+			if (strict) {
+				throw error; // This gets caught by Promise.allSettled
+			}
+		};
 
-    const errors: Error[] = [];
-    // ErrorHandler that logs but doesn't throw (simulating client.strict=false)
-    const errorHandler = (err: Error | string, strict: boolean) => {
-      errors.push(err instanceof Error ? err : new Error(err));
-      // Not throwing here even though strict=true is passed
-    };
+		await expect(async () => {
+			await apiReader(
+				{ resource, errorHandler },
+				async (content: any) => content,
+				{},
+			);
+		}).rejects.toThrow();
 
-    await expect(async () => {
-      await apiReader(
-        { resource, errorHandler },
-        async (content: any) => content,
-        {}
-      );
-    }).rejects.toThrow();
+		// ErrorHandler should have been called before the throw
+		expect(errors).toHaveLength(1);
+		expect(errors[0].name).toBe("FetchError");
+	});
 
-    // ErrorHandler should have been called
-    expect(errors).toHaveLength(1);
-    expect(errors[0].name).toBe('FetchError');
-  });
+	test("strict mode throws only the first error when multiple errors occur in batch", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 2 }, { page: 2 }, { page: 2 }], // All three will fail
+			output: "array",
+			strict: true,
+		});
 
-  test('errorHandler that throws still results in apiReader throwing', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }, { page: 3 }],
-      output: 'array',
-      strict: true
-    });
+		const errors: Error[] = [];
+		const errorHandler = (err: Error | string) => {
+			errors.push(err instanceof Error ? err : new Error(err));
+		};
 
-    const errors: Error[] = [];
-    // ErrorHandler that throws (simulating client.strict=true)
-    const errorHandler = (err: Error | string, strict: boolean) => {
-      const error = err instanceof Error ? err : new Error(err);
-      errors.push(error);
-      if (strict) {
-        throw error; // This gets caught by Promise.allSettled
-      }
-    };
+		let thrownError: Error | null = null;
+		try {
+			await apiReader(
+				{ resource, errorHandler },
+				async (content: any) => content,
+				{},
+			);
+		} catch (error) {
+			thrownError = error as Error;
+		}
 
-    await expect(async () => {
-      await apiReader(
-        { resource, errorHandler },
-        async (content: any) => content,
-        {}
-      );
-    }).rejects.toThrow();
+		// Should throw an error
+		expect(thrownError).not.toBeNull();
+		expect(thrownError?.name).toBe("FetchError");
 
-    // ErrorHandler should have been called before the throw
-    expect(errors).toHaveLength(1);
-    expect(errors[0].name).toBe('FetchError');
-  });
+		// ErrorHandler should have been called for all errors in the batch
+		// (since Promise.allSettled waits for all promises)
+		expect(errors.length).toBeGreaterThanOrEqual(1);
+	});
 
-  test('strict mode throws only the first error when multiple errors occur in batch', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 2 }, { page: 2 }, { page: 2 }], // All three will fail
-      output: 'array',
-      strict: true
-    });
+	test("distinguishes between fetch errors and parse errors", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/parse-error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "array",
+			strict: false,
+		});
 
-    const errors: Error[] = [];
-    const errorHandler = (err: Error | string) => {
-      errors.push(err instanceof Error ? err : new Error(err));
-    };
+		const errors: Error[] = [];
+		const errorHandler = (err: Error | string) => {
+			errors.push(err instanceof Error ? err : new Error(err));
+		};
 
-    let thrownError: Error | null = null;
-    try {
-      await apiReader(
-        { resource, errorHandler },
-        async (content: any) => content,
-        {}
-      );
-    } catch (error) {
-      thrownError = error as Error;
-    }
+		// Parser that throws on page 2
+		const result = await apiReader(
+			{ resource, errorHandler },
+			async (content: any) => {
+				if (
+					Array.isArray(content) &&
+					content.length > 0 &&
+					content[0].id === 3
+				) {
+					throw new Error("Parser failed to process data");
+				}
+				return content;
+			},
+			{},
+		);
 
-    // Should throw an error
-    expect(thrownError).not.toBeNull();
-    expect(thrownError?.name).toBe('FetchError');
+		// Should have data from page 1 only (page 2 had parse error)
+		expect(result).toEqual(sampleData.slice(0, 2));
 
-    // ErrorHandler should have been called for all errors in the batch
-    // (since Promise.allSettled waits for all promises)
-    expect(errors.length).toBeGreaterThanOrEqual(1);
-  });
+		// Should have one parse error
+		expect(errors).toHaveLength(1);
+		expect(errors[0].name).toBe("ParseError");
+		expect(errors[0].message).toContain("Parser failed");
+	});
 
-  test('distinguishes between fetch errors and parse errors', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/parse-error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }],
-      output: 'array',
-      strict: false
-    });
+	test("fetch errors include status code", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/error-data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "array",
+			strict: false,
+		});
 
-    const errors: Error[] = [];
-    const errorHandler = (err: Error | string) => {
-      errors.push(err instanceof Error ? err : new Error(err));
-    };
+		const errors: any[] = [];
+		const errorHandler = (err: Error | string) => {
+			errors.push(err instanceof Error ? err : new Error(err));
+		};
 
-    // Parser that throws on page 2
-    const result = await apiReader(
-      { resource, errorHandler },
-      async (content: any) => {
-        if (Array.isArray(content) && content.length > 0 && content[0].id === 3) {
-          throw new Error('Parser failed to process data');
-        }
-        return content;
-      },
-      {}
-    );
+		await apiReader(
+			{ resource, errorHandler },
+			async (content: any) => content,
+			{},
+		);
 
-    // Should have data from page 1 only (page 2 had parse error)
-    expect(result).toEqual(sampleData.slice(0, 2));
+		// Should have one fetch error with status code
+		expect(errors).toHaveLength(1);
+		expect(errors[0].name).toBe("FetchError");
+		expect(errors[0].statusCode).toBe(500);
+	});
 
-    // Should have one parse error
-    expect(errors).toHaveLength(1);
-    expect(errors[0].name).toBe('ParseError');
-    expect(errors[0].message).toContain('Parser failed');
-  });
+	test("default behavior (no output): single URL returns response directly", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/objects",
+		});
 
-  test('fetch errors include status code', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/error-data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }],
-      output: 'array',
-      strict: false
-    });
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-    const errors: any[] = [];
-    const errorHandler = (err: Error | string) => {
-      errors.push(err instanceof Error ? err : new Error(err));
-    };
+		// With no output specified, single URL returns the response directly
+		expect(result).toEqual(objectData);
+	});
 
-    await apiReader(
-      { resource, errorHandler },
-      async (content: any) => content,
-      {}
-    );
+	test("default behavior (no output): multiple URLs return array of responses", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			// No output specified - should return array of responses
+		});
 
-    // Should have one fetch error with status code
-    expect(errors).toHaveLength(1);
-    expect(errors[0].name).toBe('FetchError');
-    expect(errors[0].statusCode).toBe(500);
-  });
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
 
-  test('default behavior (no output): single URL returns response directly', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/objects'
-    });
-
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
-
-    // With no output specified, single URL returns the response directly
-    expect(result).toEqual(objectData);
-  });
-
-  test('default behavior (no output): multiple URLs return array of responses', async () => {
-    const resource = new Resource({
-      url: 'https://api.test.com/data?page=:page',
-      parameters: [{ page: 1 }, { page: 2 }]
-      // No output specified - should return array of responses
-    });
-
-    const result = await apiReader(
-      { resource },
-      async (content: any) => content,
-      {}
-    );
-
-    // With no output specified, multiple URLs return array of their responses
-    // Each response is an array, so we get an array of arrays
-    expect(result).toEqual([
-      sampleData.slice(0, 2), // page 1 response
-      sampleData.slice(2)     // page 2 response
-    ]);
-  });
-
-
+		// With no output specified, multiple URLs return array of their responses
+		// Each response is an array, so we get an array of arrays
+		expect(result).toEqual([
+			sampleData.slice(0, 2), // page 1 response
+			sampleData.slice(2), // page 2 response
+		]);
+	});
 });
 
-test('mergeObjects works', async () => {
-  const input = [{locations: ['a','b'], measurements: [1,2]}, {locations: ['c'], measurements: [3]}]
-  const expected = {locations: ['a','b','c'], measurements: [1,2,3]}
-  
-  expect(mergeObjects(input)).toEqual(expected);
-});
+test("mergeObjects works", async () => {
+	const input = [
+		{ locations: ["a", "b"], measurements: [1, 2] },
+		{ locations: ["c"], measurements: [3] },
+	];
+	const expected = { locations: ["a", "b", "c"], measurements: [1, 2, 3] };
 
+	expect(mergeObjects(input)).toEqual(expected);
+});

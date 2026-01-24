@@ -43,7 +43,7 @@ const read = async ({ resource }, parser) => {
   const content = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      resolve(e.target!.result);
+      resolve(e.target?.result);
     };
     reader.onerror = (e) => {
       reject(e);
@@ -114,12 +114,12 @@ describe('reading one json file v2', () => {
 });
 
 describe('different files with the same parser', () => {
-  let locations = new File(
+  const locations = new File(
     [JSON.stringify(widedata.locations)],
     'locations.json',
     { type: 'application/json' }
   );
-  let measurements = new File(
+  const measurements = new File(
     [JSON.stringify(widedata.measurements)],
     'measurements.json',
     { type: 'application/json' }
@@ -144,12 +144,12 @@ describe('different files with the same parser', () => {
 });
 
 describe('different files with different parsers', () => {
-  let locations = new File(
+  const locations = new File(
     [JSON.stringify(widedata.locations)],
     'locations.json',
     { type: 'application/json' }
   );
-  let measurements = new File([csvdata.measurements], 'measurements.csv', {
+  const measurements = new File([csvdata.measurements], 'measurements.csv', {
     type: 'text/csv',
   });
 
@@ -204,12 +204,12 @@ describe('different files with different custom readers', () => {
 });
 
 describe('different files with different custom readers v2', () => {
-  let locations = new File(
+  const locations = new File(
     [JSON.stringify(widedata.locations)],
     'locations.json',
     { type: 'application/json' }
   );
-  let measurements = new File([csvdata.measurements], 'measurements.csv', {
+  const measurements = new File([csvdata.measurements], 'measurements.csv', {
     type: 'text/csv',
   });
 
@@ -237,10 +237,10 @@ describe('different files with custom parser and library parser', () => {
     'locations.json',
     { type: 'application/json' }
   );
-  let measurements = new File([csvdata.measurements], 'measurements.csv', {
+  const measurements = new File([csvdata.measurements], 'measurements.csv', {
     type: 'text/csv',
   });
-  let json2 = (content) => {
+  const json2 = (content) => {
     if (typeof content === 'string') {
       return JSON.parse(content);
     } else {

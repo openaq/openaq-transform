@@ -10,10 +10,10 @@ const PARSE_ERROR = Symbol('Parse error');
 export class TransformError extends RangeError {
   name: string
   type: symbol
-  value?: any
+  value?: unknown
   flag?: string
 
-  constructor(message: string, value: any) {
+  constructor(message: string, value: unknown) {
     super(`${message}. Client provided '${value}'.`);
     this.name = this.constructor.name;
     this.type = TRANSFORM_ERROR
@@ -23,7 +23,7 @@ export class TransformError extends RangeError {
 }
 
 export class LocationError extends TransformError {
-  constructor(message: string, value: any) {
+  constructor(message: string, value: unknown) {
     super(message, value);
     this.type = LOCATION_ERROR;
   }
@@ -51,14 +51,14 @@ export class InvalidPrecisionError extends LocationError {
 
 
 class MeasurementError extends TransformError {
-  constructor(message: string, value: any) {
+  constructor(message: string, value: unknown) {
     super(message, value)
     this.type = MEASUREMENT_ERROR;
   }
 }
 
 export class MissingAttributeError extends MeasurementError {
-  constructor(attribute: string, value: any) {
+  constructor(attribute: string, value: unknown) {
     super(`Missing '${attribute}' attribute.`, value)
   }
 }
@@ -77,16 +77,15 @@ export class UnsupportedParameterError extends MeasurementError {
 export class UnsupportedUnitsError extends MeasurementError {
   constructor(parameter: string, units: string) {
     const supportedUnits = Object.values(PARAMETERS)
-      .filter(d => d.name == parameter)
-      .map(d => Object.keys(d.converters))
-      .flat()
+      .filter(d => d.name === parameter)
+      .flatMap(d => Object.keys(d.converters))
       .join(',')
     super(`Unsupported units for '${parameter}'. Currently supporting ${supportedUnits}`, units)
   }
 }
 
 export class MissingValueError extends MeasurementError {
-  constructor(value: any) {
+  constructor(value: unknown) {
     super('Value is required', value)
     //this.flag = 'MissingValue'
     this.value = null;
@@ -95,9 +94,9 @@ export class MissingValueError extends MeasurementError {
 
 // the value passed is expected to be a flag
 export class ProviderValueError extends MeasurementError {
-  constructor(value: any) {
+  constructor(value: unknown) {
     super('Provider flagged value', value)
-    this.flag = value;
+    this.flag = String(value);
     this.value = null;
   }
 }

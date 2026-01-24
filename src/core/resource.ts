@@ -41,7 +41,7 @@ interface ResourceUrl {
 export type ResourceOutput = 'array' | 'object';
 
 type ResourceConfig =
-  {
+  | {
       url: string;
       file?: never;
       parameters?: Parameters[] | ParametersFunction | PathExpression;
@@ -59,7 +59,6 @@ type ResourceConfig =
       readAs?: ReadAs;
       strict?: boolean;
     };
-
 
 /**
  * Represents a data source (URL or file) with configuration for how it should be fetched and processed.
@@ -138,12 +137,16 @@ export class Resource {
   }
 
   get protocol(): string {
-    const url = new URL(this.urls[0].url)
+    const url = new URL(this.urls[0].url);
     return url.protocol;
   }
 
   get files(): Array<File> | undefined {
-    return this.#file ? Array.isArray(this.#file) ? this.#file : [this.#file] : undefined;
+    return this.#file
+      ? Array.isArray(this.#file)
+        ? this.#file
+        : [this.#file]
+      : undefined;
   }
 
   /**
@@ -274,10 +277,10 @@ export class Resource {
 
       for (const params of parameters) {
         const url = this.buildUrl(params);
-        let body;
-        if (this.#body !== undefined) {
-          body = Resource.buildBody(this.#body, params);
-        }
+        const body =
+          this.#body !== undefined
+            ? Resource.buildBody(this.#body, params)
+            : undefined;
         urls.push({
           url,
           ...(body && { body: body }),

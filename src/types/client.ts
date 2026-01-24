@@ -3,7 +3,7 @@ import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { IndexedParser, Parser } from "./parsers";
 import type { ClientParameters } from "./metric";
 import { Resource } from "../core/resource";
-import { ResourceKeys } from "./resource";
+import type { ResourceKeys } from "./resource";
 
 interface Meta {
   locationIdKey: string;
@@ -118,9 +118,6 @@ export function isIndexedReader<T>(value: unknown): value is IndexedReader<T> {
     return false;
   }
 
-  const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
-  const allowedKeysSet = new Set(allowedKeys);
-
   const objectKeys = Object.keys(value);
 
   if (objectKeys.length === 0) {
@@ -135,9 +132,6 @@ export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
-
-  const allowedKeys: ResourceKeys[] = ['measurements', 'locations', 'meta', 'flags', 'sensors'];
-  const allowedKeysSet = new Set(allowedKeys);
 
   const objectKeys = Object.keys(value);
 

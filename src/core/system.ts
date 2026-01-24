@@ -27,8 +27,8 @@ export class System {
 
   get key(): string {
     const key = [this.locationKey]
-    if (this.manufacturerName != 'default') key.push(this.manufacturerName)
-    if (this.modelName != 'default') key.push(this.modelName)
+    if (this.manufacturerName !== 'default') key.push(this.manufacturerName)
+    if (this.modelName !== 'default') key.push(this.modelName)
     return key.join('-');
   }
 

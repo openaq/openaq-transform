@@ -1,13 +1,9 @@
 import debug from 'debug';
-import type { ParserMethods, IndexedParser, Parser } from '../types/parsers';
-import { isReader, type Reader, type ReaderMethods } from '../types/readers';
 import {
   isPathExpression,
   type PathExpression,
 } from '../types/metric';
 import { search } from '@jmespath-community/jmespath';
-import { ClientParser, ClientReader } from '../types/client';
-import { ResourceKeys } from '../types/resource';
 
 const log = debug('openaq-transform utils: DEBUG');
 
@@ -30,6 +26,7 @@ export const getValueFromKey = (
   let value = null;
   if (isPathExpression(key)) {
     if (key.type === 'jmespath') {
+      log(`getting value from key using 'jmespath'`);
       value = search(data, key.expression);
     } else {
       throw TypeError(
@@ -38,6 +35,7 @@ export const getValueFromKey = (
     }
   }
   if (typeof key === 'function') {
+    log(`getting value from key using 'function'`);
     try {
       value = key(data);
     } catch (error: unknown) {
@@ -48,6 +46,7 @@ export const getValueFromKey = (
       }
     }
   } else if (typeof key === 'string') {
+    log(`getting value from key using 'string'`);
     value = data ? data[key] : key;
   }
   // the csv method reads everything in as strings
@@ -60,9 +59,7 @@ export const getValueFromKey = (
 
 export const cleanKey = (value: string): string => {
   return (
-    value &&
-    value
-      .replace(/^\s+|\s+$/g, '')
+    value?.replace(/^\s+|\s+$/g, '')
       .replace(/\s+/g, '_')
       .replace(/[^\w]/g, '')
       .toLowerCase()

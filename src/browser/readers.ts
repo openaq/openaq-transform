@@ -1,6 +1,6 @@
 import { mergeObjects } from "../core/readers";
-import { Parser } from "../types/parsers";
-import { DataContext, FileReaderParameters } from "../types/readers";
+import type { Parser } from "../types/parsers";
+import type { DataContext, FileReaderParameters } from "../types/readers";
 
 export const fileReader = async ({
   resource,

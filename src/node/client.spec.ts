@@ -496,7 +496,7 @@ describe('Client with measurement errors', () => {
     //console.dir(expected.measurements, { depth: null })
     //console.dir(expected, { depth: null })
     expect(data.measurements.length).toBe(7);
-    expect(errors!.length).toBe(1);
+    expect(errors?.length).toBe(1);
     expect(data).toStrictEqual(expected);
   });
 

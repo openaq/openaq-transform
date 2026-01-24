@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import type { DataContext, FileSystemReaderParameters } from '../types/readers';
-import { Parser } from '../types/parsers';
+import type { Parser } from '../types/parsers';
 
 export const fileSystemReader = async ({
   resource,

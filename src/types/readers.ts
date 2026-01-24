@@ -1,7 +1,7 @@
 import type { JSONValue } from "@jmespath-community/jmespath";
 import type { Resource } from "../core/resource";
 import type { Parser } from "./parsers";
-import { ResourceKeys } from "./resource";
+import type { ResourceKeys } from "./resource";
 
 /**
  * Specifies how a URL resource should be read and parsed.
@@ -110,7 +110,7 @@ export function isReader(value: unknown): value is Reader {
  * Extended by specific reader option types.
  * Retrieved using getReaderOptions() helper function in the Client class.
  */
-export interface ReaderOptions {}
+export type ReaderOptions = {}
 
 /**
  * Options for URL-based readers.

@@ -1,10 +1,10 @@
 import debug from 'debug';
 const log = debug('openaq-transform measurements: DEBUG');
 
-import { Datetime } from './datetime';
-import { Sensor } from './sensor';
+import type { Datetime } from './datetime';
+import type { Sensor } from './sensor';
 import type { BBox } from 'geojson';
-import { Coordinates, updateBounds } from './coordinates';
+import { type Coordinates, updateBounds } from './coordinates';
 import { PARAMETER_DEFAULTS, Metric } from './metric';
 
 import { TransformError, MissingAttributeError } from './errors';

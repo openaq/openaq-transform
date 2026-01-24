@@ -39,14 +39,20 @@
   },
   "scripts": {
     "build": "tsdown",
-    "watch:build": "tsc --watch",
+    "dev": "tsdown --watch",
+    "fix": "pnpm run format && pnpm run lint",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "lint": "biome lint --write .",
+    "lint:check": "biome lint .",
     "test": "vitest run --typecheck",
     "watch:test": "vitest run --typecheck --watch",
     "coverage": "vitest run --typecheck --coverage",
-    "oxlint": "oxlint src",
-    "knip": "knip"
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.12",
     "@types/debug": "^4.1.12",
     "@types/geojson": "^7946.0.16",
     "@types/luxon": "^3.6.2",
@@ -54,9 +60,7 @@
     "@types/proj4": "^2.5.6",
     "@vitest/coverage-v8": "^3.2.4",
     "happy-dom": "^17.4.6",
-    "knip": "^5.65.0",
     "msw": "^2.7.5",
-    "oxlint": "^1.18.0",
     "oxlint-tsgolint": "^0.2.0",
     "tsdown": "^0.15.4",
     "typedoc": "^0.28.5",

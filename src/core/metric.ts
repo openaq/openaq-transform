@@ -190,7 +190,7 @@ export class Metric {
   constructor(parameter: string, unit: string) {
     let idx = -1;
     // check for parameter(s)
-    idx = Object.values(PARAMETERS).findIndex((p) => p.name == parameter);
+    idx = Object.values(PARAMETERS).findIndex((p) => p.name === parameter);
 
     if (idx < 0) {
       throw new UnsupportedParameterError(parameter);
@@ -198,7 +198,7 @@ export class Metric {
 
     // now add the units
     idx = Object.values(PARAMETERS).findIndex(
-      (p) => p.name == parameter && Object.keys(p.converters).includes(unit)
+      (p) => p.name === parameter && Object.keys(p.converters).includes(unit)
     );
 
     if (idx < 0) {

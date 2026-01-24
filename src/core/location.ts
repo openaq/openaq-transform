@@ -1,7 +1,7 @@
 import debug from 'debug';
 const log = debug('openaq-transform locations: DEBUG');
 
-import { BBox } from 'geojson';
+import type { BBox } from 'geojson';
 import { stripNulls } from './utils';
 import { System } from './system';
 import { Sensor } from './sensor';
@@ -129,14 +129,14 @@ export class Location {
    * @returns {*} - system object
    */
   getSystem(data: SystemData | Sensor): System {
-    let key;
+    let key: string;
     if (data instanceof Sensor) {
       key = data.systemKey;
     } else {
-      key = [this.key]
-      if (data.manufacturerName) key.push(data.manufacturerName)
-      if (data.modelName) key.push(data.modelName)
-      key = key.join('-')
+      const parts = [this.key];
+      if (data.manufacturerName) parts.push(data.manufacturerName)
+      if (data.modelName) parts.push(data.modelName)
+      key = parts.join('-')
     }
 
     if (!this.#systems.has(key)) {

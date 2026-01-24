@@ -36,13 +36,13 @@ const contentTypeMap = new Map<string | null | undefined, ReadAs>([
 ]);
 
 
-const httpFetcher = async({}) => {} // https:// or http://
+// const httpFetcher = async({}) => {} // https:// or http://
 
-const s3Fetcher = async({}) => {} /// s3://
+// const s3Fetcher = async({}) => {} /// s3://
 
-const r2Fetch = async({}) => {} // rs://
+// const r2Fetch = async({}) => {} // rs://
 
-const googleStorageFetcher = async() => {} // gs://
+// const googleStorageFetcher = async() => {} // gs://
 
 /**
  * Merges multiple objects by concatenating arrays with matching keys.
@@ -171,6 +171,8 @@ export async function apiReader(
   const urls = resource.urls;
   const results: object[] = [];
   let firstError: Error | null = null;
+  log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
+
 
   for (let i = 0; i < urls.length; i += concurrency) {
     const batch = urls.slice(i, i + concurrency);
@@ -182,11 +184,13 @@ export async function apiReader(
 
         // Step 1: Fetch and read content
         try {
+          log(`fetching ${url}...`);
           const res = await fetch(url, fetchOptions);
 
           if (res.status !== 200) {
             throw new FetchError(`${res.status} ${res.statusText}`, url, res.status);
           }
+          log(`fetching ${url} received HTTP 200`);
 
           // Determine readAs format: use resource.readAs if set, otherwise auto-detect
           readAsFormat = resource.readAs;

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { Coordinates, updateBounds } from './coordinates';
 import proj4 from 'proj4';
-import { type BBox } from 'geojson';
+import type { BBox } from 'geojson';
 
 test('Coordinates latitude and longitude return unchanged value for EPSG:4326', () => {
   const coordinates = new Coordinates(32, 42);
@@ -90,7 +90,7 @@ test('updateBounds initializes bounds correctly when undefined', () => {
 });
 
 test('updateBounds expands bounds in all directions', () => {
-  let initialBounds: BBox = [0, 0, 10, 10];
+  const initialBounds: BBox = [0, 0, 10, 10];
   const coords = new Coordinates(-5, 15);
   const newBounds = updateBounds(coords, initialBounds);
   expect(newBounds).toEqual([-5, 0, 10, 15]);

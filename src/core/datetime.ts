@@ -100,7 +100,7 @@ export class Datetime {
 
     if (this.#input instanceof DateTime) {
       parsedDate = this.#input;
-    } else if (typeof this.#input == 'number') {
+    } else if (typeof this.#input === 'number') {
       parsedDate = DateTime.fromSeconds(this.#input);
       if (!this.locationTimezone) this.locationTimezone = 'UTC';
     } else if (this.#input instanceof Date) {
@@ -252,6 +252,6 @@ export class Datetime {
       dt = now;
     }
 
-    return new this(dt);
+    return new Datetime(dt);
   }
 }

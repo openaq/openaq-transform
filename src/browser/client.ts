@@ -3,7 +3,7 @@ import { apiReader } from '../core/readers';
 import {fileReader} from './readers';
 import { csv, tsv } from './parsers';
 import { json } from '../core/parsers';
-import { ParserMethods } from '../types/parsers';
+import type { ParserMethods } from '../types/parsers';
 import type { ReaderMethods } from '../types/readers';
 
 const readers = {

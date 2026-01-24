@@ -1,5 +1,5 @@
 import proj4 from 'proj4';
-import { BBox } from 'geojson';
+import type { BBox } from 'geojson';
 import {
   InvalidPrecisionError,
   LatitudeBoundsError,

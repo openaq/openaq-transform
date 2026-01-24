@@ -1,12 +1,15 @@
 import type { Options as CsvParseOptions } from 'csv-parse';
-import { ResourceKeys } from './resource';
+import type { ResourceKeys } from './resource';
+
 
 export type CsvParseFunction = (
   input: string | Buffer,
   options?: CsvParseOptions
 ) => any;
 
-export type Parser = (content: string | Blob | Object) => object;
+
+
+export type Parser = (content: string | Blob | object) => Promise<object>;
 
 export function isParser(value: unknown): value is Parser {
   return typeof value === 'function';

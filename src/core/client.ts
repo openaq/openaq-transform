@@ -38,7 +38,7 @@ import {
 } from '../types/readers';
 import { ClientParameters, PathExpression } from '../types/metric';
 import { Resource } from './resource';
-import { RESOURCE_KEYS, ResourceKeys } from '../types/resource';
+import { ResourceKeys } from '../types/resource';
 
 const log = debug('openaq-transform client (core): DEBUG');
 
@@ -604,73 +604,75 @@ export abstract class Client<
    *
    * @param {array} measurements - list of measurement data
    */
-  processMeasurementsData(measurements: any) {
-    log(`Processing ${measurements.length} measurement(s)`);
-    // if we provided a parameter column key we use that
-    // otherwise we use the list of parameters
-    // the end goal is just an array of parameter names to loop through
-    const params: Array<string | PathExpression | ParseFunction> = this
-      .longFormat
-      ? // for long format we will just pass the parameter name key and use that each time
-        [this.parameterNameKey]
-      : this.measurements.parameterKeys();
+processMeasurementsData(measurements: any[]) {
+  log(`Processing ${measurements.length} measurement(s)`);
+  // if we provided a parameter column key we use that
+  // otherwise we use the list of parameters
+  // the end goal is just an array of parameter names to loop through
+  const params: Array<string | PathExpression | ParseFunction> = this
+    .longFormat
+    ? // for long format we will just pass the parameter name key and use that each time
+      [this.parameterNameKey]
+    : this.measurements.parameterKeys();
 
-    measurements.forEach((measurementRow: any) => {
-      try {
-        const datetime = this.getDatetime(measurementRow);
+  measurements.forEach((measurementRow: any) => {
+    try {
+      const datetime = this.getDatetime(measurementRow);
 
-        params.map((p) => {
-          let metric, value, metricName, valueName;
+      params.forEach((p) => {
+        // By using const here, we satisfy Biome's requirement for explicit types
+        // and avoid the "implicit any" let declaration.
+        
+        // for long format data we will need to extract the parameter name from the field
+        // for wide format they are both the same value
+        const metricName = this.longFormat 
+          ? getValueFromKey(measurementRow, p) 
+          : p;
 
-          if (this.longFormat) {
-            // for long format data we will need to extract the parameter name from the field
-            metricName = getValueFromKey(measurementRow, p);
-            valueName = this.parameterValueKey;
-          } else {
-            // for wide format they are both the same value
-            metricName = p;
-            valueName = p;
+        const valueName = this.longFormat 
+          ? this.parameterValueKey 
+          : p;
+
+        const value = getValueFromKey(measurementRow, valueName);
+
+        // for wide format data we will not assume that null is a real measurement
+        // but for long format data we will assume it is valid
+        if (value !== undefined && (value || this.longFormat)) {
+          const metric = this.measurements.metricFromProviderKey(metricName as string);
+          
+          if (!metric) {
+            this.errorHandler(new UnsupportedParameterError(metricName as string));
+            return;
           }
 
-          value = getValueFromKey(measurementRow, valueName);
-
-          // for wide format data we will not assume that null is a real measurement
-          // but for long format data we will assume it is valid
-          if (value !== undefined && (value || this.longFormat)) {
-            metric = this.measurements.metricFromProviderKey(metricName);
-            if (!metric) {
-              this.errorHandler(new UnsupportedParameterError(metricName));
-              return;
-            }
-
-            // get the approprate sensor from or reference list,
-            // or create it, which in turn with create the location and system
-            const sensor = this.getSensor({ ...measurementRow, metric });
-            if (!sensor) {
-              this.errorHandler(
-                new MissingAttributeError('sensor', {
-                  ...measurementRow,
-                  metric,
-                })
-              );
-              return;
-            }
-            this.measurements.add(
-              new Measurement({
-                sensor: sensor,
-                timestamp: datetime,
-                value: value,
+          // get the approprate sensor from or reference list,
+          // or create it, which in turn with create the location and system
+          const sensor = this.getSensor({ ...measurementRow, metric });
+          if (!sensor) {
+            this.errorHandler(
+              new MissingAttributeError('sensor', {
+                ...measurementRow,
+                metric,
               })
             );
+            return;
           }
-        });
-      } catch (e: unknown) {
-        if (e instanceof Error || typeof e === 'string') {
-          this.errorHandler(e);
+          this.measurements.add(
+            new Measurement({
+              sensor: sensor,
+              timestamp: datetime,
+              value: value,
+            })
+          );
         }
+      });
+    } catch (e: unknown) {
+      if (e instanceof Error || typeof e === 'string') {
+        this.errorHandler(e);
       }
-    });
-  }
+    }
+  });
+}
 
   /**
    * PLACEHOLDER
@@ -680,7 +682,7 @@ export abstract class Client<
    */
   processFlagsData(flags: Array<any>) {
     log(`Processing ${flags.length} flags`);
-    flags.map((d: any) => {
+    flags.forEach((d: any) => {
       try {
         const metric = getValueFromKey(d, this.parameterNameKey);
         const sensor = this.getSensor({

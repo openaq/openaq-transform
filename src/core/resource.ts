@@ -1,10 +1,10 @@
-import { search } from "@jmespath-community/jmespath";
+import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
 import type { DataContext, ReadAs } from "../types/readers";
 import type { Body } from "../types/resource";
 
-export type Parameters = Record<string, any>;
+export type Parameters = Record<string, string | number | boolean>;
 
 export type ParametersFunction = (data?: DataContext) => Parameters[];
 
@@ -61,18 +61,27 @@ type ResourceConfig =
 	  };
 
 /**
- * Represents a data source (URL or file) with configuration for how it should be fetched and processed.
+ * A data source configuration for fetching and processing remote or local data.
  *
- * The Resource class serves as the central configuration point for data fetching, containing:
- * - What to fetch (URLs with optional parameters, or files)
- * - How to parse responses (readAs: json/text/blob with auto-detection fallback)
- * - How to combine multiple responses (output: array/object)
- * - Error handling strategy (strict: fail-fast vs resilient)
+ * Accepts either a URL (with optional query parameters for pagination etc.)
+ * or a File object. Once constructed, pass the resource to a reader which will
+ * use it to fetch, parse, and combine responses.
  *
- * Design rationale:
- * - Consolidates all fetch configuration in one place for clarity
- * - Mutates during operation (sets data context) to avoid polluting return types
- * - Used by readers as both input configuration and output state container
+ * @example
+ * // Basic URL resource
+ * const resource = new Resource({ url: 'https://api.example.com/data' });
+ *
+ * @example
+ * // Paginated URL resource
+ * const resource = new Resource({
+ *   url: 'https://api.example.com/data?page=:page',
+ *   parameters: [{ page: 1 }, { page: 2 }],
+ *   output: 'array',
+ * });
+ *
+ * @example
+ * // File resource
+ * const resource = new Resource({ file: uploadedFile });
  */
 export class Resource {
 	#file?: File | Array<File>;
@@ -96,9 +105,16 @@ export class Resource {
 		this.#strict = config.strict ?? false;
 	}
 
-	private validateConfig(config: any): asserts config is ResourceConfig {
-		const hasUrl = config.url !== undefined && config.url !== null;
-		const hasFile = config.file !== undefined && config.file !== null;
+	private validateConfig(config: unknown): asserts config is ResourceConfig {
+
+		if (typeof config !== 'object' || config === null) {
+        throw new TypeError('Resource config must be an object');
+    	}
+
+		const c = config as Record<string, unknown>;
+		const hasUrl = c.url !== undefined && c.url !== null;
+		const hasFile = c.file !== undefined && c.file !== null;
+
 
 		if (!hasUrl && !hasFile) {
 			throw new TypeError('Either "url" or "file" must be provided');
@@ -112,18 +128,18 @@ export class Resource {
 
 		if (
 			hasFile &&
-			(config.parameters !== undefined || config.body !== undefined)
+			(c.parameters !== undefined || c.body !== undefined)
 		) {
 			throw new TypeError(
 				'"parameters" and "body" can only be used with "url", not "file"',
 			);
 		}
 
-		if (hasUrl && typeof config.url !== "string") {
+		if (hasUrl && typeof c.url !== "string") {
 			throw new TypeError('"url" must be a string');
 		}
 
-		if (hasFile && !(config.file instanceof File)) {
+		if (hasFile && !(c.file instanceof File)) {
 			throw new TypeError('"file" must be a File object');
 		}
 	}
@@ -307,7 +323,7 @@ export class Resource {
 
 		if (isPathExpression(this.#parameters)) {
 			if (this.#parameters.type === "jmespath") {
-				const value = search(this.#data, this.#parameters.expression);
+				const value = search(this.#data as unknown as JSONValue, this.#parameters.expression);
 				return value as Parameters[];
 			} else {
 				throw TypeError(

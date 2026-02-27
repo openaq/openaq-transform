@@ -10,7 +10,7 @@ export class System {
 	locationKey: string;
 	manufacturerName: string;
 	modelName: string;
-	metadata: { [key: string]: any };
+	metadata: Record<string, unknown>;
 	#sensors: Map<string, Sensor>;
 
 	constructor(data: SystemData) {

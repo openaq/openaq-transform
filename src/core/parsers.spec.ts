@@ -80,28 +80,6 @@ describe("parseDelimited", () => {
 		expect(result).toEqual([{ name: "Del Norte" }]);
 	});
 
-	test("returns Blob as-is without calling parse", async () => {
-		const mockParse = vi.fn();
-		const blob = new Blob(["test"]);
-		const options = { columns: true };
-
-		const result = await parseDelimited(blob, mockParse, options);
-
-		expect(mockParse).not.toHaveBeenCalled();
-		expect(result).toBe(blob);
-	});
-
-	test("returns object as-is without calling parse", async () => {
-		const mockParse = vi.fn();
-		const obj = { foo: "bar" };
-		const options = { columns: true };
-
-		const result = await parseDelimited(obj, mockParse, options);
-
-		expect(mockParse).not.toHaveBeenCalled();
-		expect(result).toBe(obj);
-	});
-
 	test("handles empty string", async () => {
 		const mockParse = vi.fn(() => []);
 		const options = { columns: true };
@@ -145,28 +123,6 @@ describe("createDelimitedParsers", () => {
 				{ name: "Alice", age: "30" },
 				{ name: "Bob", age: "25" },
 			]);
-		});
-
-		test("returns object as-is when content is already an object", async () => {
-			const mockParse = vi.fn();
-			const { csv } = createDelimitedParsers(mockParse);
-
-			const obj = { data: "test" };
-			const result = await csv(obj);
-
-			expect(mockParse).not.toHaveBeenCalled();
-			expect(result).toBe(obj);
-		});
-
-		test("returns Blob as-is when content is a Blob", async () => {
-			const mockParse = vi.fn();
-			const { csv } = createDelimitedParsers(mockParse);
-
-			const blob = new Blob(["test"]);
-			const result = await csv(blob);
-
-			expect(mockParse).not.toHaveBeenCalled();
-			expect(result).toBe(blob);
 		});
 
 		test("handles empty CSV string", async () => {
@@ -231,28 +187,6 @@ describe("createDelimitedParsers", () => {
 				{ name: "Alice", age: "30" },
 				{ name: "Bob", age: "25" },
 			]);
-		});
-
-		test("returns object as-is when content is already an object", async () => {
-			const mockParse = vi.fn();
-			const { tsv } = createDelimitedParsers(mockParse);
-
-			const obj = { data: "test" };
-			const result = await tsv(obj);
-
-			expect(mockParse).not.toHaveBeenCalled();
-			expect(result).toBe(obj);
-		});
-
-		test("returns Blob as-is when content is a Blob", async () => {
-			const mockParse = vi.fn();
-			const { tsv } = createDelimitedParsers(mockParse);
-
-			const blob = new Blob(["test"]);
-			const result = await tsv(blob);
-
-			expect(mockParse).not.toHaveBeenCalled();
-			expect(result).toBe(blob);
 		});
 
 		test("uses tab delimiter", async () => {

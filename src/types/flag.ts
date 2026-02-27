@@ -1,21 +1,19 @@
 /**
- * Input data structure of options for instantiating the Flag class.
+ * Input provided by the caller when adding a flag to a sensor.
+ * The `sensorKey` is not required here — it is set internally by `Sensor.add`.
  *
  * @example
  * ```ts
- * const flagData: FlagData = {
- *   sensorKey: "sensor-123",
+ * const input: FlagInput = {
  *   starts: "2025-01-01T00:00:00Z",
  *   ends: "2025-01-01T01:00:00Z",
  *   flag: "error",
- *   note: "error code"
+ *   note: "Sensor reported error code 42",
  * };
+ * sensor.add(input);
  * ```
  */
-export interface FlagData {
-	/** key of the sensor this flag applies to */
-	sensorKey: string;
-
+export interface FlagInput {
 	/**
 	 * Optional custom flag key. If not provided, will be auto-generated
 	 * using the pattern: `{sensorKey}-{flag}::{starts}`
@@ -33,6 +31,26 @@ export interface FlagData {
 
 	/** Additional notes or description for this flag */
 	note: string;
+}
+
+/**
+ * Complete flag data with all fields resolved, including the sensor association.
+ * Constructed internally by `Sensor.add` before being passed to the `Flag` constructor.
+ *
+ * @example
+ * ```ts
+ * const flagData: FlagData = {
+ *   sensorKey: "provider-location-sensor-123",
+ *   starts: "2025-01-01T00:00:00Z",
+ *   ends: "2025-01-01T01:00:00Z",
+ *   flag: "error",
+ *   note: "Sensor reported error code 42",
+ * };
+ * ```
+ */
+export interface FlagData extends FlagInput {
+	/** Key of the sensor this flag applies to — always set by `Sensor.add` */
+	sensorKey: string;
 }
 
 /**

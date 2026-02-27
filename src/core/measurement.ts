@@ -49,7 +49,7 @@ export class Measurements {
 		return Array.from(this.parameters.keys());
 	}
 
-	metricFromProviderKey(key: string) {
+	metricFromProviderKey(key: string): Metric | undefined {
 		return this.parameters.get(key);
 	}
 
@@ -87,7 +87,7 @@ export class Measurements {
 				value: m.value,
 			};
 			if (m.flags) measurement.flags = m.flags;
-			if (m.coordinates) measurement["coordinates"] = m.coordinates.json();
+			if (m.coordinates) measurement.coordinates = m.coordinates.json();
 			return measurement;
 		});
 	}
@@ -117,12 +117,11 @@ export class Measurement {
 		try {
 			this.value = this.sensor?.metric.process(data.value);
 		} catch (e: unknown) {
-			// if the error includes a flag value we
 			if (e instanceof TransformError) {
 				if (e?.flag) {
 					this.flags = [String(e.flag)];
 				}
-				this.value = e.value;
+				this.value = typeof e.value === 'number' ? e.value : null;
 			}
 		}
 

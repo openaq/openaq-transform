@@ -3,7 +3,6 @@ import {
 	type ClientConfiguration,
 	type ClientParser,
 	type ClientReader,
-	type DataDefinition,
 	type ErrorSummary,
 	type IndexedResource,
 	type IngestMatchingMethod,
@@ -29,11 +28,13 @@ import { Datetime } from "./datetime";
 import { MissingAttributeError, UnsupportedParameterError } from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
-import { PARAMETER_DEFAULTS } from "./metric";
+import { type Metric, PARAMETER_DEFAULTS } from "./metric";
 import { getReaderOptions } from "./readers";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
 import { cleanKey, formatValueForLog, getValueFromKey } from "./utils";
+import type { ResourceData, SourceRecord } from "../types/data";
+import type { FlagInput } from "../types/flag";
 
 const log = debug("openaq-transform client (core): DEBUG");
 
@@ -208,7 +209,7 @@ export abstract class Client<
 		log("No post configuration provided");
 	}
 
-	get measurements() {
+	get measurements(): Measurements {
 		if (!this.#measurements) {
 			this.#measurements = new Measurements(this.parameters);
 		}
@@ -221,28 +222,27 @@ export abstract class Client<
 	 * @param {*} row - data with fields to create timestamp
 	 * @returns {string} - formated timestamp string
 	 */
-	getDatetime(row: any) {
-		const dtString: string = getValueFromKey(row, this.datetimeKey);
-		log(`getDatetime`, dtString);
-		if (!dtString) {
-			throw new Error(
-				`Missing date/time field. Looking in ${formatValueForLog(
-					this.datetimeKey,
-				)}`,
-			);
-		}
-		const dt = new Datetime(dtString, {
-			format: this.datetimeFormat,
-			timezone: this.timezone,
-		});
-		return dt;
+	getDatetime(row: SourceRecord): Datetime {
+	const dtString = getValueFromKey(row, this.datetimeKey);
+	log(`getDatetime`, dtString);
+	if (typeof dtString !== 'string' || !dtString) {
+		throw new Error(
+			`Missing date/time field. Looking in ${formatValueForLog(this.datetimeKey)}`,
+		);
+	}
+
+	const dt = new Datetime(dtString, {
+		format: this.datetimeFormat,
+		timezone: this.timezone,
+	});
+	return dt;
 	}
 
 	/**
 	 * fetches data and convert to json
 	 *
 	 */
-	async loadResources() {
+	async loadResources(): Promise<ResourceData> {
 		log(`Loading resources`);
 		// if its a non-json string it should be a string that represents a location
 		// local://..
@@ -270,11 +270,8 @@ export abstract class Client<
 
 	private async loadIndexedResources(
 		indexedResource: IndexedResource,
-	): Promise<DataDefinition> {
-		const data: DataDefinition = {};
-
-		let reader: Reader;
-		let parser: Parser;
+	): Promise<ResourceData> {
+		const data: ResourceData = {};
 
 		// I think we should use the devs resource order here and just check to make sure the keys match
 		// this way the dev can control the order of the resource calls, for example, for clarity we
@@ -285,20 +282,14 @@ export abstract class Client<
 		>) {
 			const resource = indexedResource[key];
 			if (resource) {
-				if (isIndexedReader<R>(this.reader)) {
-					log(`Loading ${key} using indexed reader`);
-					reader = this.getReaderMethod(this.reader, key);
-				} else {
-					log(`Loading ${key} using the sole reader`);
-					reader = this.getReaderMethod(this.reader);
-				}
-				if (isIndexedParser<P>(this.parser)) {
-					log(`Parsing ${key} using indexed parser`);
-					parser = this.getParserMethod(this.parser, key);
-				} else {
-					log(`Parsing ${key} using the sole parser`);
-					parser = this.getParserMethod(this.parser);
-				}
+				const reader = isIndexedReader<R>(this.reader)
+					? this.getReaderMethod(this.reader, key)
+					: this.getReaderMethod(this.reader);
+
+				const parser = isIndexedParser<P>(this.parser)
+					? this.getParserMethod(this.parser, key)
+					: this.getParserMethod(this.parser);
+
 				const options = getReaderOptions(
 					this.readerOptions,
 					key as keyof IndexedReaderOptions,
@@ -310,16 +301,7 @@ export abstract class Client<
 					data,
 				);
 
-				if (Array.isArray(d)) {
-					// Parser returned an array - index it by key
-					log(`Adding '${key}' to data object`);
-					data[key] = d;
-				} else {
-					// we might want an in between option of merging objects
-					// but only merge object keys that fit our resource keys
-					log(`Replacing the data object with results from '${key}'`);
-					data[key] = d;
-				}
+				data[key] = Array.isArray(d) ? d as SourceRecord[] : [d] as SourceRecord[];
 			} // should we do something here if there is no resource?
 		}
 
@@ -329,10 +311,10 @@ export abstract class Client<
 	// must return parsed data in keyed format
 	private async loadSingleResource(
 		resource: Resource,
-	): Promise<DataDefinition> {
+	): Promise<ResourceData> {
 		let reader: Reader;
 		let parser: Parser;
-		const data: DataDefinition = {};
+		const data: ResourceData = {};
 
 		if (resource.isFileResource()) {
 			log("loading single file resource");
@@ -352,6 +334,10 @@ export abstract class Client<
 			data,
 		);
 
+		if (d === null || d === undefined) {
+			throw new Error("Reader returned null or undefined");
+		}
+
 		if (typeof d !== "object") {
 			throw new Error("Reader did not return an object");
 		}
@@ -359,7 +345,7 @@ export abstract class Client<
 		return this.normalizeDataStructure(d);
 	}
 
-	private normalizeDataStructure(d: any): DataDefinition {
+	private normalizeDataStructure(d: ResourceData | SourceRecord[]): ResourceData {
 		const acceptedKeys = new Set([
 			"locations",
 			"sensors",
@@ -368,11 +354,11 @@ export abstract class Client<
 		]);
 
 		//Check if data is already in the expected indexed format
-		if (Object.keys(d).every((key) => acceptedKeys.has(key))) {
+    	if (!Array.isArray(d) && Object.keys(d).every((key) => acceptedKeys.has(key))) {
 			return d;
 		} else {
 			// Data is in wide format, wrap it as measurements
-			return { measurements: d };
+			return { measurements: d as SourceRecord[]};
 		}
 	}
 
@@ -403,7 +389,7 @@ export abstract class Client<
 
 		if (err instanceof Error) {
 			if (!this.log.has(type)) this.log.set(type, []);
-			this.log.get(type)!.push({ message, err }); // line above means type will always exist
+			this.log.get(type)?.push({ message, err }); // line above means type will always exist
 		}
 
 		console.error(`** ERROR (${type}):`, message);
@@ -429,7 +415,7 @@ export abstract class Client<
 		return this.data();
 	}
 
-	private process(data: DataDefinition) {
+	private process(data: ResourceData) {
 		log(`Processing data`, Object.keys(data), Array.isArray(data));
 		if (!data) {
 			throw new Error("No data was returned from file");
@@ -465,8 +451,8 @@ export abstract class Client<
 	/**
 	 * Add a location to our list
 	 */
-	getLocation(data: DataDefinition) {
-		const siteId = getValueFromKey(data, this.locationIdKey);
+	getLocation(data: SourceRecord) {
+		const siteId = getString(data, this.locationIdKey) ?? '';
 		// BUILDING KEY
 		const key = Location.createKey({ provider: this.provider, siteId });
 
@@ -478,25 +464,16 @@ export abstract class Client<
 				...data,
 				siteId,
 				provider: this.provider,
-				siteName: getValueFromKey(data, this.locationLabelKey),
-				ismobile: getValueFromKey(data, this.isMobileKey),
-				x: getValueFromKey(data, this.xGeometryKey),
-				y: getValueFromKey(data, this.yGeometryKey),
-				projection: getValueFromKey(data, this.geometryProjectionKey),
-				// the following are for passing along to sensors
-				averagingIntervalSeconds: getValueFromKey(
-					data,
-					this.averagingIntervalKey,
-					true,
-				),
-				loggingIntervalSeconds: getValueFromKey(
-					data,
-					this.loggingIntervalKey,
-					true,
-				),
-				status: getValueFromKey(data, this.sensorStatusKey),
-				owner: getValueFromKey(data, this.ownerKey),
-				label: getValueFromKey(data, this.locationLabelKey),
+				siteName: getString(data, this.locationLabelKey) ?? '',
+				ismobile: getBoolean(data, this.isMobileKey),
+				x : getNumber(data, this.xGeometryKey),
+				y : getNumber(data, this.yGeometryKey),
+				projection: getString(data, this.geometryProjectionKey),
+				averagingIntervalSeconds: getNumber(data, this.averagingIntervalKey),
+				loggingIntervalSeconds: getNumber(data, this.loggingIntervalKey),
+				status: getString(data, this.sensorStatusKey) ?? '',
+				owner: getString(data, this.ownerKey) ?? '',
+				label: getString(data, this.locationLabelKey) ?? '',
 			});
 			this.#locations.add(location);
 		}
@@ -506,7 +483,7 @@ export abstract class Client<
 	/**
 	 * Process a list of locations
 	 */
-	processLocationsData(locations: DataDefinition[]) {
+	processLocationsData(locations: SourceRecord[]) {
 		log(`Processing ${locations.length} locations`);
 		for (const location of locations) {
 			try {
@@ -524,32 +501,27 @@ export abstract class Client<
 	 *
 	 * @param {array} sensors - list of sensor data
 	 */
-	processSensorsData(sensors: DataDefinition[]) {
+	processSensorsData(sensors: SourceRecord[]) {
 		log(`Processing ${sensors.length} sensors`);
 		for (const sensor of sensors) {
 			this.getSensor(sensor);
 		}
 	}
 
-	private getSensor(data: DataDefinition): Sensor {
-		if (!data.metric) {
-			const metricName = getValueFromKey(data, this.parameterNameKey);
-			data.metric = this.measurements.metricFromProviderKey(metricName);
+	private getSensor(data: SourceRecord): Sensor {
+		const metricName = getValueFromKey(data, this.parameterNameKey) as string;
+		const metric = (data.metric as Metric | undefined) ?? 
+			this.measurements.metricFromProviderKey(metricName);
+
+		if (!metric) {
+			throw new Error(`Could not resolve metric for parameter: ${metricName}`);
 		}
 
 		// get or add then get the location
-		let sensor: Sensor | undefined;
 		const location = this.getLocation(data);
 
-		// check for averaging data but fall back to the location values
-		const averagingIntervalSeconds =
-			getValueFromKey(data, this.averagingIntervalKey, true) ??
-			location.averagingIntervalSeconds;
-		const loggingIntervalSeconds =
-			getValueFromKey(data, this.loggingIntervalKey, true) ??
-			location.loggingIntervalSeconds;
-		const status =
-			getValueFromKey(data, this.sensorStatusKey) ?? location.sensorStatus;
+		const status = getString(data, this.sensorStatusKey) ?? location.sensorStatus;
+
 		// maintain a way to get the sensor back without traversing everything
 
 		const manufacturerName = cleanKey(
@@ -568,19 +540,23 @@ export abstract class Client<
 		// check if the sensor exists
 		const key = Sensor.createKey({
 			systemKey: system.key,
-			metric: data.metric,
+			metric,
 			versionDate,
 			instance,
 		});
+
+		let sensor: Sensor | undefined;
 
 		if (this.#sensors.has(key)) {
 			sensor = this.#sensors.get(key);
 		} else {
 			sensor = new Sensor({
 				systemKey: system.key,
-				metric: data.metric,
-				averagingIntervalSeconds,
-				loggingIntervalSeconds,
+				metric,
+				averagingIntervalSeconds:   getNumber(data, this.averagingIntervalKey) ??
+    location.averagingIntervalSeconds,
+				loggingIntervalSeconds:getNumber(data, this.loggingIntervalKey) ??
+    location.loggingIntervalSeconds,
 				versionDate,
 				instance,
 				status,
@@ -601,7 +577,7 @@ export abstract class Client<
 	 *
 	 * @param {array} measurements - list of measurement data
 	 */
-	processMeasurementsData(measurements: any[]) {
+	processMeasurementsData(measurements: SourceRecord[]) {
 		log(`Processing ${measurements.length} measurement(s)`);
 		// if we provided a parameter column key we use that
 		// otherwise we use the list of parameters
@@ -612,14 +588,11 @@ export abstract class Client<
 				[this.parameterNameKey]
 			: this.measurements.parameterKeys();
 
-		measurements.forEach((measurementRow: any) => {
+		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
 				const datetime = this.getDatetime(measurementRow);
 
 				params.forEach((p) => {
-					// By using const here, we satisfy Biome's requirement for explicit types
-					// and avoid the "implicit any" let declaration.
-
 					// for long format data we will need to extract the parameter name from the field
 					// for wide format they are both the same value
 					const metricName = this.longFormat
@@ -629,6 +602,7 @@ export abstract class Client<
 					const valueName = this.longFormat ? this.parameterValueKey : p;
 
 					const value = getValueFromKey(measurementRow, valueName);
+			
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
@@ -679,9 +653,9 @@ export abstract class Client<
 	 * @param {*} flags -
 	 * @returns {*} -
 	 */
-	processFlagsData(flags: Array<any>) {
+	processFlagsData(flags: SourceRecord[]) {
 		log(`Processing ${flags.length} flags`);
-		flags.forEach((d: any) => {
+		flags.forEach((d: SourceRecord) => {
 			try {
 				const metric = getValueFromKey(d, this.parameterNameKey);
 				const sensor = this.getSensor({
@@ -690,7 +664,13 @@ export abstract class Client<
 				});
 
 				if (sensor) {
-					sensor.add(d);
+					const flagInput: FlagInput = {
+						starts: getValueFromKey(d, 'starts') as string,
+						ends: getValueFromKey(d, 'ends') as string,
+						flag: getValueFromKey(d, 'flag') as string,
+						note: getValueFromKey(d, 'note') as string,
+					};
+					sensor.add(flagInput);
 				}
 			} catch (e: unknown) {
 				if (e instanceof Error) {
@@ -853,3 +833,19 @@ export abstract class Client<
 		};
 	}
 }
+
+
+const getString = (data: SourceRecord, key: ParseFunction | string | PathExpression): string | undefined => {
+	const value = getValueFromKey(data, key);
+	return typeof value === 'string' ? value : undefined;
+};
+
+const getNumber = (data: SourceRecord, key: ParseFunction | string | PathExpression): number | undefined => {
+	const value = getValueFromKey(data, key, true);
+	return typeof value === 'number' ? value : undefined;
+};
+
+const getBoolean = (data: SourceRecord, key: ParseFunction | string | PathExpression): boolean => {
+	const value = getValueFromKey(data, key);
+	return Boolean(value);
+};

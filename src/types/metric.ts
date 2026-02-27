@@ -22,10 +22,7 @@ export type UnitConverter = (value: number | string) => number;
  * };
  * ```
  */
-interface ConverterMap {
-	/** Unit conversion functions keyed by unit string */
-	[unit: string]: UnitConverter;
-}
+export type ConverterMap = Record<string, UnitConverter>;
 
 /**
  * Valid range specification for parameter values.
@@ -155,7 +152,7 @@ export interface ParameterUnit {
 /**
  *
  */
-export type ParameterKeyFunction = (data?: any) => string | number;
+export type ParameterKeyFunction = (data?: unknown) => string | number;
 
 /**
  * Type guard to check if options are indexed reader options.

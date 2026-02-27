@@ -32,7 +32,7 @@ export interface MeasurementData {
 	/**
 	 * The measured value from the sensor.
 	 */
-	value: number | null;
+	value: unknown;
 
 	/**
 	 * Optional geographic coordinates where the measurement was taken.

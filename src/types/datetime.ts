@@ -79,14 +79,21 @@ export interface TimeOffset {
  * isTimeOffset({ seconds: 30 }); // false (invalid property)
  * ```
  */
-export function isTimeOffset(obj: any): obj is TimeOffset {
-	return (
-		obj &&
-		typeof obj === "object" &&
-		!Array.isArray(obj) &&
-		("minutes" in obj || "days" in obj || "hours" in obj) &&
-		(obj.minutes === undefined || typeof obj.minutes === "number") &&
-		(obj.days === undefined || typeof obj.days === "number") &&
-		(obj.hours === undefined || typeof obj.hours === "number")
-	);
+export function isTimeOffset(obj: unknown): obj is TimeOffset {
+
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+        return false;
+    }
+
+    const record = obj as Record<string, unknown>;
+
+    if (!("minutes" in record || "days" in record || "hours" in record)) {
+        return false;
+    }
+
+    return (
+        (record.minutes === undefined || typeof record.minutes === "number") &&
+        (record.days === undefined || typeof record.days === "number") &&
+        (record.hours === undefined || typeof record.hours === "number")
+    );
 }

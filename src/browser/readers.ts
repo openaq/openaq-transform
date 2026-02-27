@@ -1,4 +1,5 @@
 import { mergeObjects } from "../core/readers";
+import type { SourceRecord } from "../types/data";
 import type { Parser } from "../types/parsers";
 import type { DataContext, FileReaderParameters } from "../types/readers";
 
@@ -22,7 +23,7 @@ export const fileReader = async (
 	// Read and parse each file individually
 	for (const file of files) {
 		let content: string;
-		let parsed: any;
+		let parsed: SourceRecord | SourceRecord[];
 
 		// Step 1: Read file content
 		try {
@@ -66,7 +67,11 @@ export const fileReader = async (
 
 		// Step 2: Parse content
 		try {
-			parsed = await parser(content);
+			const result: unknown = await parser(content);
+			if (!result || typeof result !== "object") {
+				throw new Error(`Parser returned a non-object value`);
+			}
+			parsed = result as SourceRecord | SourceRecord[];
 		} catch (error) {
 			const parseError = new Error(
 				`Failed to parse file ${file.name}: ${error instanceof Error ? error.message : String(error)}`,

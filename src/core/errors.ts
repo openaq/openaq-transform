@@ -57,7 +57,7 @@ class MeasurementError extends TransformError {
 
 export class MissingAttributeError extends MeasurementError {
 	constructor(attribute: string, value: unknown) {
-		super(`Missing '${attribute}' attribute.`, value);
+		super(`Missing '${attribute}' attribute.`, JSON.stringify(value));
 	}
 }
 

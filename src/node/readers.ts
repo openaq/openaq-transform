@@ -1,15 +1,18 @@
-import { readFile } from "fs/promises";
-import type { Parser } from "../types/parsers";
+import { readFile } from "node:fs/promises";
+import type { StringParser } from "../types/parsers";
 import type { DataContext, FileSystemReaderParameters } from "../types/readers";
+import type { ResourceData, SourceRecord } from "../types/data";
+
 
 export const fileSystemReader = async (
 	{ resource, encoding }: FileSystemReaderParameters,
-	parser: Parser,
+	parser: StringParser,
 	_?: DataContext,
-): Promise<object> => {
+): Promise<ResourceData | SourceRecord[]> => {
 	if (!resource.isUrlResource()) {
 		throw new TypeError("fileSystemReader requires a URL-based resource");
 	}
+
 	const results = await Promise.all(
 		resource.urls.map(({ url }) => {
 			const path = url.startsWith("file://") ? new URL(url) : url;
@@ -18,5 +21,12 @@ export const fileSystemReader = async (
 		}),
 	);
 
-	return parser({ content: results });
+	const content = results.join("\n");
+	const result: unknown = await parser(content);
+
+	if (!result || typeof result !== "object") {
+		throw new Error("Parser returned a non-object value");
+	}
+
+	return result as ResourceData | SourceRecord[];
 };

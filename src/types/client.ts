@@ -4,6 +4,7 @@ import type { ClientParameters } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
 import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { ResourceKeys } from "./resource";
+import type { SourceRecord } from "./data";
 
 interface Meta {
 	locationIdKey: string;
@@ -28,7 +29,6 @@ export interface Source {
 	parameters: string[];
 }
 
-export type DataDefinition = Record<string, any>;
 
 export type ErrorSummary = Record<string, number>;
 
@@ -50,7 +50,7 @@ export interface LogEntry {
 	err?: Error;
 }
 
-export type ParseFunction = (data?: any) => string | number | object | boolean;
+export type ParseFunction = (data?: SourceRecord) => string | number | object | boolean;
 
 export type IndexedResource = {
 	measurements: Resource;
@@ -60,7 +60,7 @@ export function isFile(value: unknown): value is File {
 	return typeof File !== "undefined" && value instanceof File;
 }
 
-export function isIndexed(resource: any): resource is IndexedResource {
+export function isIndexed(resource: unknown): resource is IndexedResource {
 	return (
 		typeof resource === "object" &&
 		resource !== null &&

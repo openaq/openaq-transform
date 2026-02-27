@@ -53,10 +53,10 @@ export interface LocationData {
 	label: string;
 
 	/** X coordinate (longitude for geographic projections) */
-	x: number;
+	x?: number;
 
 	/** Y coordinate (latitude for geographic projections) */
-	y: number;
+	y?: number;
 
 	/**
 	 * Optional coordinate reference system identifier (e.g., "EPSG:4326" for WGS84).

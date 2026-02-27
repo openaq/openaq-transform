@@ -1,6 +1,8 @@
-import { search } from "@jmespath-community/jmespath";
+import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
 import { isPathExpression, type PathExpression } from "../types/metric";
+import type { ParseFunction } from "../types/client";
+import type { SourceRecord } from "../types/data";
 
 const log = debug("openaq-transform utils: DEBUG");
 
@@ -16,15 +18,15 @@ export const stripNulls = <T extends object>(
 };
 
 export const getValueFromKey = (
-	data: any,
-	key: Function | string | PathExpression,
+	data: SourceRecord,
+	key: ParseFunction | string | PathExpression,
 	asNumber: boolean = false,
 ) => {
 	let value = null;
 	if (isPathExpression(key)) {
 		if (key.type === "jmespath") {
 			log(`getting value from key using 'jmespath'`);
-			value = search(data, key.expression);
+			value = search(data as unknown as JSONValue, key.expression);
 		} else {
 			throw TypeError(
 				`TypeError: unsupported path expression type, supported syntaxes include: jmespath`,
@@ -54,12 +56,13 @@ export const getValueFromKey = (
 	return value;
 };
 
-export const cleanKey = (value: string): string => {
-	return value
-		?.replace(/^\s+|\s+$/g, "")
-		.replace(/\s+/g, "_")
-		.replace(/[^\w]/g, "")
-		.toLowerCase();
+export const cleanKey = (value: unknown): string | undefined => {
+    if (typeof value !== "string") return undefined;
+    return value
+        .replace(/^\s+|\s+$/g, "")
+        .replace(/\s+/g, "_")
+        .replace(/[^\w]/g, "")
+        .toLowerCase();
 };
 
 /**

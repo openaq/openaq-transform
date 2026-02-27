@@ -2,7 +2,7 @@ import debug from "debug";
 
 const log = debug("openaq-transform sensor: DEBUG");
 
-import type { FlagData } from "../types/flag";
+import type { FlagData, FlagInput } from "../types/flag";
 import type { SensorData, SensorJSON, SensorKeyData } from "../types/sensor";
 import { Flag } from "./flag";
 import { Metric } from "./metric";
@@ -44,11 +44,11 @@ export class Sensor {
 	// key: string;
 	systemKey: string;
 	metric: Metric;
-	averagingIntervalSeconds: number;
-	loggingIntervalSeconds: number;
-	status: string;
-	versionDate: string | undefined;
-	instance: string | undefined;
+	averagingIntervalSeconds?: number;
+	loggingIntervalSeconds?: number;
+	status?: string;
+	versionDate?: string | undefined;
+	instance?: string | undefined;
 	flags: Map<string, Flag>;
 
 	constructor(data: SensorData) {
@@ -84,11 +84,10 @@ export class Sensor {
 		return `${systemKey}-${key.join(":")}`;
 	}
 
-	add(data: FlagData) {
-		data.key = this.key;
-		const flag = new Flag(data);
+	add(data: FlagInput) {
+		const flagData: FlagData = { ...data, sensorKey: this.key };
+		const flag = new Flag(flagData);
 		log(`adding flag (${flag.key}) to sensor (${this.key})`);
-		//this.flags[flag.key] = flag;
 		this.flags.set(flag.key, flag);
 		return flag;
 	}

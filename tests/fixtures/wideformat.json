@@ -1,19 +1,19 @@
 {
-  "locations": [
-    {
-      "station": "ts1",
-      "site_name": "test site #1",
-      "latitude": 45.56665,
-      "longitude": -123.12121,
-      "averaging": 3600
-    }
-  ],
-  "measurements": [
-    {
-      "station": "ts1",
-      "datetime": "2024-01-01T00:00:00-08:00",
-      "particulate_matter_25": 10,
-      "tempf": 80
-    }
-  ]
+	"locations": [
+		{
+			"station": "ts1",
+			"site_name": "test site #1",
+			"latitude": 45.56665,
+			"longitude": -123.12121,
+			"averaging": 3600
+		}
+	],
+	"measurements": [
+		{
+			"station": "ts1",
+			"datetime": "2024-01-01T00:00:00-08:00",
+			"particulate_matter_25": 10,
+			"tempf": 80
+		}
+	]
 }

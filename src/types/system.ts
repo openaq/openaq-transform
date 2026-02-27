@@ -14,20 +14,20 @@ import type { SensorJSON } from "./sensor";
  * ```
  */
 export interface SystemData {
-  /** Reference to the location where this system is deployed */
-  locationKey: string;
+	/** Reference to the location where this system is deployed */
+	locationKey: string;
 
-  /**
-   * Name of the system manufacturer.
-   * Defaults to 'default' if not provided during System construction.
-   */
-  manufacturerName?: string;
+	/**
+	 * Name of the system manufacturer.
+	 * Defaults to 'default' if not provided during System construction.
+	 */
+	manufacturerName?: string;
 
-  /**
-   * Model name or identifier of the system.
-   * Defaults to 'default' if not provided during System construction.
-   */
-  modelName?: string;
+	/**
+	 * Model name or identifier of the system.
+	 * Defaults to 'default' if not provided during System construction.
+	 */
+	modelName?: string;
 }
 
 /**
@@ -35,15 +35,15 @@ export interface SystemData {
  * Represents the structure returned by the System.json() method.
  */
 export interface SystemJSON {
-  /** Unique identifier for the system */
-  key: string;
+	/** Unique identifier for the system */
+	key: string;
 
-  /** Name of the system manufacturer */
-  manufacturer_name: string;
+	/** Name of the system manufacturer */
+	manufacturer_name: string;
 
-  /** Model name or identifier of the system */
-  model_name: string;
+	/** Model name or identifier of the system */
+	model_name: string;
 
-  /** Array of sensors associated with this system in JSON format */
-  sensors: SensorJSON[];
+	/** Array of sensors associated with this system in JSON format */
+	sensors: SensorJSON[];
 }

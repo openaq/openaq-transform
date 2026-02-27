@@ -1,144 +1,142 @@
-import proj4 from 'proj4';
-import { BBox } from 'geojson';
+import type { BBox } from "geojson";
+import proj4 from "proj4";
+import type { CoordinatesJSON } from "../types/coordinates";
 import {
-  InvalidPrecisionError,
-  LatitudeBoundsError,
-  LongitudeBoundsError,
-  LocationError,
-} from './errors';
-
-import { countDecimals } from './utils';
-import type { CoordinatesJSON } from '../types/coordinates';
-
+	InvalidPrecisionError,
+	LatitudeBoundsError,
+	LocationError,
+	LongitudeBoundsError,
+} from "./errors";
+import { countDecimals } from "./utils";
 
 /**
  * Represents geographic coordinates, capable of handling different projections
  * and providing access to latitude and longitude in 'EPSG:4326'.
  */
 export class Coordinates {
-  /**
-   * The x-coordinate in the specified projection.
-   */
-  x: number;
-  /**
-   * The y-coordinate in the specified projection.
-   */
-  y: number;
-  /**
-   * The proj4 string representing the coordinate system (e.g., 'EPSG:4326', 'EPSG:3857').
-   */
-  proj: string;
-  /**
-   * The minimum number of places after the decimal point required
-   */
-  precision: number;
-  /**
-   * @private
-   * Stores the projected coordinates in 'EPSG:4326' format: [longitude, latitude].
-   */
-  #projected: [number, number];
+	/**
+	 * The x-coordinate in the specified projection.
+	 */
+	x: number;
+	/**
+	 * The y-coordinate in the specified projection.
+	 */
+	y: number;
+	/**
+	 * The proj4 string representing the coordinate system (e.g., 'EPSG:4326', 'EPSG:3857').
+	 */
+	proj: string;
+	/**
+	 * The minimum number of places after the decimal point required
+	 */
+	precision: number;
+	/**
+	 * @private
+	 * Stores the projected coordinates in 'EPSG:4326' format: [longitude, latitude].
+	 */
+	#projected: [number, number];
 
-  /**
-   * Creates a new Coordinates instance.
-   * If the input `proj` is not 'EPSG:4326' or 'WGS84', the coordinates will be
-   * projected to 'EPSG:4326' internally for `latitude` and `longitude` access.
-   *
-   * @param x The x-coordinate in the specified projection.
-   * @param y The y-coordinate in the specified projection.
-   * @param proj The proj4 string for the input coordinates' projection. Defaults to 'EPSG:4326' (WGS84).
-   * @example
-   * // WGS84 coordinates
-   * const coords = new Coordinates(106.82293,-6.22383,'EPSG:4326');
-   * console.log(coords.latitude, coords.longitude); // -6.22383, 106.82293
-   */
-  constructor(x: number, y: number, proj: string = 'EPSG:4326', precision: number = 0) {
-    this.x = x;
-    this.y = y;
-    this.proj = proj;
-    this.precision = Math.round(precision);
+	/**
+	 * Creates a new Coordinates instance.
+	 * If the input `proj` is not 'EPSG:4326' or 'WGS84', the coordinates will be
+	 * projected to 'EPSG:4326' internally for `latitude` and `longitude` access.
+	 *
+	 * @param x The x-coordinate in the specified projection.
+	 * @param y The y-coordinate in the specified projection.
+	 * @param proj The proj4 string for the input coordinates' projection. Defaults to 'EPSG:4326' (WGS84).
+	 * @example
+	 * // WGS84 coordinates
+	 * const coords = new Coordinates(106.82293,-6.22383,'EPSG:4326');
+	 * console.log(coords.latitude, coords.longitude); // -6.22383, 106.82293
+	 */
+	constructor(
+		x: number,
+		y: number,
+		proj: string = "EPSG:4326",
+		precision: number = 0,
+	) {
+		this.x = x;
+		this.y = y;
+		this.proj = proj;
+		this.precision = Math.round(precision);
 
-    if (!this.x) {
-      throw new LongitudeBoundsError(this.x)
-    }
-    if (!this.y) {
-      throw new LatitudeBoundsError(this.y)
-    }
+		if (!this.x) {
+			throw new LongitudeBoundsError(this.x);
+		}
+		if (!this.y) {
+			throw new LatitudeBoundsError(this.y);
+		}
 
-    // If the projection is not already WGS84, project it.
-    if (!['EPSG:4326','WGS84'].includes(this.proj)) {
-      try {
-        this.#projected = proj4(this.proj, 'EPSG:4326', [this.x, this.y]);
-      } catch (e: unknown) {
-        // proj4 throws a string as an error
-        throw new LocationError(`PROJ4 ERROR: ${String(e)}`, { proj });
-      }
-    } else {
+		// If the projection is not already WGS84, project it.
+		if (!["EPSG:4326", "WGS84"].includes(this.proj)) {
+			try {
+				this.#projected = proj4(this.proj, "EPSG:4326", [this.x, this.y]);
+			} catch (e: unknown) {
+				// proj4 throws a string as an error
+				throw new LocationError(`PROJ4 ERROR: ${String(e)}`, { proj });
+			}
+		} else {
+			if (this.precision) {
+				const xPrecision = countDecimals(this.x);
+				if (xPrecision < precision) {
+					throw new InvalidPrecisionError(xPrecision, precision);
+				}
 
-      if (this.precision) {
-        const xPrecision = countDecimals(this.x)
-        if(xPrecision < precision) {
-          throw new InvalidPrecisionError(xPrecision, precision)
-        }
+				const yPrecision = countDecimals(this.y);
+				if (yPrecision < precision) {
+					throw new InvalidPrecisionError(yPrecision, precision);
+				}
+			}
 
-        const yPrecision = countDecimals(this.y)
-        if(yPrecision < precision) {
-          throw new InvalidPrecisionError(yPrecision, precision)
-        }
-      }
+			this.#projected = [this.x, this.y];
+		}
 
-      this.#projected = [this.x, this.y];
-    }
+		if (this.#projected[1] < -90 || this.#projected[1] > 90) {
+			throw new LatitudeBoundsError(this.#projected[1]);
+		}
+		if (this.#projected[0] < -180 || this.#projected[0] > 180) {
+			throw new LongitudeBoundsError(this.#projected[0]);
+		}
+	}
 
-    if (this.#projected[1] < -90 || this.#projected[1] > 90) {
-      throw new LatitudeBoundsError(this.#projected[1]);
-    }
-    if (this.#projected[0] < -180 || this.#projected[0] > 180) {
-      throw new LongitudeBoundsError(this.#projected[0]);
-    }
+	/**
+	 * Gets the latitude of the coordinate in degrees, always in 'EPSG:4326' (WGS84).
+	 * @returns The latitude in degrees.
+	 * @example
+	 * const coords = new Coordinates(106.82293,-6.22383);
+	 * console.log(coords.latitude); // -6.22383
+	 */
+	get latitude(): number {
+		return this.#projected[1];
+	}
 
+	/**
+	 * Gets the longitude of the coordinate in degrees, always in 'EPSG:4326' (WGS84).
+	 * @returns The longitude in degrees.
+	 * @example
+	 * const coords = new Coordinates(106.82293,-6.22383);
+	 * console.log(coords.latitude); // 106.82293
+	 */
+	get longitude(): number {
+		return this.#projected[0];
+	}
 
-  }
-
-  /**
-   * Gets the latitude of the coordinate in degrees, always in 'EPSG:4326' (WGS84).
-   * @returns The latitude in degrees.
-   * @example
-   * const coords = new Coordinates(106.82293,-6.22383);
-   * console.log(coords.latitude); // -6.22383
-   */
-  get latitude() : number {
-    return this.#projected[1]
-  }
-
-
-  /**
-   * Gets the longitude of the coordinate in degrees, always in 'EPSG:4326' (WGS84).
-   * @returns The longitude in degrees.
-   * @example
-   * const coords = new Coordinates(106.82293,-6.22383);
-   * console.log(coords.latitude); // 106.82293
-   */
-  get longitude(): number {
-    return this.#projected[0]
-  }
-
-  /**
-   * Returns a JSON representation of the coordinates,
-   * always projected to 'EPSG:4326' (WGS84).
-   * @returns An object conforming to `CoordinatesJsonDefinition`.
-   * @example
-   * const coords = new Coordinates(106.82293,-6.22383);
-   * console.log(coords.json());
-   * // { latitude: -6.22383, longitude: 106.82293, proj: 'EPSG:4326' }
-   */
-  json(): CoordinatesJSON {
-    return {
-      latitude: this.latitude,
-      longitude: this.longitude,
-      proj: 'EPSG:4326',
-    }
-  }
-
+	/**
+	 * Returns a JSON representation of the coordinates,
+	 * always projected to 'EPSG:4326' (WGS84).
+	 * @returns An object conforming to `CoordinatesJsonDefinition`.
+	 * @example
+	 * const coords = new Coordinates(106.82293,-6.22383);
+	 * console.log(coords.json());
+	 * // { latitude: -6.22383, longitude: 106.82293, proj: 'EPSG:4326' }
+	 */
+	json(): CoordinatesJSON {
+		return {
+			latitude: this.latitude,
+			longitude: this.longitude,
+			proj: "EPSG:4326",
+		};
+	}
 }
 
 /**
@@ -170,25 +168,28 @@ export class Coordinates {
  * bounds = updateBounds(coords3, bounds);
  * console.log(bounds); // [5, 15, 15, 25]
  */
-export function updateBounds(coordinates: Coordinates,  bounds: BBox | null | undefined): BBox {
-  const { x, y } = coordinates
-  let newBounds: BBox;
-  if (!bounds) {
-    newBounds = [x, y, x, y];
-  } else {
-    newBounds = [...bounds];
-  }
-  if (x < newBounds[0]) {
-    newBounds[0] = x;
-  }
-  if (x > newBounds[2]) {
-    newBounds[2] = x;
-  }
-  if (y < newBounds[1]) {
-    newBounds[1] = y;
-  }
-  if (y > newBounds[3]) {
-    newBounds[3] = y;
-  }
-  return newBounds;
+export function updateBounds(
+	coordinates: Coordinates,
+	bounds: BBox | null | undefined,
+): BBox {
+	const { x, y } = coordinates;
+	let newBounds: BBox;
+	if (!bounds) {
+		newBounds = [x, y, x, y];
+	} else {
+		newBounds = [...bounds];
+	}
+	if (x < newBounds[0]) {
+		newBounds[0] = x;
+	}
+	if (x > newBounds[2]) {
+		newBounds[2] = x;
+	}
+	if (y < newBounds[1]) {
+		newBounds[1] = y;
+	}
+	if (y > newBounds[3]) {
+		newBounds[3] = y;
+	}
+	return newBounds;
 }

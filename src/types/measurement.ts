@@ -19,33 +19,33 @@ import type { CoordinatesJSON } from "./coordinates";
  *
  */
 export interface MeasurementData {
-  /**
-   * The sensor that recorded this measurement.
-   */
-  sensor: Sensor;
+	/**
+	 * The sensor that recorded this measurement.
+	 */
+	sensor: Sensor;
 
-  /**
-   * The timestamp when this measurement was recorded.
-   */
-  timestamp: Datetime;
+	/**
+	 * The timestamp when this measurement was recorded.
+	 */
+	timestamp: Datetime;
 
-  /**
-   * The measured value from the sensor.
-   */
-  value: number | null;
+	/**
+	 * The measured value from the sensor.
+	 */
+	value: unknown;
 
-  /**
-   * Optional geographic coordinates where the measurement was taken.
-   * Used for mobile sensor measurements.
-   */
-  coordinates?: Coordinates;
+	/**
+	 * Optional geographic coordinates where the measurement was taken.
+	 * Used for mobile sensor measurements.
+	 */
+	coordinates?: Coordinates;
 
-  /**
-   * Optional array of flags indicating measurement quality or processing notes.
-   *
-   * @example ['calibrated', 'validated'] or ['outlier', 'suspect']
-   */
-  flags?: ReadonlyArray<string>;
+	/**
+	 * Optional array of flags indicating measurement quality or processing notes.
+	 *
+	 * @example ['calibrated', 'validated'] or ['outlier', 'suspect']
+	 */
+	flags?: ReadonlyArray<string>;
 }
 
 /**
@@ -54,33 +54,33 @@ export interface MeasurementData {
  *
  */
 export interface MeasurementJSON {
-  /**
-   * Unique identifier combining sensor key and timestamp.
-   * Format: `{sensor.key}-{timestamp.toString()}`
-   */
-  key: string;
+	/**
+	 * Unique identifier combining sensor key and timestamp.
+	 * Format: `{sensor.key}-{timestamp.toString()}`
+	 */
+	key: string;
 
-  /**
-   * ISO 8601 formatted timestamp string.
-   * Represents when the measurement was recorded.
-   */
-  timestamp: string | undefined;
+	/**
+	 * ISO 8601 formatted timestamp string.
+	 * Represents when the measurement was recorded.
+	 */
+	timestamp: string | undefined;
 
-  /**
-   * The measured value from the sensor.
-   */
-  value: number | null;
+	/**
+	 * The measured value from the sensor.
+	 */
+	value: number | null;
 
-  /**
-   * Optional serialized coordinate data.
-   * Geographic location information in JSON-friendly format.
-   */
-  coordinates?: CoordinatesJSON;
+	/**
+	 * Optional serialized coordinate data.
+	 * Geographic location information in JSON-friendly format.
+	 */
+	coordinates?: CoordinatesJSON;
 
-  /**
-   * Optional array of flags indicating measurement quality or processing notes.
-   *
-   * @example ['error', 'validated']
-   */
-  flags?: ReadonlyArray<string>;
+	/**
+	 * Optional array of flags indicating measurement quality or processing notes.
+	 *
+	 * @example ['error', 'validated']
+	 */
+	flags?: ReadonlyArray<string>;
 }

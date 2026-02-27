@@ -1,8 +1,8 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
-import { isPathExpression, type PathExpression } from "../types/metric";
 import type { ParseFunction } from "../types/client";
 import type { SourceRecord } from "../types/data";
+import { isPathExpression, type PathExpression } from "../types/metric";
 
 const log = debug("openaq-transform utils: DEBUG");
 
@@ -57,12 +57,12 @@ export const getValueFromKey = (
 };
 
 export const cleanKey = (value: unknown): string | undefined => {
-    if (typeof value !== "string") return undefined;
-    return value
-        .replace(/^\s+|\s+$/g, "")
-        .replace(/\s+/g, "_")
-        .replace(/[^\w]/g, "")
-        .toLowerCase();
+	if (typeof value !== "string") return undefined;
+	return value
+		.replace(/^\s+|\s+$/g, "")
+		.replace(/\s+/g, "_")
+		.replace(/[^\w]/g, "")
+		.toLowerCase();
 };
 
 /**

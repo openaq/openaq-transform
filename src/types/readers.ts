@@ -1,7 +1,7 @@
-import type { Resource } from '../core/resource';
-import type { Parser, StringParser } from './parsers';
-import type { ResourceKeys } from './resource';
-import type { ResourceData } from './data';
+import type { Resource } from "../core/resource";
+import type { ResourceData } from "./data";
+import type { Parser, StringParser } from "./parsers";
+import type { ResourceKeys } from "./resource";
 
 /**
  * Specifies how a URL resource should be read and parsed.
@@ -10,7 +10,7 @@ import type { ResourceData } from './data';
  * - `'text'` - Read response as text string
  * - `'blob'` - Read response as binary Blob
  */
-export type ReadAs = 'json' | 'text' | 'blob';
+export type ReadAs = "json" | "text" | "blob";
 
 export type DataContext = ResourceData;
 
@@ -25,13 +25,13 @@ export type ErrorHandler = (err: string | Error, strict?: boolean) => void;
  * the reader checks the Content-Type header to determine the appropriate format.
  */
 export interface UrlReaderParameters {
-  resource: Resource;
-  /** HTTP request options for the fetch */
-  options?: UrlReaderOptions;
-  /** Maximum number of concurrent fetches to allows */
-  concurrency?: number;
-  /** Optional error handler for fetch and parse errors */
-  errorHandler?: ErrorHandler;
+	resource: Resource;
+	/** HTTP request options for the fetch */
+	options?: UrlReaderOptions;
+	/** Maximum number of concurrent fetches to allows */
+	concurrency?: number;
+	/** Optional error handler for fetch and parse errors */
+	errorHandler?: ErrorHandler;
 }
 
 /**
@@ -41,10 +41,10 @@ export interface UrlReaderParameters {
  * Not used in browser-based implementations.
  */
 export interface FileSystemReaderParameters {
-  resource: Resource;
-  /** Optional character encoding for reading the file */
-  encoding?: BufferEncoding;
-  errorHandler: ErrorHandler;
+	resource: Resource;
+	/** Optional character encoding for reading the file */
+	encoding?: BufferEncoding;
+	errorHandler: ErrorHandler;
 }
 
 /**
@@ -54,9 +54,9 @@ export interface FileSystemReaderParameters {
 //   | UrlReaderParameters
 //   | FileSystemReaderParameters
 export interface ReaderParameters {
-  resource: Resource;
-  options?: ReaderOptions;
-  errorHandler?: ErrorHandler;
+	resource: Resource;
+	options?: ReaderOptions;
+	errorHandler?: ErrorHandler;
 }
 
 /**
@@ -67,9 +67,9 @@ export interface ReaderParameters {
  * Used by the Client class when reader is set to 'api'.
  */
 export type UrlReader = Reader<
-  UrlReaderParameters,
-  unknown | unknown[] | Record<string, unknown>,
-  Parser
+	UrlReaderParameters,
+	unknown | unknown[] | Record<string, unknown>,
+	Parser
 >;
 
 /**
@@ -79,9 +79,9 @@ export type UrlReader = Reader<
  * Used in Node.js environments for local file access.
  */
 export type FileSystemReader = Reader<
-  FileSystemReaderParameters,
-  unknown,
-  StringParser
+	FileSystemReaderParameters,
+	unknown,
+	StringParser
 >;
 
 /**
@@ -91,9 +91,9 @@ export type FileSystemReader = Reader<
  * Used in Node.js environments for local file access.
  */
 export type BrowserFileReader = Reader<
-  FileReaderParameters,
-  unknown,
-  StringParser
+	FileReaderParameters,
+	unknown,
+	StringParser
 >;
 
 /**
@@ -112,14 +112,14 @@ export type BrowserFileReader = Reader<
  * @returns Promise resolving to the parsed result
  */
 export type Reader<
-   // biome-ignore lint/suspicious/noExplicitAny: Default allows reader implementations with any param type
-  TParams = any, 
-  TResult = unknown,
-  TParser extends Parser = Parser,
+	// biome-ignore lint/suspicious/noExplicitAny: Default allows reader implementations with any param type
+	TParams = any,
+	TResult = unknown,
+	TParser extends Parser = Parser,
 > = (params: TParams, parser: TParser, data: DataContext) => Promise<TResult>;
 
 export function isReader(value: unknown): value is Reader {
-  return typeof value === 'function';
+	return typeof value === "function";
 }
 
 /**
@@ -139,15 +139,16 @@ export interface ReaderOptions {}
  * Can include headers, credentials, and other fetch options.
  */
 export interface UrlReaderOptions
-  extends ReaderOptions, Omit<RequestInit, 'method'> {
-  /** HTTP method for the request. Only GET and POST are supported */
-  method?: 'GET' | 'POST';
+	extends ReaderOptions,
+		Omit<RequestInit, "method"> {
+	/** HTTP method for the request. Only GET and POST are supported */
+	method?: "GET" | "POST";
 }
 
 export interface FileReaderParameters {
-  resource: Resource;
-  encoding?: string; // 'utf8', 'utf-16', etc.
-  errorHandler: ErrorHandler;
+	resource: Resource;
+	encoding?: string; // 'utf8', 'utf-16', etc.
+	errorHandler: ErrorHandler;
 }
 
 /**
@@ -159,7 +160,7 @@ export interface FileReaderParameters {
  * Common pattern: `{ measurements: {...}, locations: {...}, meta: {...} }`
  */
 export type IndexedReaderOptions = {
-  [P in ResourceKeys]?: ReaderOptions;
+	[P in ResourceKeys]?: ReaderOptions;
 };
 
 /**
@@ -171,21 +172,21 @@ export type IndexedReaderOptions = {
  * or return the flat options object.
  */
 export function isIndexedReaderOptions(
-  obj: ReaderOptions | IndexedReaderOptions,
+	obj: ReaderOptions | IndexedReaderOptions,
 ): obj is IndexedReaderOptions {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    ('locations' in obj || 'measurements' in obj || 'meta' in obj)
-  );
+	return (
+		typeof obj === "object" &&
+		obj !== null &&
+		("locations" in obj || "measurements" in obj || "meta" in obj)
+	);
 }
 
 /**
  * Map of reader method names to their implementations.
  */
 export interface ReaderMethods {
-  // biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate different reader implementations
-  [key: string]: Reader<any, any, any>;
+	// biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate different reader implementations
+	[key: string]: Reader<any, any, any>;
 }
 
 /**
@@ -194,16 +195,16 @@ export interface ReaderMethods {
  * Provides type-safe access to common reader implementations.
  */
 export type ReaderMethodMap = {
-  /** Reader for API/URL resources */
-  api: UrlReader;
-  /** Reader for filesystem paths */
-  filesystem: FileSystemReader;
-  /** Additional custom readers */
-  // biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate readers with different parameter, result, and parser types
-  [key: string]: Reader<any, any, any>;
+	/** Reader for API/URL resources */
+	api: UrlReader;
+	/** Reader for filesystem paths */
+	filesystem: FileSystemReader;
+	/** Additional custom readers */
+	// biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate readers with different parameter, result, and parser types
+	[key: string]: Reader<any, any, any>;
 };
 
 export type RawContent =
-  | { readAs: 'json'; content: unknown }
-  | { readAs: 'text'; content: string }
-  | { readAs: 'blob'; content: Blob };
+	| { readAs: "json"; content: unknown }
+	| { readAs: "text"; content: string }
+	| { readAs: "blob"; content: Blob };

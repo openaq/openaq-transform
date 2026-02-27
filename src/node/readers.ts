@@ -1,8 +1,7 @@
 import { readFile } from "node:fs/promises";
+import type { ResourceData, SourceRecord } from "../types/data";
 import type { StringParser } from "../types/parsers";
 import type { DataContext, FileSystemReaderParameters } from "../types/readers";
-import type { ResourceData, SourceRecord } from "../types/data";
-
 
 export const fileSystemReader = async (
 	{ resource, encoding }: FileSystemReaderParameters,

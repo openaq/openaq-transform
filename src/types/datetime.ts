@@ -80,20 +80,19 @@ export interface TimeOffset {
  * ```
  */
 export function isTimeOffset(obj: unknown): obj is TimeOffset {
+	if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+		return false;
+	}
 
-    if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-        return false;
-    }
+	const record = obj as Record<string, unknown>;
 
-    const record = obj as Record<string, unknown>;
+	if (!("minutes" in record || "days" in record || "hours" in record)) {
+		return false;
+	}
 
-    if (!("minutes" in record || "days" in record || "hours" in record)) {
-        return false;
-    }
-
-    return (
-        (record.minutes === undefined || typeof record.minutes === "number") &&
-        (record.days === undefined || typeof record.days === "number") &&
-        (record.hours === undefined || typeof record.hours === "number")
-    );
+	return (
+		(record.minutes === undefined || typeof record.minutes === "number") &&
+		(record.days === undefined || typeof record.days === "number") &&
+		(record.hours === undefined || typeof record.hours === "number")
+	);
 }

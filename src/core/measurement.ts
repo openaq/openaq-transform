@@ -121,7 +121,7 @@ export class Measurement {
 				if (e?.flag) {
 					this.flags = [String(e.flag)];
 				}
-				this.value = typeof e.value === 'number' ? e.value : null;
+				this.value = typeof e.value === "number" ? e.value : null;
 			}
 		}
 

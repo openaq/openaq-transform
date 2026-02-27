@@ -106,15 +106,13 @@ export class Resource {
 	}
 
 	private validateConfig(config: unknown): asserts config is ResourceConfig {
-
-		if (typeof config !== 'object' || config === null) {
-        throw new TypeError('Resource config must be an object');
-    	}
+		if (typeof config !== "object" || config === null) {
+			throw new TypeError("Resource config must be an object");
+		}
 
 		const c = config as Record<string, unknown>;
 		const hasUrl = c.url !== undefined && c.url !== null;
 		const hasFile = c.file !== undefined && c.file !== null;
-
 
 		if (!hasUrl && !hasFile) {
 			throw new TypeError('Either "url" or "file" must be provided');
@@ -126,10 +124,7 @@ export class Resource {
 			);
 		}
 
-		if (
-			hasFile &&
-			(c.parameters !== undefined || c.body !== undefined)
-		) {
+		if (hasFile && (c.parameters !== undefined || c.body !== undefined)) {
 			throw new TypeError(
 				'"parameters" and "body" can only be used with "url", not "file"',
 			);
@@ -323,7 +318,10 @@ export class Resource {
 
 		if (isPathExpression(this.#parameters)) {
 			if (this.#parameters.type === "jmespath") {
-				const value = search(this.#data as unknown as JSONValue, this.#parameters.expression);
+				const value = search(
+					this.#data as unknown as JSONValue,
+					this.#parameters.expression,
+				);
 				return value as Parameters[];
 			} else {
 				throw TypeError(

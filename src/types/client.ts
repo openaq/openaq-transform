@@ -1,10 +1,10 @@
 import type { BBox } from "geojson";
 import { Resource } from "../core/resource";
+import type { SourceRecord } from "./data";
 import type { ClientParameters } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
 import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { ResourceKeys } from "./resource";
-import type { SourceRecord } from "./data";
 
 interface Meta {
 	locationIdKey: string;
@@ -29,7 +29,6 @@ export interface Source {
 	parameters: string[];
 }
 
-
 export type ErrorSummary = Record<string, number>;
 
 export interface Summary {
@@ -50,7 +49,9 @@ export interface LogEntry {
 	err?: Error;
 }
 
-export type ParseFunction = (data?: SourceRecord) => string | number | object | boolean;
+export type ParseFunction = (
+	data?: SourceRecord,
+) => string | number | object | boolean;
 
 export type IndexedResource = {
 	measurements: Resource;

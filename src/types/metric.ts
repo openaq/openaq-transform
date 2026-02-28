@@ -155,26 +155,6 @@ export interface ParameterUnit {
 export type ParameterKeyFunction = (data?: unknown) => string | number;
 
 /**
- * Type guard to check if options are indexed reader options.
- * @param obj - The object to check
- * @returns True if obj is ParameterKeyFunction
- */
-export function isParameterKeyFunction(
-	value: unknown,
-): value is ParameterKeyFunction {
-	if (typeof value !== "function") {
-		return false;
-	}
-
-	try {
-		const result = value(undefined);
-		return typeof result === "string" || typeof result === "number";
-	} catch {
-		return false;
-	}
-}
-
-/**
  * Supported query languages for extracting data from structured objects.
  *
  * Currently supports JMESPath, a query language for JSON to

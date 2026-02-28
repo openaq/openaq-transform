@@ -1,9 +1,5 @@
 import { DateTime, Duration } from "luxon";
-import {
-	type DatetimeOptions,
-	isTimeOffset,
-	type TimeOffset,
-} from "../types/datetime";
+import type { DatetimeOptions, TimeOffset } from "../types/datetime";
 import { formatValueForLog } from "./utils";
 
 /**
@@ -112,32 +108,24 @@ export class Datetime {
 				setZone: true,
 			});
 		} else {
-			try {
-				if (!this.format) {
-					// defaults to ISO-8601
-					// the setZone option will ensure that it sets the zone to the string offset and not the local zone
-					parsedDate = DateTime.fromISO(this.#input, { setZone: true });
+			if (!this.format) {
+				// defaults to ISO-8601
+				// the setZone option will ensure that it sets the zone to the string offset and not the local zone
+				parsedDate = DateTime.fromISO(this.#input, { setZone: true });
+			} else {
+				if (this.timezone) {
+					parsedDate = DateTime.fromFormat(this.#input, this.format, {
+						zone: this.timezone,
+					});
 				} else {
-					if (this.timezone) {
-						parsedDate = DateTime.fromFormat(this.#input, this.format, {
-							zone: this.timezone,
-						});
-					} else {
-						parsedDate = DateTime.fromFormat(this.#input, this.format, {
-							setZone: true,
-						});
-					}
+					parsedDate = DateTime.fromFormat(this.#input, this.format, {
+						setZone: true,
+					});
 				}
+			}
 
-				if (!this.locationTimezone && !!parsedDate.zoneName) {
-					this.locationTimezone = parsedDate.zoneName;
-				}
-			} catch (error) {
-				throw new TypeError(
-					`Failed to parse date string "${formatValueForLog(
-						this.#input,
-					)}" with format "${this.format}". Error: ${String(error)}`,
-				);
+			if (!this.locationTimezone && !!parsedDate.zoneName) {
+				this.locationTimezone = parsedDate.zoneName;
 			}
 		}
 		if (!parsedDate.isValid) {
@@ -228,7 +216,7 @@ export class Datetime {
 	 * @returns {string | undefined} An ISO 8601 string in the `locationTimezone`,
 	 * or `undefined` if `locationTimezone` is somehow invalid (though unlikely if set correctly).
 	 */
-	toString(formatString = null): string | undefined {
+	toString(formatString: string | null = null): string | undefined {
 		return this.toLocal(formatString);
 	}
 
@@ -248,10 +236,8 @@ export class Datetime {
 			dt = now.minus(Math.abs(timeOffset) * 1000);
 		} else if (timeOffset instanceof Duration) {
 			dt = now.minus(timeOffset);
-		} else if (isTimeOffset(timeOffset)) {
-			dt = now.minus(timeOffset);
 		} else {
-			dt = now;
+			dt = now.minus(timeOffset);
 		}
 
 		return new Datetime(dt);

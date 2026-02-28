@@ -1,4 +1,4 @@
-import { DateTime, Settings } from "luxon";
+import { DateTime, Duration, Settings } from "luxon";
 import { expect, test } from "vitest";
 import { Datetime } from "./datetime";
 
@@ -161,6 +161,12 @@ test("lesserOf works", () => {
 	expect(datetime2.lesserOf(datetime1)).toEqual(datetime2);
 });
 
+test("greaterOf returns provided date when it is later", () => {
+    const datetime1 = new Datetime(1746736700);
+    const datetime2 = new Datetime(1746736701);
+    expect(datetime1.greaterOf(datetime2)).toEqual(datetime2);
+});
+
 test("lesserOf works when values equal", () => {
 	const datetime1 = new Datetime(1746736700);
 	const datetime2 = new Datetime(1746736700);
@@ -203,4 +209,21 @@ test("static method returns offset data v2", () => {
 	const now = Datetime.now({ hours: 1 });
 	const fmt = now.toUTC();
 	expect(fmt).toBe("2025-06-01T04:00:00Z");
+});
+
+test("static now with Duration offset works", () => {
+    const now = Datetime.now(Duration.fromObject({ hours: 1 }));
+    const fmt = now.toUTC();
+    expect(fmt).toBe("2025-06-01T04:00:00Z");
+});
+
+test("static now with no valid offset falls back to now", () => {
+    const now = Datetime.now(undefined);
+    expect(now).toBeInstanceOf(Datetime);
+    expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
+});
+
+test("toString with format string returns formatted date", () => {
+    const datetime = new Datetime("2025-01-01T00:00:00-05:00");
+    expect(datetime.toString("yyyy-MM-dd")).toBe("2025-01-01");
 });

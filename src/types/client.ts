@@ -57,10 +57,6 @@ export type IndexedResource = {
 	measurements: Resource;
 } & Partial<Record<Exclude<ResourceKeys, "measurements">, Resource>>;
 
-export function isFile(value: unknown): value is File {
-	return typeof File !== "undefined" && value instanceof File;
-}
-
 export function isIndexed(resource: unknown): resource is IndexedResource {
 	return (
 		typeof resource === "object" &&

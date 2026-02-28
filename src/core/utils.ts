@@ -74,10 +74,6 @@ export function countDecimals(value: number) {
 	return value.toString().split(".")[1].length || 0;
 }
 
-export function isFile(value: unknown): value is File {
-	return typeof File !== "undefined" && value instanceof File;
-}
-
 export function formatValueForLog(value: unknown): string {
 	if (
 		typeof value === "string" ||

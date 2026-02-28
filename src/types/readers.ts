@@ -1,6 +1,6 @@
 import type { Resource } from "../core/resource";
 import type { ResourceData } from "./data";
-import type { Parser, StringParser } from "./parsers";
+import type { Parser } from "./parsers";
 import type { ResourceKeys } from "./resource";
 
 /**
@@ -46,55 +46,6 @@ export interface FileSystemReaderParameters {
 	encoding?: BufferEncoding;
 	errorHandler: ErrorHandler;
 }
-
-/**
- * Union type of all possible reader parameter types.
- */
-// export type ReaderParameters =
-//   | UrlReaderParameters
-//   | FileSystemReaderParameters
-export interface ReaderParameters {
-	resource: Resource;
-	options?: ReaderOptions;
-	errorHandler?: ErrorHandler;
-}
-
-/**
- * Reader function for URL resources.
- * @remarks
- * Returns string, Blob, or Response based on readAs option.
- * Auto-detects content type from response headers if readAs is not specified.
- * Used by the Client class when reader is set to 'api'.
- */
-export type UrlReader = Reader<
-	UrlReaderParameters,
-	unknown | unknown[] | Record<string, unknown>,
-	Parser
->;
-
-/**
- * Reader function for filesystem resources.
- * @remarks
- * Always returns string content, so only accepts a StringParser.
- * Used in Node.js environments for local file access.
- */
-export type FileSystemReader = Reader<
-	FileSystemReaderParameters,
-	unknown,
-	StringParser
->;
-
-/**
- * Reader function for File resources.
- * @remarks
- * Always returns string content.
- * Used in Node.js environments for local file access.
- */
-export type BrowserFileReader = Reader<
-	FileReaderParameters,
-	unknown,
-	StringParser
->;
 
 /**
  * Generic reader function that fetches or reads a resource and passes the raw
@@ -188,21 +139,6 @@ export interface ReaderMethods {
 	// biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate different reader implementations
 	[key: string]: Reader<any, any, any>;
 }
-
-/**
- * Typed map of specific reader methods.
- * @remarks
- * Provides type-safe access to common reader implementations.
- */
-export type ReaderMethodMap = {
-	/** Reader for API/URL resources */
-	api: UrlReader;
-	/** Reader for filesystem paths */
-	filesystem: FileSystemReader;
-	/** Additional custom readers */
-	// biome-ignore lint/suspicious/noExplicitAny: Reader registry must accommodate readers with different parameter, result, and parser types
-	[key: string]: Reader<any, any, any>;
-};
 
 export type RawContent =
 	| { readAs: "json"; content: unknown }

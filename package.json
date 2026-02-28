@@ -49,7 +49,8 @@
 		"watch:test": "vitest run --typecheck --watch",
 		"coverage": "vitest run --typecheck --coverage",
 		"type-check": "tsc --noEmit",
-		"type-check:watch": "tsc --noEmit --watch"
+		"type-check:watch": "tsc --noEmit --watch",
+		"knip": "knip"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.12",
@@ -60,10 +61,9 @@
 		"@types/proj4": "^2.5.6",
 		"@vitest/coverage-v8": "^3.2.4",
 		"happy-dom": "^17.4.6",
+		"knip": "^5.85.0",
 		"msw": "^2.7.5",
-		"oxlint-tsgolint": "^0.2.0",
 		"tsdown": "^0.15.4",
-		"typedoc": "^0.28.5",
 		"typescript": "~5.8.3",
 		"vitest": "^3.2.4"
 	},

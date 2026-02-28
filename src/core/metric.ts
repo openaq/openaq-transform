@@ -173,12 +173,7 @@ export const PARAMETERS: ParameterMap = {
 	},
 };
 
-export const PROVIDER_VALUE_FLAGS: Array<number | string> = [
-	-99,
-	-999,
-	"-99",
-	"-999",
-];
+const PROVIDER_VALUE_FLAGS: Array<number | string> = [-99, -999, "-99", "-999"];
 
 export const PARAMETER_DEFAULTS: ClientParameters = [
 	{ parameter: "pm25", unit: "ugm3", key: "pm_25" },

@@ -4,9 +4,9 @@ import { isPathExpression } from "../types/metric";
 import type { DataContext, ReadAs } from "../types/readers";
 import type { Body } from "../types/resource";
 
-export type Parameters = Record<string, string | number | boolean>;
+type Parameters = Record<string, string | number | boolean>;
 
-export type ParametersFunction = (data?: DataContext) => Parameters[];
+type ParametersFunction = (data?: DataContext) => Parameters[];
 
 interface ResourceUrl {
 	url: string;
@@ -38,7 +38,7 @@ interface ResourceUrl {
  * output: 'object'
  * // {stations:[a,b]} + {stations:[c]} → {stations:[a,b,c]}
  */
-export type ResourceOutput = "array" | "object";
+type ResourceOutput = "array" | "object";
 
 type ResourceConfig =
 	| {

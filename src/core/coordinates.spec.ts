@@ -77,6 +77,12 @@ test("Coordinates throws precision default error", () => {
 	);
 });
 
+test("Coordinates with inprecise y throws precision default error", () => {
+	expect(() => new Coordinates(172.123, 85.12, "EPSG:4326", 3)).toThrowError(
+		/precise/,
+	);
+});
+
 test("updateBounds initializes bounds correctly when null", () => {
 	const coords = new Coordinates(10, 20);
 	const newBounds = updateBounds(coords, null);

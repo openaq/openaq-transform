@@ -1,13 +1,13 @@
 import type { BBox } from "geojson";
 import { Resource } from "../core/resource";
 import type { SourceRecord } from "./data";
+import type { TimestampString } from "./datetime";
+import type { LocationJSON } from "./location";
+import type { MeasurementJSON } from "./measurement";
 import type { ClientParameters } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
 import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { ResourceKeys } from "./resource";
-import type { MeasurementJSON } from "./measurement";
-import type { LocationJSON } from "./location";
-import type { TimestampString } from "./datetime";
 
 interface Meta {
 	locationIdKey: string;
@@ -60,7 +60,6 @@ export interface TransformData {
 	measurements: MeasurementJSON[];
 	locations: LocationJSON[];
 }
-
 
 export interface LogEntry {
 	message: string;

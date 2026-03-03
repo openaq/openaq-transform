@@ -12,7 +12,7 @@ import {
 	type LogEntry,
 	type ParseFunction,
 	type Summary,
-  type TransformData,
+	type TransformData,
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";

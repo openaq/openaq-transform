@@ -2,7 +2,7 @@ import type { Coordinates } from "../core/coordinates";
 import type { Datetime } from "../core/datetime";
 import type { Sensor } from "../core/sensor";
 import type { CoordinatesJSON } from "./coordinates";
-
+import type { TimestampString } from "./datetime";
 /**
  * Input data structure for instantiating the Measurement class.
  *
@@ -64,7 +64,7 @@ export interface MeasurementJSON {
 	 * ISO 8601 formatted timestamp string.
 	 * Represents when the measurement was recorded.
 	 */
-	timestamp: string | undefined;
+	timestamp: TimestampString | undefined;
 
 	/**
 	 * The measured value from the sensor.

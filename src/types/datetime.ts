@@ -54,6 +54,11 @@ export interface TimeOffset {
 }
 
 /**
+ * An alias that just defines a string as a timestamp string for readability
+ */
+export type TimestampString = string;
+
+/**
  * Type guard function that checks if an object is a valid TimeOffset.
  *
  * Validates that the object:

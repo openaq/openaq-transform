@@ -1,6 +1,9 @@
 import type { BBox } from "geojson";
 import { Resource } from "../core/resource";
 import type { SourceRecord } from "./data";
+import type { TimestampString } from "./datetime";
+import type { LocationJSON } from "./location";
+import type { MeasurementJSON } from "./measurement";
 import type { ClientParameters } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
 import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
@@ -42,6 +45,20 @@ export interface Summary {
 	errors: ErrorSummary;
 	datetimeTo: string | undefined;
 	datetimeFrom: string | undefined;
+}
+
+export interface TransformData {
+	meta: {
+		schema: string;
+		sourceName: string;
+		ingestMatchingMethod: IngestMatchingMethod;
+		startedOn: TimestampString | undefined;
+		finishedOn: TimestampString | undefined;
+		exportedOn: TimestampString | undefined;
+		fetchSummary: Summary;
+	};
+	measurements: MeasurementJSON[];
+	locations: LocationJSON[];
 }
 
 export interface LogEntry {

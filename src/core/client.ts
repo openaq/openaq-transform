@@ -12,6 +12,7 @@ import {
 	type LogEntry,
 	type ParseFunction,
 	type Summary,
+	type TransformData,
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
@@ -825,7 +826,7 @@ export abstract class Client<
 	 *
 	 * @returns {object} - data object formated for ingestion
 	 */
-	data() {
+	data(): TransformData {
 		return {
 			meta: {
 				schema: "v0.1",

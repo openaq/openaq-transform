@@ -272,8 +272,8 @@ export abstract class Client<
 	private async loadIndexedResources(
 		indexedResource: IndexedResource,
 	): Promise<ResourceData> {
-		const data: ResourceData = {};
-
+		let data: ResourceData = {};
+    log('Loading indexed resources')
 		// I think we should use the devs resource order here and just check to make sure the keys match
 		// this way the dev can control the order of the resource calls, for example, for clarity we
 		// need to hit the meta resource first
@@ -302,9 +302,13 @@ export abstract class Client<
 					data,
 				);
 
-				data[key] = Array.isArray(d)
-					? (d as SourceRecord[])
-					: ([d] as SourceRecord[]);
+        if(Array.isArray(d)) {
+          data[key] = (d as SourceRecord[])
+        } else {
+          // if its not a source record we assume its a ResourceData object
+          // and it should replace the current data object
+          data = (d as ResourceData)
+        }
 			} // should we do something here if there is no resource?
 		}
 

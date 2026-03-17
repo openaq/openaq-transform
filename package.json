@@ -46,7 +46,7 @@
 		"lint": "biome lint --write .",
 		"lint:check": "biome lint .",
 		"test": "vitest run --typecheck",
-		"watch:test": "vitest run --typecheck --watch",
+		"test:watch": "vitest run --typecheck --watch",
 		"coverage": "vitest run --typecheck --coverage",
 		"type-check": "tsc --noEmit",
 		"type-check:watch": "tsc --noEmit --watch",

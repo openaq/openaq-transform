@@ -217,7 +217,7 @@ describe("Client with data in wide format", () => {
 });
 
 
-describe.only("Client with data split between two different resources", () => {
+describe("Client with data split between two different resources", () => {
 	class JsonClient extends Client {
 		resource = {
 			locations: new Resource({

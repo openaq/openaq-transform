@@ -103,7 +103,7 @@ export abstract class Client<
 	constructor(params?: ClientConfiguration) {
 		// update with config if the config was passed in
 		// this will still behave oddly in our abstract/extend framework
-		this.configure(params);
+		this.configure(params as ClientConfiguration);
 	}
 
   configure(params: ClientConfiguration) {

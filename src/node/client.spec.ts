@@ -188,6 +188,20 @@ describe("Client with secrets example", () => {
 	});
 });
 
+describe("Client with secrets example with configure", () => {
+	class FakeClient extends Client {
+		resource = new Resource({
+      url: "https://blah.org/api-key-in-query?token=:token",
+      parameters: () => [{ token: this.secrets.token }]
+    });
+	}
+	test("resource is updated", () => {
+		const cln = new FakeClient();
+    cln.configure({ secrets: { token: 'letmein'} }) // configure calls setup after setting the params
+		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+	});
+});
+
 describe("Client with data in wide format", () => {
 	class JsonClient extends Client {
 		resource = new Resource({ url: "https://blah.org/wide" });

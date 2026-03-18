@@ -174,6 +174,26 @@ describe("Simple client example", () => {
 	});
 });
 
+describe.skip("Client with secrets example", () => {
+	class FakeClient extends Client {
+
+		resource = new Resource({
+      url: "https://blah.org/api-key-in-query?token=:token",
+      parameters: () => [{ token: 'lockedout' }]
+    });
+
+	}
+
+	test("resource is updated", () => {
+		const cln = new FakeClient({ secrets: { token: 'letmein'} });
+    cln.setup()
+    // still need a way to get the token to the resource, e.g.
+    // this.resource.parameters = [{ token: this.secrets.token }]
+		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+	});
+
+});
+
 describe("Client with data in wide format", () => {
 	class JsonClient extends Client {
 		resource = new Resource({ url: "https://blah.org/wide" });

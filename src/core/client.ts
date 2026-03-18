@@ -94,6 +94,8 @@ export abstract class Client<
 	#measurements?: Measurements;
 	#locations: Locations;
 	#sensors: Sensors;
+  #params: ClientConfiguration
+
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
 	strict: boolean = true;
@@ -101,107 +103,107 @@ export abstract class Client<
 	constructor(params?: ClientConfiguration) {
 		// update with config if the config was passed in
 		// this will still behave oddly in our abstract/extend framework
-		if (params) this.configure(params);
-		// this should convert the clients set of expected parameter to something we can use
-		// and include our transform methods
-		//this._measurands = new Measurands(this.parameters)
-		//this.#measurements = new Measurements(this.parameters);
-		this.#locations = new Locations();
-		this.#sensors = new Sensors();
-		this.log = new Map();
+		this.configure(params);
 	}
 
-	configure(params: ClientConfiguration) {
-		if (params?.resource) {
-			this.resource = params.resource;
-		}
-		if (params?.readerOptions) {
-			this.readerOptions = params.readerOptions;
-		}
-		if (params?.provider) {
-			this.provider = params.provider;
-		}
+  configure(params: ClientConfiguration) {
+    if(params && typeof(params) === 'object') {
+      this.#params = { ...this.#params, ...params };
+      this.setup();
+    }
+  }
 
-		if (params?.datetimeFormat) {
-			this.datetimeFormat = params.datetimeFormat;
+	setup() {
+		if (this.#params?.resource) {
+			this.resource = this.#params.resource;
 		}
-		if (params?.timezone) {
-			this.timezone = params.timezone;
+		if (this.#params?.readerOptions) {
+			this.readerOptions = this.#params.readerOptions;
 		}
-		if (params?.longFormat) {
-			this.longFormat = params.longFormat;
+		if (this.#params?.provider) {
+			this.provider = this.#params.provider;
 		}
-
-		if (params?.reader) {
-			this.reader = params.reader;
+		if (this.#params?.datetimeFormat) {
+			this.datetimeFormat = this.#params.datetimeFormat;
 		}
-		if (params?.parser) {
-			this.parser = params.parser;
+		if (this.#params?.timezone) {
+			this.timezone = this.#params.timezone;
 		}
-
+		if (this.#params?.longFormat) {
+			this.longFormat = this.#params.longFormat;
+		}
+		if (this.#params?.reader) {
+			this.reader = this.#params.reader;
+		}
+		if (this.#params?.parser) {
+			this.parser = this.#params.parser;
+		}
 		// mapped data variables
-		if (params?.locationIdKey) {
-			this.locationIdKey = params.locationIdKey;
+		if (this.#params?.locationIdKey) {
+			this.locationIdKey = this.#params.locationIdKey;
 		}
-		if (params?.locationLabelKey) {
-			this.locationLabelKey = params.locationLabelKey;
+		if (this.#params?.locationLabelKey) {
+			this.locationLabelKey = this.#params.locationLabelKey;
 		}
 		// these are used for long format
-		if (params?.parameterNameKey) {
-			this.parameterNameKey = params.parameterNameKey;
+		if (this.#params?.parameterNameKey) {
+			this.parameterNameKey = this.#params.parameterNameKey;
 		}
-		if (params?.parameterValueKey) {
-			this.parameterValueKey = params.parameterValueKey;
+		if (this.#params?.parameterValueKey) {
+			this.parameterValueKey = this.#params.parameterValueKey;
 		}
-		if (params?.yGeometryKey) {
-			this.yGeometryKey = params.yGeometryKey;
+		if (this.#params?.yGeometryKey) {
+			this.yGeometryKey = this.#params.yGeometryKey;
 		}
-		if (params?.xGeometryKey) {
-			this.xGeometryKey = params.xGeometryKey;
+		if (this.#params?.xGeometryKey) {
+			this.xGeometryKey = this.#params.xGeometryKey;
 		}
-		if (params?.geometryProjectionKey) {
-			this.geometryProjectionKey = params.geometryProjectionKey;
+		if (this.#params?.geometryProjectionKey) {
+			this.geometryProjectionKey = this.#params.geometryProjectionKey;
 		}
-		if (params?.manufacturerKey) {
-			this.manufacturerKey = params.manufacturerKey;
+		if (this.#params?.manufacturerKey) {
+			this.manufacturerKey = this.#params.manufacturerKey;
 		}
-		if (params?.modelKey) {
-			this.modelKey = params.modelKey;
+		if (this.#params?.modelKey) {
+			this.modelKey = this.#params.modelKey;
 		}
-		if (params?.ownerKey) {
-			this.ownerKey = params.ownerKey;
+		if (this.#params?.ownerKey) {
+			this.ownerKey = this.#params.ownerKey;
 		}
-		if (params?.datetimeKey) {
-			this.datetimeKey = params.datetimeKey;
+		if (this.#params?.datetimeKey) {
+			this.datetimeKey = this.#params.datetimeKey;
 		}
-		if (params?.licenseKey) {
-			this.licenseKey = params.licenseKey;
+		if (this.#params?.licenseKey) {
+			this.licenseKey = this.#params.licenseKey;
 		}
-		if (params?.isMobileKey) {
-			this.isMobileKey = params.isMobileKey;
+		if (this.#params?.isMobileKey) {
+			this.isMobileKey = this.#params.isMobileKey;
 		}
-		if (params?.loggingIntervalKey) {
-			this.loggingIntervalKey = params.loggingIntervalKey;
+		if (this.#params?.loggingIntervalKey) {
+			this.loggingIntervalKey = this.#params.loggingIntervalKey;
 		}
-		if (params?.averagingIntervalKey) {
-			this.averagingIntervalKey = params.averagingIntervalKey;
+		if (this.#params?.averagingIntervalKey) {
+			this.averagingIntervalKey = this.#params.averagingIntervalKey;
 		}
-		if (params?.sensorStatusKey) {
-			this.sensorStatusKey = params.sensorStatusKey;
+		if (this.#params?.sensorStatusKey) {
+			this.sensorStatusKey = this.#params.sensorStatusKey;
 		}
-		if (params?.ingestMatchingMethod) {
-			this.ingestMatchingMethod = params.ingestMatchingMethod;
+		if (this.#params?.ingestMatchingMethod) {
+			this.ingestMatchingMethod = this.#params.ingestMatchingMethod;
 		}
-		if (params?.parameters) {
-			this.parameters = params.parameters;
+		if (this.#params?.parameters) {
+			this.parameters = this.#params.parameters;
 		}
-		if (params?.secrets) {
-			this.secrets = params.secrets;
+		if (this.#params?.secrets) {
+			this.secrets = this.#params.secrets;
 		}
-
 		// if we were able to pass more values in params we
 		// could include the params in the postConfigure args
 		this.postConfigure();
+
+		this.#locations = new Locations();
+		this.#sensors = new Sensors();
+		this.log = new Map();
 	}
 
 	postConfigure() {
@@ -416,6 +418,9 @@ export abstract class Client<
 	 */
 	async load() {
 		log(`Starting the load process`);
+    // update the config with anything added
+    // after init
+    this.setup()
 		// start the fetch clock
 		this.#startedOn = Datetime.now();
 		const data = await this.loadResources();

@@ -190,7 +190,7 @@ export class Metric {
 
 	constructor(parameter: string, unit: string) {
 		// check for parameter(s)
-    // should either be one or two (parts & mass
+		// should either be one or two (parts & mass
 		const parameterEntries = Object.entries(PARAMETERS).filter(
 			([, p]) => p.name === parameter,
 		);
@@ -199,10 +199,10 @@ export class Metric {
 			throw new UnsupportedParameterError(parameter);
 		}
 
-    // now check those parameters for the right units
-    const parameterEntry = parameterEntries.find(
-      ([, p]) => p.converters && Object.keys(p.converters).includes(unit),
-    );
+		// now check those parameters for the right units
+		const parameterEntry = parameterEntries.find(
+			([, p]) => p.converters && Object.keys(p.converters).includes(unit),
+		);
 
 		if (!parameterEntry) {
 			throw new UnsupportedUnitsError(parameter, unit);

@@ -47,6 +47,28 @@ const handlers = [
 			{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
 		]);
 	}),
+  http.get("https://blah.org/test-provider/measurements-and-locations", async () => {
+		return HttpResponse.json({
+      measurements: [
+			  {
+				  station: "ts1",
+				  datetime: "2024-01-01T00:00:00-08:00",
+				  particulate_matter_25: 10,
+				  tempf: 80,
+			  },
+			  { station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+      ],
+      locations: [
+			  {
+				  station: "ts1",
+				  site_name: "test site #1",
+				  latitude: 45.56665,
+				  longitude: -123.12121,
+				  averaging: 3600,
+			  },
+		  ]
+		});
+	}),
 	http.get("https://blah.org/long", async () => {
 		return HttpResponse.json({
 			locations: [
@@ -152,6 +174,34 @@ describe("Simple client example", () => {
 	});
 });
 
+describe("Client with secrets example", () => {
+	class FakeClient extends Client {
+		resource = new Resource({
+      url: "https://blah.org/api-key-in-query?token=:token",
+      parameters: () => [{ token: this.secrets.token }]
+    });
+	}
+	test("resource is updated", () => {
+		const cln = new FakeClient({ secrets: { token: 'letmein'} });
+    cln.setup() // call this because we are not calling load
+		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+	});
+});
+
+describe("Client with secrets example with configure", () => {
+	class FakeClient extends Client {
+		resource = new Resource({
+      url: "https://blah.org/api-key-in-query?token=:token",
+      parameters: () => [{ token: this.secrets.token }]
+    });
+	}
+	test("resource is updated", () => {
+		const cln = new FakeClient();
+    cln.configure({ secrets: { token: 'letmein'} }) // configure calls setup after setting the params
+		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+	});
+});
+
 describe("Client with data in wide format", () => {
 	class JsonClient extends Client {
 		resource = new Resource({ url: "https://blah.org/wide" });
@@ -194,6 +244,7 @@ describe("Client with data in wide format", () => {
 	});
 });
 
+
 describe("Client with data split between two different resources", () => {
 	class JsonClient extends Client {
 		resource = {
@@ -228,6 +279,43 @@ describe("Client with data split between two different resources", () => {
 		const data = await cln.load();
 		expect(data).toStrictEqual(expectedOutput);
 	});
+
+});
+
+describe("Client with an indexed resource that returns a ResourceData object", () => {
+  // This is a special case where we expect one of the resources might provide data required
+  // for the next resource and the final resource basically compiles it all.
+	class JsonClient extends Client {
+		resource = {
+			measurements: new Resource({
+				url: "https://blah.org/test-provider/measurements-and-locations",
+				output: "object",
+			}),
+		};
+
+		provider = "testing";
+		// mapping data
+		xGeometryKey = "longitude";
+		averagingIntervalKey = "averaging";
+		sensorStatusKey = () => "asdf";
+		yGeometryKey = "latitude";
+		locationIdKey = "station";
+		locationLabelKey = "site_name";
+		geometryProjectionKey = () => "WGS84";
+		ownerKey = () => "test_owner";
+		isMobileKey = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
+
+	test("outputs correct format", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+		expect(data).toStrictEqual(expectedOutput);
+	});
+
 });
 
 describe("Client with data in long format", () => {

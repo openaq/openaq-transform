@@ -25,7 +25,7 @@ export const getValueFromKey = (
 	let value = null;
 	if (isPathExpression(key)) {
 		if (key.type === "jmespath") {
-			log(`getting value from key using 'jmespath'`);
+			log(`getting value from key using ${key.expression}`);
 			value = search(data as unknown as JSONValue, key.expression);
 		} else {
 			throw TypeError(
@@ -45,7 +45,7 @@ export const getValueFromKey = (
 			}
 		}
 	} else if (typeof key === "string") {
-		log(`getting value from key using 'string'`);
+		log(`getting value from key using '${key}'`);
 		value = data ? data[key] : key;
 	}
 	// the csv method reads everything in as strings

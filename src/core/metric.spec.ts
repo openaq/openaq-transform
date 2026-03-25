@@ -28,8 +28,8 @@ test("unsupported units returns error #2", () => {
 });
 
 test("parameter supported with both mass and parts distinquishes without explicitly providing key", () => {
-	const m = new Metric("o3", "ppm");
-	expect(m.key).toBe("o3:parts");
+	expect((new Metric("o3", "ppm")).key).toBe("o3:parts");
+	expect((new Metric("o3", "ug/m3")).key).toBe("o3:mass");
 });
 
 test("supported parameter and units returned rounded", () => {

@@ -94,7 +94,7 @@ export abstract class Client<
 	#measurements?: Measurements;
 	#locations: Locations;
 	#sensors: Sensors;
-  #params: ClientConfiguration
+	#params: ClientConfiguration;
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
@@ -106,12 +106,12 @@ export abstract class Client<
 		this.configure(params as ClientConfiguration);
 	}
 
-  configure(params: ClientConfiguration) {
-    if(params && typeof(params) === 'object') {
-      this.#params = { ...this.#params, ...params };
-      this.setup();
-    }
-  }
+	configure(params: ClientConfiguration) {
+		if (params && typeof params === "object") {
+			this.#params = { ...this.#params, ...params };
+			this.setup();
+		}
+	}
 
 	setup() {
 		if (this.#params?.resource) {
@@ -418,9 +418,9 @@ export abstract class Client<
 	 */
 	async load() {
 		log(`Starting the load process`);
-    // update the config with anything added
-    // after init
-    this.setup()
+		// update the config with anything added
+		// after init
+		this.setup();
 		// start the fetch clock
 		this.#startedOn = Datetime.now();
 		const data = await this.loadResources();

@@ -1,6 +1,8 @@
 import debug from "debug";
 import {
 	type ClientConfiguration,
+	type ClientInfo,
+	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
 	type ErrorSummary,
@@ -860,35 +862,42 @@ export abstract class Client<
 		};
 	}
 
-  info(): ClientInfo {
-    const translateKey = (key) => {
-      let type: string = undefined
-      let value: string = undefined;
-      if (typeof key === 'function') {
-        // this will only work for constants. ie () => 3600
-        type = 'function';
-        value = getValueFromKey({}, key);
-      } else if (typeof key === 'string') {
-        type = 'field'
-        value = key;
-      } else if (typeof key === 'object') {
-        type = 'jsmepath'
-        value = key.expression
-      }
-      return { type, value }
-    }
+	/**
+	 * Returns a summary of the client's configuration for display or debugging purposes.
+	 */
+	info(): ClientInfo {
+		const translateKey = (
+			key: string | PathExpression | ParseFunction,
+		): ClientInfoKey => {
+			let type: ClientInfoKey["type"];
+			let value: string | undefined;
+			if (typeof key === "function") {
+				type = "function";
+				value = String(getValueFromKey({}, key));
+			} else if (typeof key === "string") {
+				type = "field";
+				value = key;
+			} else if (typeof key === "object" && "expression" in key) {
+				type = "jmespath";
+				value = key.expression;
+			} else {
+				type = "field";
+				value = undefined;
+			}
+			return { type, value };
+		};
 
-    return {
-      isLongFormat: this.longFormat,
-      isMobile: translateKey(this.isMobileKey),
-      loggingInterval: translateKey(this.loggingIntervalKey),
-      averagingInterval: translateKey(this.averagingIntervalKey),
-      parameters: this.parameters.map( p => ({ parameter: p.parameter, unit: p.unit })),
-      timezone: this.timezone,
-      provider: this.provider,
-      supportsOffset: true,
-      supportsDatetimeFrom: false,
-      supportsDatetimeTo: false,
-    };
-  }
+		return {
+			timezone: this.timezone,
+			provider: this.provider,
+			isLongFormat: this.longFormat,
+			isMobile: translateKey(this.isMobileKey),
+			loggingInterval: translateKey(this.loggingIntervalKey),
+			averagingInterval: translateKey(this.averagingIntervalKey),
+			parameters: this.parameters.map((p) => ({
+				parameter: p.parameter,
+				unit: p.unit,
+			})),
+		};
+	}
 }

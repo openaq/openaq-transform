@@ -3,9 +3,12 @@
 A Typescript library for transforming air quality data sources into a single
 standardized output.
 
+> [!WARNING]
+> OpenAQ Transform is a work in progress and may contain breaking changes until reaching a 1.0.0 version
+
 ## Overview
 
-OpenAQ Transform provides a declarative configuration layer to solve common
+OpenAQ transform provides a declarative configuration layer to solve common
 tasks for transforming, normalizing and reshaping air quality measurement data.
 
 ## TransformData Output
@@ -33,7 +36,7 @@ tasks for transforming, normalizing and reshaping air quality measurement data.
 ### `meta`
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `schema` | `string` | Schema version for the output format. |
 | `sourceName` | `string` | The provider name, used to identify the data source. |
 | `ingestMatchingMethod` | `"ingest-id"` \| `"source-spatial"` | How the ingestor should match incoming data to existing records. `"ingest-id"` matches on the sensor key; `"source-spatial"` matches on coordinates. |

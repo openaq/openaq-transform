@@ -35,7 +35,14 @@ import { type Metric, PARAMETER_DEFAULTS } from "./metric";
 import { getReaderOptions } from "./readers";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
-import { cleanKey, formatValueForLog, getValueFromKey } from "./utils";
+import {
+	cleanKey,
+	formatValueForLog,
+	getBoolean,
+	getNumber,
+	getString,
+	getValueFromKey,
+} from "./utils";
 
 const log = debug("openaq-transform client (core): DEBUG");
 
@@ -630,9 +637,11 @@ export abstract class Client<
 						);
 
 						if (!metric) {
-							this.errorHandler(
-								new UnsupportedParameterError(metricName as string),
-							);
+							if (!this.longFormat) {
+								this.errorHandler(
+									new UnsupportedParameterError(metricName as string),
+								);
+							}
 							return;
 						}
 
@@ -851,27 +860,3 @@ export abstract class Client<
 		};
 	}
 }
-
-const getString = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): string | undefined => {
-	const value = getValueFromKey(data, key);
-	return typeof value === "string" ? value : undefined;
-};
-
-const getNumber = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): number | undefined => {
-	const value = getValueFromKey(data, key, true);
-	return typeof value === "number" ? value : undefined;
-};
-
-const getBoolean = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): boolean => {
-	const value = getValueFromKey(data, key);
-	return Boolean(value);
-};

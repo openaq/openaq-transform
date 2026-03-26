@@ -100,3 +100,34 @@ export function formatValueForLog(value: unknown): string {
 	}
 	return `[${typeof value}]`;
 }
+
+export const getString = (
+	data: SourceRecord,
+	key: ParseFunction | string | PathExpression,
+): string | undefined => {
+	const value = getValueFromKey(data, key);
+	if (value == null) return undefined;
+	return String(value);
+};
+
+export const getNumber = (
+	data: SourceRecord,
+	key: ParseFunction | string | PathExpression,
+): number | undefined => {
+	const value = getValueFromKey(data, key, true) as number | null | string;
+	if (value == null || value === "") return undefined;
+	return Number.isNaN(value as number) ? undefined : (value as number);
+};
+
+export const getBoolean = (
+	data: SourceRecord,
+	key: ParseFunction | string | PathExpression,
+): boolean => {
+	const value = getValueFromKey(data, key);
+	if (typeof value === "string") {
+		const lower = value.toLowerCase().trim();
+		if (lower === "false" || lower === "0") return false;
+		if (lower === "true" || lower === "1") return true;
+	}
+	return Boolean(value);
+};

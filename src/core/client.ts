@@ -637,9 +637,11 @@ export abstract class Client<
 						);
 
 						if (!metric) {
-							this.errorHandler(
-								new UnsupportedParameterError(metricName as string),
-							);
+							if (!this.longFormat) {
+								this.errorHandler(
+									new UnsupportedParameterError(metricName as string),
+								);
+							};
 							return;
 						}
 

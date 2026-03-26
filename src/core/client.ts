@@ -641,7 +641,7 @@ export abstract class Client<
 								this.errorHandler(
 									new UnsupportedParameterError(metricName as string),
 								);
-							};
+							}
 							return;
 						}
 

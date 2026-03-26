@@ -1,10 +1,21 @@
-OpenAQ Transform
+# OpenAQ Transform
 
-# TransformData Output
+A Typescript library for transforming air quality data sources into a single
+standardized output.
+
+> [!WARNING]
+> OpenAQ Transform is a work in progress and may contain breaking changes until reaching a 1.0.0 version
+
+## Overview
+
+OpenAQ transform provides a declarative configuration layer to solve common
+tasks for transforming, normalizing and reshaping air quality measurement data.
+
+## TransformData Output
 
 `TransformData` is the main output of the transform client, returned by `client.load()`. It contains everything the ingestor needs to process a batch of air quality data.
 
-## Structure
+### Structure
 
 ```json
 {
@@ -22,10 +33,10 @@ OpenAQ Transform
 }
 ```
 
-## `meta`
+### `meta`
 
 | Field | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `schema` | `string` | Schema version for the output format. |
 | `sourceName` | `string` | The provider name, used to identify the data source. |
 | `ingestMatchingMethod` | `"ingest-id"` \| `"source-spatial"` | How the ingestor should match incoming data to existing records. `"ingest-id"` matches on the sensor key; `"source-spatial"` matches on coordinates. |
@@ -34,7 +45,7 @@ OpenAQ Transform
 | `exportedOn` | `string \| undefined` | Timestamp when the output was serialized. |
 | `fetchSummary` | `Summary` | Counts of locations, systems, sensors, flags, measurements, datetime range, bounding box, and error totals. Useful for logging and debugging. |
 
-## `measurements`
+### `measurements`
 
 An array of `MeasurementJSON` objects. Each represents a single sensor reading:
 
@@ -46,7 +57,7 @@ An array of `MeasurementJSON` objects. Each represents a single sensor reading:
 | `flags` | `string[] \| undefined` | Optional flags applied during value processing (e.g., out-of-range). |
 | `coordinates` | `object \| undefined` | Optional per-measurement coordinates, only present for mobile sensors. |
 
-## `locations`
+### `locations`
 
 An array of `LocationJSON` objects. Each represents a monitoring site and its full sensor hierarchy:
 
@@ -59,7 +70,7 @@ An array of `LocationJSON` objects. Each represents a monitoring site and its fu
 | `ismobile` | `boolean` | Whether the station is mobile. |
 | `systems` | `SystemJSON[]` | Nested array of sensor systems (manufacturer/model groupings), each containing an array of sensors with their metric, intervals, status, and any flags. |
 
-## Key relationships
+### Key relationships
 
 ```
 Location (site)

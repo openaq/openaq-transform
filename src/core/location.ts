@@ -109,7 +109,7 @@ export class Location {
 		const siteId = data.siteId;
 		if (!(provider && siteId)) {
 			throw new Error(
-				`Both a provider and siteId value are required to build a location key: You provided ${provider} & ${siteId}`,
+				`Both a provider and locationId value are required to build a location key: You provided ${provider} & ${siteId}`,
 			);
 		}
 		return `${provider}-${siteId}`;

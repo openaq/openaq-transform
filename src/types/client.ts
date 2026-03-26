@@ -61,6 +61,10 @@ export interface TransformData {
 	locations: LocationJSON[];
 }
 
+export interface ClientInfo {
+  isLongFormat: bool;
+}
+
 export interface LogEntry {
 	message: string;
 	err?: Error;

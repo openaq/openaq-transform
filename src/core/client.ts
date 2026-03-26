@@ -850,7 +850,43 @@ export abstract class Client<
 			locations: this.#locations.json(),
 		};
 	}
+
+  info(): ClientInfo {
+    const translateKey = (key) => {
+      let type: string = undefined
+      let value: string = undefined;
+      if (typeof key === 'function') {
+        // this will only work for constants. ie () => 3600
+        type = 'function';
+        value = getValueFromKey({}, key);
+      } else if (typeof key === 'string') {
+        type = 'field'
+        value = key;
+      } else if (typeof key === 'object') {
+        type = 'jsmepath'
+        value = key.expression
+      }
+      return { type, value }
+    }
+
+    return {
+      isLongFormat: this.longFormat,
+      isMobile: translateKey(this.isMobileKey),
+      loggingInterval: translateKey(this.loggingIntervalKey),
+      averagingInterval: translateKey(this.averagingIntervalKey),
+      parameters: this.parameters.map( p => ({ parameter: p.parameter, unit: p.unit })),
+      timezone: this.timezone,
+      provider: this.provider,
+      supportsOffset: true,
+      supportsDatetimeFrom: false,
+      supportsDatetimeTo: false,
+    };
+  }
+
+
 }
+
+
 
 const getString = (
 	data: SourceRecord,

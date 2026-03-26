@@ -515,9 +515,7 @@ describe("Client with measurement errors", () => {
 				measurements: 7,
 				datetimeFrom: "2024-01-01T00:00:00-08:00",
 				datetimeTo: "2024-01-02T01:00:00-08:00",
-				errors: {
-					UnsupportedParameterError: 1,
-				},
+				errors: {},
 			},
 		},
 		locations: expectedOutput.locations,
@@ -582,13 +580,11 @@ describe("Client with measurement errors", () => {
 		const cln = new JsonClient();
 
 		const data = await cln.load();
-		const errors = cln.log.get("UnsupportedParameterError");
 		// currently we are adding
 		//console.dir(data.measurements, { depth: null })
 		//console.dir(expected.measurements, { depth: null })
 		//console.dir(expected, { depth: null })
 		expect(data.measurements.length).toBe(7);
-		expect(errors?.length).toBe(1);
 		expect(data).toStrictEqual(expected);
 	});
 

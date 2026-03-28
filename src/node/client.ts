@@ -1,5 +1,5 @@
 import { Client } from "../core/client";
-import { json } from "../core/parsers";
+import { json, xml } from "../core/parsers";
 import { apiReader } from "../core/readers";
 import type { ParserMethods } from "../types/parsers";
 import type { ReaderMethods } from "../types/readers";
@@ -15,6 +15,7 @@ const parsers: ParserMethods = {
 	json,
 	csv,
 	tsv,
+	xml
 };
 
 export class NodeClient extends Client {

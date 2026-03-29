@@ -1,7 +1,12 @@
 import type { Options as CsvParseOptions } from "csv-parse";
 import debug from "debug";
+import { type X2jOptions, XMLParser } from "fast-xml-parser";
 import type { SourceRecord } from "../types/data";
-import type { CsvParseFunction, JsonParser } from "../types/parsers";
+import type {
+	CsvParseFunction,
+	JsonParser,
+	StringParser,
+} from "../types/parsers";
 
 const log = debug("openaq-transform parsers: DEBUG");
 
@@ -43,4 +48,13 @@ export const json: JsonParser<SourceRecord | SourceRecord[]> = async (
 	} else {
 		return content as SourceRecord | SourceRecord[];
 	}
+};
+
+export const xml: StringParser<SourceRecord | SourceRecord[]> = async (
+	content,
+	options: X2jOptions = {},
+) => {
+	log(`Parsing ${typeof content} data using the xml method`);
+	const parser = new XMLParser(options);
+	return parser.parse(content) as SourceRecord | SourceRecord[];
 };

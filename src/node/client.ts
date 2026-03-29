@@ -15,7 +15,7 @@ const parsers: ParserMethods = {
 	json,
 	csv,
 	tsv,
-	xml
+	xml,
 };
 
 export class NodeClient extends Client {

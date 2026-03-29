@@ -15,7 +15,7 @@ const parsers = {
 	json,
 	csv,
 	tsv,
-	xml
+	xml,
 } satisfies ParserMethods;
 
 export class BrowserClient extends Client<typeof readers, typeof parsers> {

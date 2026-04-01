@@ -103,6 +103,7 @@ export interface ClientConfiguration {
 	locationLabelKey?: string | ParseFunction;
 	parameterNameKey?: string | ParseFunction;
 	parameterValueKey?: string | ParseFunction;
+	decimalSeparator?: DecimalSeparator;
 	xGeometryKey?: string | ParseFunction;
 	yGeometryKey?: string | ParseFunction;
 	geometryProjectionKey?: string | ParseFunction;
@@ -157,3 +158,5 @@ export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
 export type ClientReader<T> = keyof T | Reader | IndexedReader<T>;
 
 export type ClientParser<T> = keyof T | Parser | IndexedParser<T>;
+
+export type DecimalSeparator = "point" | "comma" | "arabic";

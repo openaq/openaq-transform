@@ -3,6 +3,7 @@ import {
 	type ClientConfiguration,
 	type ClientParser,
 	type ClientReader,
+	type DecimalSeparator,
 	type ErrorSummary,
 	type IndexedResource,
 	type IngestMatchingMethod,
@@ -28,7 +29,11 @@ import {
 import type { ResourceKeys } from "../types/resource";
 import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
-import { MissingAttributeError, UnsupportedParameterError } from "./errors";
+import {
+	MeasurementError,
+	MissingAttributeError,
+	UnsupportedParameterError,
+} from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
 import { type Metric, PARAMETER_DEFAULTS } from "./metric";
@@ -71,6 +76,7 @@ export abstract class Client<
 	// if longFormat = false this value is ignored
 	parameterNameKey: string | PathExpression | ParseFunction = "parameter";
 	parameterValueKey: string | PathExpression | ParseFunction = "value";
+	decimalSeparator: DecimalSeparator = "point";
 	yGeometryKey: string | PathExpression | ParseFunction = "y";
 	xGeometryKey: string | PathExpression | ParseFunction = "x";
 	manufacturerKey: string | PathExpression | ParseFunction =
@@ -158,6 +164,9 @@ export abstract class Client<
 		}
 		if (this.#params?.parameterValueKey) {
 			this.parameterValueKey = this.#params.parameterValueKey;
+		}
+		if (this.#params?.decimalSeparator) {
+			this.decimalSeparator = this.#params.decimalSeparator;
 		}
 		if (this.#params?.yGeometryKey) {
 			this.yGeometryKey = this.#params.yGeometryKey;
@@ -627,7 +636,41 @@ export abstract class Client<
 
 					const valueName = this.longFormat ? this.parameterValueKey : p;
 
-					const value = getValueFromKey(measurementRow, valueName);
+					let value = getValueFromKey(measurementRow, valueName);
+
+					if (typeof value === "string") {
+						let v = value.trim();
+
+						if (v === "") {
+							throw new MeasurementError(
+								`Empty string value for key: ${valueName}`,
+								value,
+							);
+						}
+						if (this.decimalSeparator === "comma") {
+							v = v.replace(",", ".");
+						}
+						if (this.decimalSeparator === "arabic") {
+							v = v.replace("\u066B", "."); // '\u066B' is '٫'
+						}
+						value = Number(v);
+					}
+
+					if (typeof value === "number") {
+						if (isNaN(value)) {
+							throw new MeasurementError(
+								`Non-numeric value for key: ${valueName}`,
+								value,
+							);
+						}
+
+						if (!isFinite(value)) {
+							throw new MeasurementError(
+								`Non-finite value for key: ${valueName}`,
+								value,
+							);
+						}
+					}
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid

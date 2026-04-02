@@ -204,16 +204,13 @@ export abstract class Client<
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
 		}
-		// if we were able to pass more values in params we
-		// could include the params in the postConfigure args
-		this.postConfigure();
 
 		this.#locations = new Locations();
 		this.#sensors = new Sensors();
 		this.log = new Map();
 	}
 
-	postConfigure() {
+	async preLoad() {
 		// this is an opportunity for the developer to do some customizing
 		// this is where you would update any properties based on secrets or other values
 		log("No post configuration provided");
@@ -428,6 +425,7 @@ export abstract class Client<
 		// update the config with anything added
 		// after init
 		this.setup();
+		await this.preLoad();
 		// start the fetch clock
 		this.#startedOn = Datetime.now();
 		const data = await this.loadResources();

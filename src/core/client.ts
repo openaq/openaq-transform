@@ -205,7 +205,6 @@ export abstract class Client<
 			this.secrets = this.#params.secrets;
 		}
 
-
 		this.#locations = new Locations();
 		this.#sensors = new Sensors();
 		this.log = new Map();

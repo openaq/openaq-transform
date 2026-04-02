@@ -899,29 +899,3 @@ export abstract class Client<
 		};
 	}
 }
-
-
-
-const getString = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): string | undefined => {
-	const value = getValueFromKey(data, key);
-	return typeof value === "string" ? value : undefined;
-};
-
-const getNumber = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): number | undefined => {
-	const value = getValueFromKey(data, key, true);
-	return typeof value === "number" ? value : undefined;
-};
-
-const getBoolean = (
-	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-): boolean => {
-	const value = getValueFromKey(data, key);
-	return Boolean(value);
-};

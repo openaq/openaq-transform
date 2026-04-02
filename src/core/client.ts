@@ -210,7 +210,7 @@ export abstract class Client<
 		this.log = new Map();
 	}
 
-	async postConfigure() {
+	async preLoad() {
 		// this is an opportunity for the developer to do some customizing
 		// this is where you would update any properties based on secrets or other values
 		log("No post configuration provided");
@@ -425,7 +425,7 @@ export abstract class Client<
 		// update the config with anything added
 		// after init
 		this.setup();
-		await this.postConfigure();
+		await this.preLoad();
 		// start the fetch clock
 		this.#startedOn = Datetime.now();
 		const data = await this.loadResources();

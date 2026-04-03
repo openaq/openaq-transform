@@ -78,10 +78,10 @@ export interface ClientInfo {
 	datetimeKey: ClientInfoKey;
 	datetimeFormat: string;
 	geometryProjectionKey: ClientInfoKey;
-	xGeometryKey:ClientInfoKey;
+	xGeometryKey: ClientInfoKey;
 	yGeometryKey: ClientInfoKey;
 	manufacturerKey: ClientInfoKey;
-	modelKey:ClientInfoKey;
+	modelKey: ClientInfoKey;
 	ownerKey: ClientInfoKey;
 	licenseKey: ClientInfoKey;
 	ingestMatchingMethod: string;

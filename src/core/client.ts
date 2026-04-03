@@ -1,6 +1,8 @@
 import debug from "debug";
 import {
 	type ClientConfiguration,
+	type ClientInfo,
+	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
 	type ErrorSummary,
@@ -855,6 +857,55 @@ export abstract class Client<
 			},
 			measurements: this.measurements.json(),
 			locations: this.#locations.json(),
+		};
+	}
+
+	/**
+	 * Returns a summary of the client's configuration for display or debugging purposes.
+	 */
+	info(): ClientInfo {
+		const translateKey = (
+			key: string | PathExpression | ParseFunction,
+		): ClientInfoKey => {
+			let type: ClientInfoKey["type"];
+			let value: string | undefined;
+			if (typeof key === "function") {
+				type = "function";
+				value = String(getValueFromKey({}, key));
+			} else if (typeof key === "string") {
+				type = "field";
+				value = key;
+			} else if (typeof key === "object" && "expression" in key) {
+				type = "jmespath";
+				value = key.expression;
+			} else {
+				type = "field";
+				value = undefined;
+			}
+			return { type, value };
+		};
+
+		return {
+			provider: this.provider,
+			datetimeKey: translateKey(this.datetimeKey),
+			timezone: this.timezone,
+			datetimeFormat: this.datetimeFormat,
+			geometryProjectionKey: translateKey(this.geometryProjectionKey),
+			yGeometryKey: translateKey(this.yGeometryKey),
+			xGeometryKey: translateKey(this.xGeometryKey),
+			manufacturerKey: translateKey(this.manufacturerKey),
+			modelKey: translateKey(this.modelKey),
+			ownerKey: translateKey(this.ownerKey),
+			licenseKey: translateKey(this.licenseKey),
+			isLongFormat: this.longFormat,
+			isMobile: translateKey(this.isMobileKey),
+			loggingInterval: translateKey(this.loggingIntervalKey),
+			averagingInterval: translateKey(this.averagingIntervalKey),
+			ingestMatchingMethod: this.ingestMatchingMethod,
+			parameters: this.parameters.map((p) => ({
+				parameter: p.parameter,
+				unit: p.unit,
+			})),
 		};
 	}
 }

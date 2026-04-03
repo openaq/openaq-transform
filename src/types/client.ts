@@ -61,6 +61,36 @@ export interface TransformData {
 	locations: LocationJSON[];
 }
 
+export interface ClientInfoKey {
+	type: "function" | "field" | "jmespath";
+	value: string | undefined;
+}
+
+export interface ClientInfoParameter {
+	parameter: string;
+	unit: string;
+}
+
+export interface ClientInfo {
+	timezone: string | undefined;
+	provider: string;
+	isLongFormat: boolean;
+	datetimeKey: ClientInfoKey;
+	datetimeFormat: string;
+	geometryProjectionKey: ClientInfoKey;
+	xGeometryKey: ClientInfoKey;
+	yGeometryKey: ClientInfoKey;
+	manufacturerKey: ClientInfoKey;
+	modelKey: ClientInfoKey;
+	ownerKey: ClientInfoKey;
+	licenseKey: ClientInfoKey;
+	ingestMatchingMethod: string;
+	isMobile: ClientInfoKey;
+	loggingInterval: ClientInfoKey;
+	averagingInterval: ClientInfoKey;
+	parameters: ClientInfoParameter[];
+}
+
 export interface LogEntry {
 	message: string;
 	err?: Error;

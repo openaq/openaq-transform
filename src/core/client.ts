@@ -886,12 +886,22 @@ export abstract class Client<
 		};
 
 		return {
-			timezone: this.timezone,
 			provider: this.provider,
+			datetimeKey: translateKey(this.datetimeKey),
+			timezone: this.timezone,
+			datetimeFormat: this.datetimeFormat,
+			geometryProjectionKey: translateKey(this.geometryProjectionKey),
+			yGeometryKey: translateKey(this.yGeometryKey),
+			xGeometryKey: translateKey(this.xGeometryKey),
+			manufacturerKey: translateKey(this.manufacturerKey),
+			modelKey: translateKey(this.modelKey),
+			ownerKey: translateKey(this.ownerKey),
+			licenseKey: translateKey(this.licenseKey),
 			isLongFormat: this.longFormat,
 			isMobile: translateKey(this.isMobileKey),
 			loggingInterval: translateKey(this.loggingIntervalKey),
 			averagingInterval: translateKey(this.averagingIntervalKey),
+			ingestMatchingMethod: this.ingestMatchingMethod,
 			parameters: this.parameters.map((p) => ({
 				parameter: p.parameter,
 				unit: p.unit,

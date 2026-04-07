@@ -1,8 +1,8 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
-import type { DataContext, ReadAs } from "../types/readers";
-import type { Body } from "../types/resource";
+import type { DataContext, ReadAs, ReaderOptions } from "../types/readers";
+import type { Auth, Body, HttpHeader } from "../types/resource";
 
 type Parameters = Record<string, string | number | boolean>;
 
@@ -40,6 +40,11 @@ interface ResourceUrl {
  */
 type ResourceOutput = "array" | "object";
 
+interface Requires {
+	auth?: Auth;
+	headers?: HttpHeader;
+}
+
 type ResourceConfig =
 	| {
 			url: string;
@@ -48,6 +53,8 @@ type ResourceConfig =
 			body?: Body;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
+			requires?: Requires;
+			options?: ReaderOptions;
 			strict?: boolean;
 	  }
 	| {
@@ -57,6 +64,8 @@ type ResourceConfig =
 			body?: never;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
+			requires?: Requires;
+			options?: ReaderOptions;
 			strict?: boolean;
 	  };
 
@@ -92,6 +101,8 @@ export class Resource {
 	#output?: ResourceOutput;
 	#readAs?: ReadAs;
 	#strict: boolean;
+	#requires?: Requires;
+	#options?: ReaderOptions;
 
 	constructor(config: ResourceConfig) {
 		this.validateConfig(config);
@@ -103,6 +114,8 @@ export class Resource {
 		this.#output = config.output;
 		this.#readAs = config.readAs;
 		this.#strict = config.strict ?? false;
+		this.#requires = config.requires;
+		this.#options = config.options;
 	}
 
 	private validateConfig(config: unknown): asserts config is ResourceConfig {
@@ -189,6 +202,59 @@ export class Resource {
 	 */
 	get strict(): boolean {
 		return this.#strict;
+	}
+
+	get auth(): Auth | undefined {
+		return this.#requires?.auth;
+	}
+
+	get authHeaders(): HttpHeader {
+		const { auth } = this;
+		if (!auth) return {};
+
+		switch (auth.type) {
+			case "APIKey": {
+				if (auth.position === "header") {
+					return { [auth.key]: auth.value };
+				}
+				if (auth.position === "cookie") {
+					return { Cookie: auth.value };
+				}
+				return {};
+			}
+			case "Bearer":
+				if (!auth.token) return {};
+				return { Authorization: `Bearer ${auth.token}` };
+
+			case "Basic": {
+				const encoded = btoa(`${auth.username}:${auth.password}`);
+				return { Authorization: `Basic ${encoded}` };
+			}
+
+			default:
+				return {};
+		}
+	}
+
+	get headers(): HttpHeader {
+		return {
+			...this.#requires?.headers,
+			...this.authHeaders,
+		};
+	}
+
+	get options(): ReaderOptions {
+		return {
+			...this.#options,
+			headers: this.headers,
+		};
+	}
+
+	set auth(auth: Auth) {
+		this.#requires = {
+			...this.#requires,
+			auth,
+		};
 	}
 
 	private static replaceTemplateVariables(
@@ -301,6 +367,15 @@ export class Resource {
 			urls.push({
 				url: this.#url,
 				...(this.#body && { body: this.#body }),
+			});
+		}
+		const { auth } = this;
+		if (auth?.type === "APIKey" && auth.position === "query") {
+			return urls.map((resourceUrl) => {
+				const url = new URL(resourceUrl.url);
+				const { key, value } = auth;
+				url.searchParams.set(key, value);
+				return { ...resourceUrl, url: url.href };
 			});
 		}
 

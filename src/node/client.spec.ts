@@ -519,6 +519,7 @@ describe("Client with measurement errors", () => {
 			},
 		},
 		locations: expectedOutput.locations,
+		errors: {},
 		measurements: [
 			...expectedOutput.measurements,
 			{

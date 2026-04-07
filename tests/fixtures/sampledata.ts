@@ -81,6 +81,7 @@ export const expectedOutput = {
 			datetimeTo: "2024-01-01T01:00:00-08:00",
 		},
 	},
+	errors: {},
 	locations: [
 		{
 			key: "testing-ts1",

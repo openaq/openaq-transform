@@ -5,7 +5,6 @@ import {
 	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
-	type ErrorSummary,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -30,13 +29,14 @@ import {
 import type { ResourceKeys } from "../types/resource";
 import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
-import { MissingAttributeError, UnsupportedParameterError } from "./errors";
+import { Errors, MissingAttributeError, UnsupportedParameterError } from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
 import { type Metric, PARAMETER_DEFAULTS } from "./metric";
 import { getReaderOptions } from "./readers";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
+import { TransformError } from "./errors";
 import {
 	cleanKey,
 	formatValueForLog,
@@ -103,6 +103,7 @@ export abstract class Client<
 	#measurements?: Measurements;
 	#locations: Locations;
 	#sensors: Sensors;
+	#errors: Errors;
 	#params: ClientConfiguration;
 
 	// log object for compiling errors/warnings for later reference
@@ -209,7 +210,7 @@ export abstract class Client<
 
 		this.#locations = new Locations();
 		this.#sensors = new Sensors();
-		this.log = new Map();
+		this.#errors = new Errors();
 	}
 
 	async preLoad() {
@@ -385,36 +386,16 @@ export abstract class Client<
 	// fetching in production - log error and move on
 	// fetching in upload tool - throw error if strict is on
 	// developing - throw error
-	errorHandler(err: string | Error, strict: boolean = false) {
-		// types: error, warning, info
-		// check if warning or error
-		// if strict then throw error, otherwise just log for later
+	errorHandler(err: TransformError | Error | string, strict: boolean = false) {
+    const transformError: TransformError = this.#errors.add(err)
+    if (strict || this.strict || transformError.strict) {
+      // rethrow if we are in strict mode
+      // or if the context is strict
+      // or if the error itself is marked strict
+      console.log('we are about to rethrow')
+      throw err;
+    }
 
-		let type: string = "UknownError";
-		let message: string = "unknown error message";
-
-		// everything should throw an error that we handle here
-		// but until that is the case we will convert the strings
-		if (typeof err === "string") {
-			message = err;
-			err = new Error(message);
-		} else if (err instanceof Error) {
-			type = err.name ?? "UK";
-			message = err.message;
-		} else {
-			err = new Error("Original error was neither a string or an error");
-		}
-
-		if (err instanceof Error) {
-			if (!this.log.has(type)) this.log.set(type, []);
-			this.log.get(type)?.push({ message, err }); // line above means type will always exist
-		}
-
-		console.error(`** ERROR (${type}):`, message);
-
-		if (strict || this.strict) {
-			throw err;
-		}
 	}
 
 	/**
@@ -821,10 +802,6 @@ export abstract class Client<
 	 * Dump a summary that we can pass back to the log
 	 */
 	summary(): Summary {
-		const errorSummary: ErrorSummary = {};
-		this.log.forEach((v, k) => {
-			errorSummary[k] = v.length;
-		});
 		return {
 			sourceName: this.provider,
 			locations: this.#locations.length,
@@ -835,7 +812,7 @@ export abstract class Client<
 			measurements: this.measurements.length,
 			datetimeFrom: this.measurements.from?.toString(),
 			datetimeTo: this.measurements.to?.toString(),
-			errors: errorSummary,
+			errors: this.#errors.summary(),
 		};
 	}
 
@@ -857,6 +834,7 @@ export abstract class Client<
 			},
 			measurements: this.measurements.json(),
 			locations: this.#locations.json(),
+      errors: this.#errors.json(),
 		};
 	}
 

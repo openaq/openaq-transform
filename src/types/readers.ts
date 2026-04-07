@@ -95,10 +95,10 @@ export interface UrlReaderOptions
 	/** HTTP method for the request. Only GET and POST are supported */
 	method?: "GET" | "POST";
 
- 	/**
-   	* Number of URLs to fetch in parallel.
-   	*/
-	concurrency?: number 
+	/**
+	 * Number of URLs to fetch in parallel.
+	 */
+	concurrency?: number;
 }
 
 export interface FileReaderParameters {

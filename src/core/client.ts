@@ -112,7 +112,7 @@ export abstract class Client<
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
-	strict: boolean = true;
+	strict: boolean = false;
 
 	constructor(params?: ClientConfiguration) {
 		// update with config if the config was passed in
@@ -396,7 +396,6 @@ export abstract class Client<
 			// rethrow if we are in strict mode
 			// or if the context is strict
 			// or if the error itself is marked strict
-			console.log("we are about to rethrow");
 			throw err;
 		}
 	}

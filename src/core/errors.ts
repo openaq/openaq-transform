@@ -214,7 +214,7 @@ export class FetchError extends TransformError {
 	statusCode?: number;
 
 	constructor(message: string, url: string, statusCode?: number) {
-		super(message);
+		super(message, url);
 		this.name = this.constructor.name;
 		this.type = FETCH_ERROR;
 		this.url = url;
@@ -237,7 +237,7 @@ export class ParseError extends TransformError {
 	originalError?: Error;
 
 	constructor(message: string, url: string, originalError?: Error) {
-		super(message);
+		super(message, url);
 		this.name = this.constructor.name;
 		this.type = PARSE_ERROR;
 		this.url = url;

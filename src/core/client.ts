@@ -29,14 +29,18 @@ import {
 import type { ResourceKeys } from "../types/resource";
 import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
-import { Errors, MissingAttributeError, UnsupportedParameterError } from "./errors";
+import type { TransformError } from "./errors";
+import {
+	Errors,
+	MissingAttributeError,
+	UnsupportedParameterError,
+} from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
 import { type Metric, PARAMETER_DEFAULTS } from "./metric";
 import { getReaderOptions } from "./readers";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
-import { TransformError } from "./errors";
 import {
 	cleanKey,
 	formatValueForLog,
@@ -387,15 +391,14 @@ export abstract class Client<
 	// fetching in upload tool - throw error if strict is on
 	// developing - throw error
 	errorHandler(err: TransformError | Error | string, strict: boolean = false) {
-    const transformError: TransformError = this.#errors.add(err)
-    if (strict || this.strict || transformError.strict) {
-      // rethrow if we are in strict mode
-      // or if the context is strict
-      // or if the error itself is marked strict
-      console.log('we are about to rethrow')
-      throw err;
-    }
-
+		const transformError: TransformError = this.#errors.add(err);
+		if (strict || this.strict || transformError.strict) {
+			// rethrow if we are in strict mode
+			// or if the context is strict
+			// or if the error itself is marked strict
+			console.log("we are about to rethrow");
+			throw err;
+		}
 	}
 
 	/**
@@ -834,7 +837,7 @@ export abstract class Client<
 			},
 			measurements: this.measurements.json(),
 			locations: this.#locations.json(),
-      errors: this.#errors.json(),
+			errors: this.#errors.json(),
 		};
 	}
 

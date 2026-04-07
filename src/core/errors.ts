@@ -1,7 +1,6 @@
-import { PARAMETERS } from "./metric";
 import debug from "debug";
-
-import type { ErrorSummary, ErrorJSON } from "../types/errors";
+import type { ErrorJSON, ErrorSummary } from "../types/errors";
+import { PARAMETERS } from "./metric";
 
 const TRANSFORM_ERROR = "TransformError";
 const MEASUREMENT_ERROR = "MeasurementError";
@@ -12,36 +11,38 @@ const PARSE_ERROR = "ParseError";
 const log = debug("openaq-transform errors: DEBUG");
 
 export class Errors {
-  #errors: Map<string, TransformError[]>;
+	#errors: Map<string, TransformError[]>;
 
 	constructor() {
 		this.#errors = new Map<string, TransformError[]>();
 	}
 
 	add(err: TransformError | Error | string) {
-    let type: string = "UnknownError";
-    let transformError: TransformError;
+		let type: string = "UnknownError";
+		let transformError: TransformError;
 
 		if (typeof err === "string") {
 			transformError = new TransformError(err);
 		} else if (err instanceof TransformError) {
-      transformError = err
-      type = err.type;
+			transformError = err;
+			type = err.type;
 		} else if (err instanceof Error) {
 			transformError = new TransformError(err.message);
-    } else {
-			transformError = new TransformError("Original error was neither a string or an error");
+		} else {
+			transformError = new TransformError(
+				"Original error was neither a string or an error",
+			);
 		}
 
-    if(!this.#errors.has(type)) {
-      this.#errors.set(type, [])
-    }
+		if (!this.#errors.has(type)) {
+			this.#errors.set(type, []);
+		}
 
-		this.#errors.get(type)!.push(transformError);
+		this.#errors.get(type)?.push(transformError);
 
 		log(`** ERROR (${type}):`, transformError.message);
 
-    return transformError;
+		return transformError;
 	}
 
 	get(key: string): TransformError[] | undefined {
@@ -60,29 +61,28 @@ export class Errors {
 		return total;
 	}
 
-  summary() {
+	summary() {
 		const errorSummary: ErrorSummary = {};
 		this.#errors.forEach((v, k) => {
 			errorSummary[k] = v.length;
 		});
-    return errorSummary;
-  }
+		return errorSummary;
+	}
 
-  json() {
+	json() {
 		const errorSummary: ErrorJSON = {};
 		this.#errors.forEach((v, k) => {
-      v.forEach((err: TransformError) => {
-        const key = `${k}: ${err.message}`
-        if(!errorSummary[key]) {
-			    errorSummary[key] = 1;
-        } else {
-          errorSummary[key] += 1;
-        }
-      })
+			v.forEach((err: TransformError) => {
+				const key = `${k}: ${err.message}`;
+				if (!errorSummary[key]) {
+					errorSummary[key] = 1;
+				} else {
+					errorSummary[key] += 1;
+				}
+			});
 		});
-    return errorSummary;
-  }
-
+		return errorSummary;
+	}
 }
 
 export class TransformError extends RangeError {
@@ -101,9 +101,7 @@ export class TransformError extends RangeError {
 	get strict(): boolean {
 		return false;
 	}
-
 }
-
 
 export class LocationError extends TransformError {
 	constructor(message: string, value: unknown) {
@@ -224,11 +222,9 @@ export class FetchError extends TransformError {
 	}
 
 	get strict(): boolean {
-    // only authentication errors are strict??
-    return this.statusCode == 401;
+		// only authentication errors are strict??
+		return this.statusCode === 401;
 	}
-
-
 }
 
 /**

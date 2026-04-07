@@ -198,14 +198,13 @@ export async function apiReader(
 					const res = await fetch(url, fetchOptions);
 					log(`fetching ${url} received HTTP ${res.status}`);
 
-          if (res.status !== 200) {
+					if (res.status !== 200) {
 						throw new FetchError(
 							`${res.status} ${res.statusText}`,
 							url,
 							res.status,
 						);
 					}
-
 
 					// Determine readAs format: use resource.readAs if set, otherwise auto-detect
 					readAsFormat = resource.readAs;
@@ -227,22 +226,22 @@ export async function apiReader(
 						raw = { readAs: "json", content: await res.json() };
 					}
 				} catch (error) {
-          // convert the error in case the error does not come from us
+					// convert the error in case the error does not come from us
 					const fetchError =
 						error instanceof FetchError
 							? error
 							: new FetchError(
-								error instanceof Error ? error.message : String(error),
-								url,
-							);
+									error instanceof Error ? error.message : String(error),
+									url,
+								);
 
 					// Track first error for strict mode
 					if ((resource.strict || fetchError.strict) && !batchError) {
-					 	batchError = fetchError;
+						batchError = fetchError;
 					}
 
 					if (errorHandler) {
-            // this will rethrow if we are in strict mode
+						// this will rethrow if we are in strict mode
 						errorHandler(fetchError, resource.strict || fetchError.strict);
 					} else {
 						console.error(`Reader fetch error at ${url}:`, fetchError.message);

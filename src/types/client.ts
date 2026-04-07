@@ -58,7 +58,7 @@ export interface TransformData {
 	};
 	measurements: MeasurementJSON[];
 	locations: LocationJSON[];
-  errors: ErrorJSON;
+	errors: ErrorJSON;
 }
 
 export interface ClientInfoKey {

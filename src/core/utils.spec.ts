@@ -227,7 +227,7 @@ describe('getBoolean', () => {
   });
 });
 
-describe.only('getArray tests', () => {
+describe('getArray tests', () => {
   test('returns array for string array', () => {
     expect(getArray(record(['some-value']), key)).toStrictEqual(['some-value']);
   });

@@ -354,7 +354,7 @@ describe("apiReader", () => {
 		expect(errors.length).toBeGreaterThanOrEqual(1);
 	});
 
-  test.only("stops fetching subsequent batches when all URLs in first batch fail with strict errors", async () => {
+  test("stops fetching subsequent batches when all URLs in first batch fail with strict errors", async () => {
     const resource = new Resource({
       url: "https://api.test.com/auth-error",
       parameters: [

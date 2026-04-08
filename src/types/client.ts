@@ -161,13 +161,12 @@ export type ClientParser<T> = keyof T | Parser | IndexedParser<T>;
 
 // based on common groups in Examples of Use table https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
 
-
 /**
  * Describes the decimal and digit-group separator conventions for a numeric
  * locale format.
  *
  * Each variant pairs a {@link CHAR_MAP decimal separator} with the set of
- * digit-group (thousands) separators that are valid alongside it, reflecting 
+ * digit-group (thousands) separators that are valid alongside it, reflecting
  * common real-world usage documented in the
  * {@link https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems Wikipedia — Decimal separator} reference.
  *

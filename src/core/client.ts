@@ -639,7 +639,6 @@ export abstract class Client<
 						value = cleanNumber(value, this.numberFormat);
 					}
 
-
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
 					if (value !== undefined && (value || this.longFormat)) {

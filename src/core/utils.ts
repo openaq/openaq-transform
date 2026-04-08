@@ -134,7 +134,7 @@ export const getBoolean = (
 
 /**
  * Maps human-readable separator names to their corresponding Unicode
- * characters. Used to resolve decimal and digit-group separator keys in 
+ * characters. Used to resolve decimal and digit-group separator keys in
  * {@link DecimalDigitGroup} format objects.
  *
  * @example
@@ -152,14 +152,12 @@ export const CHAR_MAP: Record<string, string> = {
 	space: " ",
 };
 
-
 /**
  * Matches whitespace variants used as numeric digit-group separators, including
  * standard whitespace, non-breaking space (U+00A0), and narrow no-break space
  * (U+202F).
  */
 const SPACE_RE = /[\s\u00A0\u202f]/g;
-
 
 /**
  * Normalizes a locale-formatted numeric string into a parseable number string.

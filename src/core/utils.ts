@@ -1,6 +1,6 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
-import type { ParseFunction } from "../types/client";
+import type { DecimalDigitGroup, ParseFunction } from "../types/client";
 import type { SourceRecord } from "../types/data";
 import { isPathExpression, type PathExpression } from "../types/metric";
 
@@ -131,3 +131,85 @@ export const getBoolean = (
 	}
 	return Boolean(value);
 };
+
+/**
+ * Maps human-readable separator names to their corresponding Unicode
+ * characters. Used to resolve decimal and digit-group separator keys in 
+ * {@link DecimalDigitGroup} format objects.
+ *
+ * @example
+ * CHAR_MAP["arabic"]     // "٫"
+ * CHAR_MAP["interpunct"] // "·"
+ * CHAR_MAP["space"]      // " "
+ */
+export const CHAR_MAP: Record<string, string> = {
+	point: ".",
+	comma: ",",
+	arabic: "\u066B", // arabic comma ٫
+	apostrophe: "'",
+	interpunct: "\u00B7", // interpunct/middle dot ·
+	dot: ".",
+	space: " ",
+};
+
+
+/**
+ * Matches whitespace variants used as numeric digit-group separators, including
+ * standard whitespace, non-breaking space (U+00A0), and narrow no-break space
+ * (U+202F).
+ */
+const SPACE_RE = /[\s\u00A0\u202f]/g;
+
+
+/**
+ * Normalizes a locale-formatted numeric string into a parseable number string.
+ *
+ * Strips digit-group separators and replaces the decimal separator with `.`,
+ * based on the provided {@link DecimalDigitGroup} format descriptor.
+ *
+ * @param value - The raw input string to clean (e.g. `"1.234,56"` or `"1 234.56"`).
+ * @param format - Describes which characters are used as the decimal and
+ * 	digit-group separators.
+ * @returns A normalized numeric string with group separators removed and decimal as `.`,
+ *          or an empty string if `value` is blank.
+ *
+ * @example
+ * // Comma as decimal, period as thousands separator
+ * cleanNumber("1.234,56", { decimal: "comma", digitGroup: "point" });
+ * // => "1234.56"
+ *
+ * @example
+ * // Space as thousands separator, comma as decimal
+ * cleanNumber("1 234,56", { decimal: "comma", digitGroup: "space" });
+ * // => "1234.56"
+ *
+ * @example
+ * // Empty input passthrough
+ * cleanNumber("   ", { decimal: "point", digitGroup: "comma" });
+ * // => ""
+ */
+export function cleanNumber(value: string, format: DecimalDigitGroup): string {
+	let v = value.trim();
+
+	if (v === "") {
+		return "";
+	}
+
+	const { decimal, digitGroup } = format;
+
+	if (digitGroup) {
+		if (digitGroup === "space") {
+			v = v.replace(SPACE_RE, "");
+		} else {
+			const groupChar = CHAR_MAP[digitGroup];
+			v = v.split(groupChar).join("");
+		}
+	}
+
+	const decimalChar = CHAR_MAP[decimal];
+	if (decimalChar !== ".") {
+		v = v.split(decimalChar).join(".");
+	}
+
+	return v;
+}

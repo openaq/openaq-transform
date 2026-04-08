@@ -4,12 +4,14 @@ import { SourceRecord } from '../types/data.ts';
 
 import {
   cleanKey,
+  cleanNumber,
   countDecimals,
   getBoolean,
   getNumber,
   getString,
   getValueFromKey,
 } from './utils.ts';
+import { DecimalDigitGroup } from '../types/client.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -224,4 +226,158 @@ describe('getBoolean', () => {
   test('returns true for a non-empty arbitrary string', () => {
     expect(getBoolean(record('some-value'), key)).toBe(true);
   });
+});
+
+
+// Test cases based on "common" cases as described in the table here:
+// https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
+
+describe("cleanNumber", () => {
+
+	describe("comma grouped, point decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
+ 
+		test("parses a fully-formatted number", () => {
+			expect(cleanNumber("1,234,567.89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses an integer with group separators", () => {
+			expect(cleanNumber("1,234,567", format)).toBe("1234567");
+		});
+ 
+		test("parses a number without group separator", () => {
+			expect(cleanNumber("1234567.89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses zero", () => {
+			expect(cleanNumber("0.00", format)).toBe("0.00");
+		});
+ 
+		test("parses a negative number", () => {
+			expect(cleanNumber("-1,234.56", format)).toBe("-1234.56");
+		});
+ 
+		test("returns empty string for empty input", () => {
+			expect(cleanNumber("  ", format)).toBe("");
+		});
+	});
+ 
+
+	describe("no group, point decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "point" };
+ 
+		test("parses a plain integer", () => {
+			expect(cleanNumber("1234567", format)).toBe("1234567");
+		});
+ 
+		test("parses a number with decimal part", () => {
+			expect(cleanNumber("1234567.89", format)).toBe("1234567.89");
+		});
+ 
+		test("returns empty string for empty input", () => {
+			expect(cleanNumber("", format)).toBe("");
+		});
+	});
+ 
+
+	describe("no group, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma" };
+ 
+		test("parses a plain number and converts comma to period", () => {
+			expect(cleanNumber("1234567,89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses an integer", () => {
+			expect(cleanNumber("1234567", format)).toBe("1234567");
+		});
+	});
+
+	describe("dot grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "dot" };
+ 
+		test("parses a comma decimal got grouped number", () => {
+			expect(cleanNumber("1.234.567,89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses an integer with dot separators", () => {
+			expect(cleanNumber("1.234.567", format)).toBe("1234567");
+		});
+ 
+		test("parses a small number", () => {
+			expect(cleanNumber("1.000,00", format)).toBe("1000.00");
+		});
+
+	});
+ 
+	describe("comma grouped, interpunct decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "interpunct", digitGroup: "comma" };
+ 
+		test("parses a interpunct comma grouped number", () => {
+			expect(cleanNumber("1,234,567\u00B789", format)).toBe("1234567.89");
+		});
+ 
+		test("parses without group separator", () => {
+			expect(cleanNumber("1234567\u00B789", format)).toBe("1234567.89");
+		});
+	});
+ 
+	describe("Indian number grouping", () => {
+		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
+ 
+		test("parses Indian-style grouping", () => {
+			expect(cleanNumber("12,34,567.89", format)).toBe("1234567.89");
+		});
+	});
+ 
+	describe("apostrophe grouped, point decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "apostrophe" };
+ 
+		test("parses an apostrophe grouped point decimal number", () => {
+			expect(cleanNumber("1'234'567.89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses an integer with apostrophe groups", () => {
+			expect(cleanNumber("1'234'567", format)).toBe("1234567");
+		});
+	});
+ 
+	describe("apostrophe grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "apostrophe" };
+ 
+		test("parses an apostophe grouped comma decimal number", () => {
+			expect(cleanNumber("1'234'567,89", format)).toBe("1234567.89");
+		});
+
+    test("parses an integer with apostrophe groups", () => {
+			expect(cleanNumber("1'234'567", format)).toBe("1234567");
+		});
+	});
+ 
+	describe("space grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "space" };
+ 
+		test("parses space as group separator", () => {
+			expect(cleanNumber("1 234 567,89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses non-breaking space (U+00A0) as group separator", () => {
+			expect(cleanNumber("1\u00A0234\u00A0567,89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses narrow no-break space (U+202F) as group separator", () => {
+			expect(cleanNumber("1\u202F234\u202F567,89", format)).toBe("1234567.89");
+		});
+ 
+		test("parses an integer with space separators", () => {
+			expect(cleanNumber("1 234 567", format)).toBe("1234567");
+		});
+	});
+ 
+	describe("arabic decimal separator (U+066B)", () => {
+		const format: DecimalDigitGroup = { decimal: "arabic" };
+ 
+		test("parses a number with arabic decimal comma", () => {
+			expect(cleanNumber("1234567\u066B89", format)).toBe("1234567.89");
+		});
+	});
 });

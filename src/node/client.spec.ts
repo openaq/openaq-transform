@@ -541,7 +541,7 @@ describe("Client with measurement errors", () => {
 			{
 				key: "testing-ts1-pm25:mass",
 				timestamp: "2024-01-01T05:00:00-08:00",
-				value: 65, // number as string
+				value: 65,
 			},
 		],
 	};

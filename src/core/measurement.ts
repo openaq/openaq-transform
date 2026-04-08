@@ -107,6 +107,9 @@ export class Measurement {
 		this.value = null;
 		this.sensor = data.sensor;
 		this.timestamp = data.timestamp;
+		if (data.flags && data.flags?.length) {
+			this.flags = [...data.flags];
+		}
 		// the csv parser does not convert values to numbers
 		// should we do something here to do that?
 		// the only issue I see is if we expect a flag here, in which case we could catch an error?
@@ -119,7 +122,10 @@ export class Measurement {
 		} catch (e: unknown) {
 			if (e instanceof TransformError) {
 				if (e?.flag) {
-					this.flags = [String(e.flag)];
+					if (!this.flags) {
+						this.flags = [];
+					}
+					this.flags.push(String(e.flag));
 				}
 				this.value = typeof e.value === "number" ? e.value : null;
 			}

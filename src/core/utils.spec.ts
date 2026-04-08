@@ -8,6 +8,7 @@ import {
   getBoolean,
   getNumber,
   getString,
+  getArray,
   getValueFromKey,
 } from './utils.ts';
 
@@ -224,4 +225,29 @@ describe('getBoolean', () => {
   test('returns true for a non-empty arbitrary string', () => {
     expect(getBoolean(record('some-value'), key)).toBe(true);
   });
+});
+
+describe.only('getArray tests', () => {
+  test('returns array for string array', () => {
+    expect(getArray(record(['some-value']), key)).toStrictEqual(['some-value']);
+  });
+  test('returns array for string', () => {
+    expect(getArray(record('some-value'), key)).toStrictEqual(['some-value']);
+  });
+  test('returns array for numeric array', () => {
+    expect(getArray(record([0]), key)).toStrictEqual([0]);
+  });
+  test('returns array for number', () => {
+    expect(getArray(record(0), key)).toStrictEqual([0]);
+  });
+  test('returns undefined for undefined', () => {
+    expect(getArray(record(undefined), key)).toBeUndefined();
+  });
+  test('returns undefined for null', () => {
+    expect(getArray(record(null), key)).toBeUndefined();
+  });
+  test('returns empty array for array', () => {
+    expect(getArray(record([]), key)).toStrictEqual([]);
+  });
+
 });

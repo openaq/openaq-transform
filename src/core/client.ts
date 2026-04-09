@@ -5,6 +5,7 @@ import {
 	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
+	type DecimalDigitGroup,
 	type ErrorSummary,
 	type IndexedResource,
 	type IngestMatchingMethod,
@@ -73,6 +74,7 @@ export abstract class Client<
 	// if longFormat = false this value is ignored
 	parameterNameKey: string | PathExpression | ParseFunction = "parameter";
 	parameterValueKey: string | PathExpression | ParseFunction = "value";
+	numberFormat: DecimalDigitGroup = { decimal: "point" };
 	yGeometryKey: string | PathExpression | ParseFunction = "y";
 	xGeometryKey: string | PathExpression | ParseFunction = "x";
 	manufacturerKey: string | PathExpression | ParseFunction =
@@ -97,6 +99,11 @@ export abstract class Client<
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
 	parameters: ClientParameters = PARAMETER_DEFAULTS;
+
+	protected getNumber = (
+		data: SourceRecord,
+		key: string | PathExpression | ParseFunction,
+	) => getNumber(data, key, this.numberFormat);
 
 	#startedOn?: Datetime;
 	#finishedOn?: Datetime;
@@ -161,6 +168,9 @@ export abstract class Client<
 		if (this.#params?.parameterValueKey) {
 			this.parameterValueKey = this.#params.parameterValueKey;
 		}
+		if (this.#params?.numberFormat) {
+			this.numberFormat = this.#params.numberFormat;
+		}
 		if (this.#params?.yGeometryKey) {
 			this.yGeometryKey = this.#params.yGeometryKey;
 		}
@@ -220,7 +230,7 @@ export abstract class Client<
 
 	get measurements(): Measurements {
 		if (!this.#measurements) {
-			this.#measurements = new Measurements(this.parameters);
+			this.#measurements = new Measurements(this.parameters, this.numberFormat);
 		}
 		return this.#measurements;
 	}
@@ -488,11 +498,14 @@ export abstract class Client<
 				provider: this.provider,
 				siteName: getString(data, this.locationLabelKey) ?? "",
 				ismobile: getBoolean(data, this.isMobileKey),
-				x: getNumber(data, this.xGeometryKey),
-				y: getNumber(data, this.yGeometryKey),
+				x: this.getNumber(data, this.xGeometryKey),
+				y: this.getNumber(data, this.yGeometryKey),
 				projection: getString(data, this.geometryProjectionKey),
-				averagingIntervalSeconds: getNumber(data, this.averagingIntervalKey),
-				loggingIntervalSeconds: getNumber(data, this.loggingIntervalKey),
+				averagingIntervalSeconds: this.getNumber(
+					data,
+					this.averagingIntervalKey,
+				),
+				loggingIntervalSeconds: this.getNumber(data, this.loggingIntervalKey),
 				status: getString(data, this.sensorStatusKey) ?? "",
 				owner: getString(data, this.ownerKey) ?? "",
 				label: getString(data, this.locationLabelKey) ?? "",
@@ -578,10 +591,10 @@ export abstract class Client<
 				systemKey: system.key,
 				metric,
 				averagingIntervalSeconds:
-					getNumber(data, this.averagingIntervalKey) ??
+					this.getNumber(data, this.averagingIntervalKey) ??
 					location.averagingIntervalSeconds,
 				loggingIntervalSeconds:
-					getNumber(data, this.loggingIntervalKey) ??
+					this.getNumber(data, this.loggingIntervalKey) ??
 					location.loggingIntervalSeconds,
 				versionDate,
 				instance,

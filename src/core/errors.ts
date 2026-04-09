@@ -48,7 +48,7 @@ export class InvalidPrecisionError extends LocationError {
 	}
 }
 
-class MeasurementError extends TransformError {
+export class MeasurementError extends TransformError {
 	constructor(message: string, value: unknown) {
 		super(message, value);
 		this.type = MEASUREMENT_ERROR;

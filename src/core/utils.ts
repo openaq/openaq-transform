@@ -1,6 +1,6 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
-import type { ParseFunction } from "../types/client";
+import type { DecimalDigitGroup, ParseFunction } from "../types/client";
 import type { SourceRecord } from "../types/data";
 import { isPathExpression, type PathExpression } from "../types/metric";
 
@@ -20,7 +20,6 @@ export const stripNulls = <T extends object>(
 export const getValueFromKey = (
 	data: SourceRecord,
 	key: ParseFunction | string | PathExpression,
-	asNumber: boolean = false,
 ) => {
 	let value = null;
 	if (isPathExpression(key)) {
@@ -47,11 +46,6 @@ export const getValueFromKey = (
 	} else if (typeof key === "string") {
 		log(`getting value from key using '${key}'`);
 		value = data ? data[key] : key;
-	}
-	// the csv method reads everything in as strings
-	// null values should remain null and not be converted to 0
-	if (value && asNumber && typeof value !== "number") {
-		value = Number(value);
 	}
 	return value;
 };
@@ -113,10 +107,14 @@ export const getString = (
 export const getNumber = (
 	data: SourceRecord,
 	key: ParseFunction | string | PathExpression,
+	numberFormat: DecimalDigitGroup,
 ): number | undefined => {
-	const value = getValueFromKey(data, key, true) as number | null | string;
+	let value = getValueFromKey(data, key) as number | null | string;
 	if (value == null || value === "") return undefined;
-	return Number.isNaN(value as number) ? undefined : (value as number);
+	if (typeof value === "string") {
+		value = normalizeNumericString(value, numberFormat);
+	}
+	return Number.isNaN(value as number) ? undefined : (Number(value) as number);
 };
 
 export const getBoolean = (
@@ -131,3 +129,84 @@ export const getBoolean = (
 	}
 	return Boolean(value);
 };
+
+/**
+ * Maps human-readable separator names to their corresponding Unicode
+ * characters. Used to resolve decimal and digit-group separator keys in
+ * {@link DecimalDigitGroup} format objects.
+ *
+ * @example
+ * CHAR_MAP["arabic"]     // "٫"
+ * CHAR_MAP["interpunct"] // "·"
+ * CHAR_MAP["space"]      // " "
+ */
+export const CHAR_MAP: Record<string, string> = {
+	point: ".",
+	comma: ",",
+	arabic: "\u066B", // arabic comma ٫
+	apostrophe: "'",
+	interpunct: "\u00B7", // interpunct/middle dot ·
+	dot: ".",
+	space: " ",
+};
+
+/**
+ * Matches whitespace variants used as numeric digit-group separators, including
+ * standard whitespace, non-breaking space (U+00A0), and narrow no-break space
+ * (U+202F).
+ */
+const SPACE_RE = /[\s\u00A0\u202f]/g;
+
+/**
+ * Normalizes a locale-formatted numeric string into a parseable number string.
+ *
+ * Strips digit-group separators and replaces the decimal separator with `.`,
+ * based on the provided {@link DecimalDigitGroup} format descriptor.
+ *
+ * @param value - The raw input string to clean (e.g. `"1.234,56"` or `"1 234.56"`).
+ * @param format - Describes which characters are used as the decimal and
+ * 	digit-group separators.
+ * @returns A normalized numeric string with group separators removed and decimal as `.`,
+ *          or an empty string if `value` is blank.
+ *
+ * @example
+ * // Comma as decimal, period as thousands separator
+ * normalizeNumericString("1.234,56", { decimal: "comma", digitGroup: "point" });
+ * // => "1234.56"
+ *
+ * @example
+ * // Space as thousands separator, comma as decimal
+ * normalizeNumericString("1 234,56", { decimal: "comma", digitGroup: "space" });
+ * // => "1234.56"
+ *
+ * @example
+ * // Empty input passthrough
+ * normalizeNumericString("   ", { decimal: "point", digitGroup: "comma" });
+ * // => ""
+ */
+export function normalizeNumericString(
+	value: string,
+	format: DecimalDigitGroup,
+): string {
+	let v = value.trim();
+	if (v === "") {
+		return "";
+	}
+
+	const { decimal, digitGroup } = format;
+	if (digitGroup) {
+		if (digitGroup === "space") {
+			v = v.replace(SPACE_RE, "");
+		} else {
+			const groupChar = CHAR_MAP[digitGroup];
+			v = v.split(groupChar).join("");
+		}
+	}
+
+	const decimalChar = CHAR_MAP[decimal];
+	if (decimalChar !== ".") {
+		v = v.split(decimalChar).join(".");
+	}
+
+	return v;
+}

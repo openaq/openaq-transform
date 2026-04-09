@@ -519,6 +519,7 @@ describe("Client with measurement errors", () => {
 			},
 		},
 		locations: expectedOutput.locations,
+		errors: {},
 		measurements: [
 			...expectedOutput.measurements,
 			{
@@ -541,7 +542,7 @@ describe("Client with measurement errors", () => {
 			{
 				key: "testing-ts1-pm25:mass",
 				timestamp: "2024-01-01T05:00:00-08:00",
-				value: 65, // number as string
+				value: 65,
 			},
 		],
 	};
@@ -578,7 +579,6 @@ describe("Client with measurement errors", () => {
 
 	test("outputs correct format", async () => {
 		const cln = new JsonClient();
-
 		const data = await cln.load();
 		// currently we are adding
 		//console.dir(data.measurements, { depth: null })
@@ -596,3 +596,131 @@ describe("Client with measurement errors", () => {
 
 // describe.todo('Provider with Locations that have different averaging times');
 // describe.todo('Provider with both fixed and mobile locations');
+
+
+describe("Client with digit group and decimal delimiter setting", () => {
+	const rawdata = {
+		locations: [
+			{
+				station: "ts1",
+				site_name: "test site #1",
+				latitude: 45.56665,
+				longitude: -123.12121,
+				averaging: 3600,
+			},
+		],
+		measurements: [
+			{
+				station: "ts1",
+				datetime: "2024-01-01T00:00:00-08:00",
+				parameter: "particulate_matter_25",
+				value: "65,9",
+			},
+			{
+				station: "ts1",
+				datetime: "2024-01-02T01:00:00-08:00",
+				parameter: "particulate_matter_25",
+				value: "45", 
+			},
+			{
+				station: "ts1",
+				datetime: "2024-01-02T01:00:00-08:00",
+				parameter: "tempf",
+				value: "45", 
+			},
+			{
+				station: "ts1",
+				datetime: "2024-01-01T04:00:00-08:00",
+				parameter: "tempf",
+				value: "6,54"
+			}
+		],
+	};
+
+	const expected = {
+		errors: {},
+		meta: {
+			schema: "v0.1",
+			sourceName: "testing",
+			ingestMatchingMethod: "ingest-id",
+			startedOn: "2025-06-01T01:00:00-04:00",
+			finishedOn: "2025-06-01T01:00:00-04:00",
+			exportedOn: "2025-06-01T01:00:00-04:00",
+			fetchSummary: {
+				errors: {},
+				sourceName: "testing",
+				locations: 1,
+				bounds: [-123.12121, 45.56665, -123.12121, 45.56665],
+				systems: 1,
+				sensors: 2,
+				flags: 0,
+				measurements: 4,
+				datetimeFrom: "2024-01-01T00:00:00-08:00",
+				datetimeTo: "2024-01-02T01:00:00-08:00",
+			},
+		},
+		locations: expectedOutput.locations,
+		measurements: [
+			{
+				key: "testing-ts1-pm25:mass",
+				timestamp: "2024-01-01T00:00:00-08:00",
+				value: 65.9,
+			},
+			{
+				"key": "testing-ts1-pm25:mass",
+				"timestamp": "2024-01-02T01:00:00-08:00",
+				"value": 45,
+     		},
+			{
+				key: "testing-ts1-temperature",
+				timestamp: "2024-01-02T01:00:00-08:00",
+				value: 7.2,
+			},
+			{
+				key: "testing-ts1-temperature",
+				timestamp: "2024-01-01T04:00:00-08:00",
+				value: -14.1,
+			},
+
+		],
+	};
+
+	class JsonClient extends Client {
+		resource = new Resource({ url: "https://blah.org/wideerrors" });
+		provider = "testing";
+		strict = false;
+		longFormat = true;
+		xGeometryKey = "longitude";
+		averagingIntervalKey = "averaging";
+		sensorStatusKey = () => "asdf";
+		yGeometryKey = "latitude";
+		locationIdKey = "station";
+		locationLabelKey = "site_name";
+		geometryProjectionKey = () => "WGS84";
+		ownerKey = () => "test_owner";
+		isMobileKey = () => false;
+		numberFormat = {decimal: "comma", digitGroup: "dot"} as const;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+
+		async loadResources() {
+			return rawdata;
+		}
+	}
+
+	test("parameter check", () => {
+		const cln = new JsonClient();
+		const keys = cln.parameters.map((o) => o.key);
+		expect(keys).toStrictEqual(["particulate_matter_25", "tempf"]);
+	});
+
+	test("outputs correct format", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+		expect(data.measurements.length).toBe(4);
+		expect(data).toStrictEqual(expected);
+	});
+
+});

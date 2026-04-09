@@ -1,8 +1,18 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
-import type { DataContext, ReadAs } from "../types/readers";
-import type { Body } from "../types/resource";
+import type {
+	DataContext,
+	ReadAs,
+	ReaderOptions,
+	UrlReaderOptions,
+} from "../types/readers";
+import {
+	type Auth,
+	type AuthValueFunction,
+	type Body,
+	isAuthValueFunction,
+} from "../types/resource";
 
 type Parameters = Record<string, string | number | boolean>;
 
@@ -48,6 +58,8 @@ type ResourceConfig =
 			body?: Body;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
+			auth?: Auth;
+			options?: ReaderOptions;
 			strict?: boolean;
 	  }
 	| {
@@ -57,6 +69,8 @@ type ResourceConfig =
 			body?: never;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
+			auth?: Auth;
+			options?: ReaderOptions;
 			strict?: boolean;
 	  };
 
@@ -92,6 +106,8 @@ export class Resource {
 	#output?: ResourceOutput;
 	#readAs?: ReadAs;
 	#strict: boolean;
+	#auth?: Auth;
+	#options?: UrlReaderOptions;
 
 	constructor(config: ResourceConfig) {
 		this.validateConfig(config);
@@ -103,6 +119,8 @@ export class Resource {
 		this.#output = config.output;
 		this.#readAs = config.readAs;
 		this.#strict = config.strict ?? false;
+		this.#auth = config.auth;
+		this.#options = config.options;
 	}
 
 	private validateConfig(config: unknown): asserts config is ResourceConfig {
@@ -189,6 +207,76 @@ export class Resource {
 	 */
 	get strict(): boolean {
 		return this.#strict;
+	}
+
+	get auth(): Auth | undefined {
+		return this.#auth;
+	}
+
+	get authHeaders(): Record<string, string> {
+		const { auth } = this;
+		if (!auth) return {};
+
+		const resolve = (v: string | AuthValueFunction) =>
+			isAuthValueFunction(v) ? v() : v;
+
+		switch (auth.type) {
+			case "APIKey": {
+				if (auth.position === "header") {
+					return { [resolve(auth.key)]: resolve(auth.value) };
+				}
+				if (auth.position === "cookie") {
+					return { Cookie: resolve(auth.value) };
+				}
+				if (auth.position === "query") {
+					return {};
+				}
+				return {};
+			}
+			case "Bearer":
+				if (!auth.token) return {};
+				return { Authorization: `Bearer ${auth.token}` };
+
+			case "Basic": {
+				const username = resolve(auth.username);
+				const password = resolve(auth.password);
+				const encoded = btoa(`${username}:${password}`);
+				return { Authorization: `Basic ${encoded}` };
+			}
+
+			default:
+				return {};
+		}
+	}
+
+	get headers(): Headers {
+		const merged = new Headers();
+
+		if (this.#options?.headers) {
+			for (const [key, value] of Object.entries(this.#options.headers)) {
+				merged.set(key, typeof value === "function" ? value() : value);
+			}
+		}
+
+		for (const [key, value] of Object.entries(this.authHeaders)) {
+			merged.set(key, value);
+		}
+
+		return merged;
+	}
+
+	get options(): ReaderOptions {
+		return {
+			...this.#options,
+			headers: this.headers,
+		};
+	}
+
+	set auth(auth: Auth) {
+		this.#auth = {
+			...this.#auth,
+			...auth,
+		};
 	}
 
 	private static replaceTemplateVariables(
@@ -301,6 +389,17 @@ export class Resource {
 			urls.push({
 				url: this.#url,
 				...(this.#body && { body: this.#body }),
+			});
+		}
+		const { auth } = this;
+		if (auth?.type === "APIKey" && auth.position === "query") {
+			return urls.map((resourceUrl) => {
+				const url = new URL(resourceUrl.url);
+				const key = typeof auth.key === "function" ? auth.key() : auth.key;
+				const value =
+					typeof auth.value === "function" ? auth.value() : auth.value;
+				url.searchParams.set(key, value);
+				return { ...resourceUrl, url: url.href };
 			});
 		}
 

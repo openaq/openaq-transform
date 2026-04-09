@@ -102,6 +102,12 @@ const handlers = [
 		}
 		return HttpResponse.json([]);
 	}),
+  http.get("https://api.test.com/auth-error", async () => {
+    return new HttpResponse(null, {
+      status: 401,
+      statusText: "Unauthorized",
+    });
+  }),
 ];
 
 const server = setupServer(...handlers);
@@ -347,6 +353,42 @@ describe("apiReader", () => {
 		// (since Promise.allSettled waits for all promises)
 		expect(errors.length).toBeGreaterThanOrEqual(1);
 	});
+
+  test("stops fetching subsequent batches when all URLs in first batch fail with strict errors", async () => {
+    const resource = new Resource({
+      url: "https://api.test.com/auth-error",
+      parameters: [
+        { page: 1 },
+        { page: 2 },
+        { page: 3 }, // batch 1 (concurrency=2): pages 1,2
+        { page: 4 }, // batch 2: pages 3,4 — should never run
+      ],
+      output: "array",
+      strict: false, // resource itself is not strict
+    });
+
+    const errors: Error[] = [];
+    const errorHandler = (err: Error | string, strict?: boolean) => {
+      const error = err instanceof Error ? err : new Error(err);
+      errors.push(error);
+      if (strict) {
+        throw error;
+      }
+    };
+
+    await expect(async () => {
+      await apiReader(
+        { resource, errorHandler, concurrency: 2 },
+        async (content: any) => content,
+        {},
+      );
+    }).rejects.toThrow();
+
+    // Only first batch should have been attempted (2 URLs, not 4)
+    expect(errors).toHaveLength(2);
+    expect(errors.every((e) => e.name === "FetchError")).toBe(true);
+  });
+
 
 	test("distinguishes between fetch errors and parse errors", async () => {
 		const resource = new Resource({

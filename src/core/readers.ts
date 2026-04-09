@@ -141,7 +141,6 @@ export async function apiReader(
  * @param resource - Resource configuration with URLs, output strategy, and error handling mode
  * @param parser - Function to transform raw content (text/blob/json) into structured data
  * @param data - Data context passed to both resource URL generation and parser
- * @param options - HTTP fetch options (method, headers, etc.)
  * @param concurrency - Number of URLs to fetch in parallel (default: 3)
  * @returns Response data based on resource.output strategy
  *
@@ -162,16 +161,13 @@ export async function apiReader(
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
  */ export async function apiReader(
-	{
-		resource,
-		options = { method: "GET" },
-		concurrency = 3,
-		errorHandler,
-	}: UrlReaderParameters,
+	{ resource, concurrency = 3, errorHandler }: UrlReaderParameters,
 	parser: Parser,
 	data: DataContext,
 ): Promise<unknown | unknown[] | Record<string, unknown>> {
 	resource.data = data;
+
+	const options = resource.options as UrlReaderOptions;
 
 	// overrides default if needed
 	const fetchOptions: UrlReaderOptions = {
@@ -181,7 +177,7 @@ export async function apiReader(
 
 	const urls = resource.urls;
 	const results: object[] = [];
-	let firstError: Error | null = null;
+	let batchError: Error | null = null;
 	log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
 
 	for (let i = 0; i < urls.length; i += concurrency) {
@@ -196,6 +192,7 @@ export async function apiReader(
 				try {
 					log(`fetching ${url}...`);
 					const res = await fetch(url, fetchOptions);
+					log(`fetching ${url} received HTTP ${res.status}`);
 
 					if (res.status !== 200) {
 						throw new FetchError(
@@ -204,7 +201,6 @@ export async function apiReader(
 							res.status,
 						);
 					}
-					log(`fetching ${url} received HTTP 200`);
 
 					// Determine readAs format: use resource.readAs if set, otherwise auto-detect
 					readAsFormat = resource.readAs;
@@ -226,6 +222,7 @@ export async function apiReader(
 						raw = { readAs: "json", content: await res.json() };
 					}
 				} catch (error) {
+					// convert the error in case the error does not come from us
 					const fetchError =
 						error instanceof FetchError
 							? error
@@ -235,16 +232,17 @@ export async function apiReader(
 								);
 
 					// Track first error for strict mode
-					if (resource.strict && !firstError) {
-						firstError = fetchError;
+					if ((resource.strict || fetchError.strict) && !batchError) {
+						batchError = fetchError;
 					}
 
-					// Handle error immediately
 					if (errorHandler) {
-						errorHandler(fetchError, resource.strict);
+						// this will rethrow if we are in strict mode
+						errorHandler(fetchError, resource.strict || fetchError.strict);
 					} else {
 						console.error(`Reader fetch error at ${url}:`, fetchError.message);
 					}
+
 					return; // Early return on fetch error
 				}
 
@@ -274,8 +272,8 @@ export async function apiReader(
 									error instanceof Error ? error : undefined,
 								);
 
-					if (resource.strict && !firstError) {
-						firstError = parseError;
+					if (resource.strict && !batchError) {
+						batchError = parseError;
 					}
 
 					if (errorHandler) {
@@ -307,8 +305,8 @@ export async function apiReader(
 		);
 
 		// If we're in strict mode and an error occurred, throw it now
-		if (firstError) {
-			throw firstError;
+		if (batchError) {
+			throw batchError;
 		}
 	}
 

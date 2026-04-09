@@ -1,8 +1,18 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
-import type { DataContext, ReadAs, ReaderOptions } from "../types/readers";
-import type { Auth, Body, HttpHeader } from "../types/resource";
+import type {
+	DataContext,
+	ReadAs,
+	ReaderOptions,
+	UrlReaderOptions,
+} from "../types/readers";
+import {
+	type Auth,
+	type AuthValueFunction,
+	type Body,
+	isAuthValueFunction,
+} from "../types/resource";
 
 type Parameters = Record<string, string | number | boolean>;
 
@@ -40,11 +50,6 @@ interface ResourceUrl {
  */
 type ResourceOutput = "array" | "object";
 
-interface Requires {
-	auth?: Auth;
-	headers?: HttpHeader;
-}
-
 type ResourceConfig =
 	| {
 			url: string;
@@ -53,7 +58,7 @@ type ResourceConfig =
 			body?: Body;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
-			requires?: Requires;
+			auth?: Auth;
 			options?: ReaderOptions;
 			strict?: boolean;
 	  }
@@ -64,7 +69,7 @@ type ResourceConfig =
 			body?: never;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
-			requires?: Requires;
+			auth?: Auth;
 			options?: ReaderOptions;
 			strict?: boolean;
 	  };
@@ -101,8 +106,8 @@ export class Resource {
 	#output?: ResourceOutput;
 	#readAs?: ReadAs;
 	#strict: boolean;
-	#requires?: Requires;
-	#options?: ReaderOptions;
+	#auth?: Auth;
+	#options?: UrlReaderOptions;
 
 	constructor(config: ResourceConfig) {
 		this.validateConfig(config);
@@ -114,7 +119,7 @@ export class Resource {
 		this.#output = config.output;
 		this.#readAs = config.readAs;
 		this.#strict = config.strict ?? false;
-		this.#requires = config.requires;
+		this.#auth = config.auth;
 		this.#options = config.options;
 	}
 
@@ -205,20 +210,26 @@ export class Resource {
 	}
 
 	get auth(): Auth | undefined {
-		return this.#requires?.auth;
+		return this.#auth;
 	}
 
-	get authHeaders(): HttpHeader {
+	get authHeaders(): Record<string, string> {
 		const { auth } = this;
 		if (!auth) return {};
+
+		const resolve = (v: string | AuthValueFunction) =>
+			isAuthValueFunction(v) ? v() : v;
 
 		switch (auth.type) {
 			case "APIKey": {
 				if (auth.position === "header") {
-					return { [auth.key]: auth.value };
+					return { [resolve(auth.key)]: resolve(auth.value) };
 				}
 				if (auth.position === "cookie") {
-					return { Cookie: auth.value };
+					return { Cookie: resolve(auth.value) };
+				}
+				if (auth.position === "query") {
+					return {};
 				}
 				return {};
 			}
@@ -227,7 +238,9 @@ export class Resource {
 				return { Authorization: `Bearer ${auth.token}` };
 
 			case "Basic": {
-				const encoded = btoa(`${auth.username}:${auth.password}`);
+				const username = resolve(auth.username);
+				const password = resolve(auth.password);
+				const encoded = btoa(`${username}:${password}`);
 				return { Authorization: `Basic ${encoded}` };
 			}
 
@@ -236,11 +249,20 @@ export class Resource {
 		}
 	}
 
-	get headers(): HttpHeader {
-		return {
-			...this.#requires?.headers,
-			...this.authHeaders,
-		};
+	get headers(): Headers {
+		const merged = new Headers();
+
+		if (this.#options?.headers) {
+			for (const [key, value] of Object.entries(this.#options.headers)) {
+				merged.set(key, typeof value === "function" ? value() : value);
+			}
+		}
+
+		for (const [key, value] of Object.entries(this.authHeaders)) {
+			merged.set(key, value);
+		}
+
+		return merged;
 	}
 
 	get options(): ReaderOptions {
@@ -251,9 +273,9 @@ export class Resource {
 	}
 
 	set auth(auth: Auth) {
-		this.#requires = {
-			...this.#requires,
-			auth,
+		this.#auth = {
+			...this.#auth,
+			...auth,
 		};
 	}
 
@@ -373,7 +395,9 @@ export class Resource {
 		if (auth?.type === "APIKey" && auth.position === "query") {
 			return urls.map((resourceUrl) => {
 				const url = new URL(resourceUrl.url);
-				const { key, value } = auth;
+				const key = typeof auth.key === "function" ? auth.key() : auth.key;
+				const value =
+					typeof auth.value === "function" ? auth.value() : auth.value;
 				url.searchParams.set(key, value);
 				return { ...resourceUrl, url: url.href };
 			});

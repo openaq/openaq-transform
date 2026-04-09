@@ -16,7 +16,13 @@ export type ResourceKeys = (typeof RESOURCE_KEYS)[number];
  */
 export type Body = Exclude<BodyInit, Blob>;
 
-export type HttpHeader = Record<string, string>;
+export type AuthValueFunction = () => string;
+
+export function isAuthValueFunction(
+	value: string | AuthValueFunction,
+): value is AuthValueFunction {
+	return typeof value === "function";
+}
 
 /**
  * HTTP Basic authentication credentials.
@@ -39,13 +45,13 @@ type BasicAuth = {
 	 * The username value sent to the server.
 	 * Encoded as part of the `Authorization: Basic <base64(username:password)>` header.
 	 */
-	username: string;
+	username: string | AuthValueFunction;
 
 	/**
 	 * The password value associated with `username`.
 	 * Encoded as part of the `Authorization: Basic <base64(username:password)>` header.
 	 */
-	password: string;
+	password: string | AuthValueFunction;
 };
 
 /**
@@ -97,10 +103,10 @@ type ApiKeyAuth = {
 			 * @example 'X-API-Key'   // header
 			 * @example 'api_key'     // query parameter
 			 */
-			key: string;
+			key: string | AuthValueFunction;
 
 			/** The API key value. */
-			value: string;
+			value: string | AuthValueFunction;
 	  }
 	| {
 			/**
@@ -111,7 +117,7 @@ type ApiKeyAuth = {
 			position: "cookie";
 
 			/** The API key value to set as a cookie. */
-			value: string;
+			value: string | AuthValueFunction;
 	  }
 );
 
@@ -150,14 +156,14 @@ export type BearerAuth = {
 	 * Useful for providers that require `Content-Type` or custom headers
 	 * alongside the token request.
 	 */
-	headers?: HttpHeader;
+	headers?: Headers;
 
 	/**
 	 * The active bearer token, included as `Authorization: Bearer <token>`
 	 * on outgoing requests. Absent until the token has been obtained
 	 * from `tokenUrl`.
 	 */
-	token?: string;
+	token?: string | AuthValueFunction;
 
 	/**
 	 * Unix timestamp (seconds) at which `token` expires.

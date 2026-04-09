@@ -182,13 +182,11 @@ test("resource can explicitly set strict to false", () => {
 test("resource with API Key query parameter", () => {
 	const resource = new Resource({
 		url: "https://example.com",
-		requires: {
-			auth: {
-				type: 'APIKey',
-				key: 'api_key',
-				value: 'secretapikey1234',
-				position: 'query'
-			}
+		auth: {
+			type: 'APIKey',
+			key: 'api_key',
+			value: 'secretapikey1234',
+			position: 'query'
 		}
 	});
 	const urls = resource.urls;
@@ -200,34 +198,50 @@ test("resource with API Key query parameter", () => {
 test("resource with API Key header", () => {
 	const resource = new Resource({
 		url: "https://example.com",
-		requires: {
-			auth: {
-				type: 'APIKey',
-				key: 'X-API-Key',
-				value: 'secretapikey1234',
-				position: 'header'
-			}
+		auth: {
+			type: 'APIKey',
+			key: 'X-API-Key',
+			value: 'secretapikey1234',
+			position: 'header'
 		}
 	});
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([{ url: "https://example.com" }]);
 	const headers = resource.headers;
-	expect(headers).toStrictEqual(
+	expect(headers).toStrictEqual(new Headers(
 		{
 			'X-API-Key': 'secretapikey1234'
-		}
+		})
 	)
 });
 
 test("resource with Basic auth header", () => {
 	const resource = new Resource({
 		url: "https://example.com",
-		requires: {
-			auth: {
+		auth: {
 				type: "Basic",
 				username: 'user',
 				password: 'password'
 			}
+	});
+	const urls = resource.urls;
+	expect(urls).toStrictEqual([
+		{ url: "https://example.com" }
+	]);
+	const headers = resource.headers;
+	expect(headers).toStrictEqual(new Headers({
+		"Authorization": "Basic dXNlcjpwYXNzd29yZA=="
+	}))
+});
+
+
+test("resource with Basic auth header using function values", () => {
+	const resource = new Resource({
+		url: "https://example.com",
+		auth: {
+			type: "Basic",
+			username: () => 'user',
+			password: () => 'password'
 		}
 	});
 	const urls = resource.urls;
@@ -235,45 +249,43 @@ test("resource with Basic auth header", () => {
 		{ url: "https://example.com" }
 	]);
 	const headers = resource.headers;
-	expect(headers).toStrictEqual({
+	expect(headers).toStrictEqual(new Headers({
 		"Authorization": "Basic dXNlcjpwYXNzd29yZA=="
-	})
+	}));
 });
 
 test("resource with Bearer auth header", () => {
 	const resource = new Resource({
 		url: "https://example.com",
-		requires: {
-			auth: {
+		auth: {
 				type: "Bearer",
 				token: 'foobarbaz'
 			}
-		}
 	});
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
 		{ url: "https://example.com" }
 	]);
 	const headers = resource.headers;
-	expect(headers).toStrictEqual({
+	expect(headers).toStrictEqual(new Headers({
 		"Authorization": "Bearer foobarbaz"
-	})
+	}))
 });
 
 
 test("resource with Bearer auth returns no header when token is absent", () => {
   const resource = new Resource({
     url: "https://example.com",
-    requires: { auth: { type: "Bearer", tokenUrl: "https://example.com/token" } }
+    auth: { type: "Bearer", tokenUrl: "https://example.com/token" }
   });
-  expect(resource.headers).toStrictEqual({});
+  expect(resource.headers).toStrictEqual(new Headers({}));
 });
 
 test("Bearer auth header overwrite over Authorization header from options", () => {
   const resource = new Resource({
     url: "https://example.com",
     options: { headers: { Authorization: "Bearer oldtoken" } },
-    requires: { auth: { type: "Bearer", token: "newtoken" } }
+    auth: { type: "Bearer", token: "newtoken" }
   });
-  expect(resource.headers).toStrictEqual({ Authorization: "Bearer newtoken" });
+  expect(resource.headers).toStrictEqual(new Headers({ Authorization: "Bearer newtoken" }));
 });

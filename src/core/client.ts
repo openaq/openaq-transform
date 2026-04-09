@@ -274,10 +274,10 @@ export abstract class Client<
 
 			const res = await fetch(url, {
 				method: "POST",
-				headers: {
+				headers: new Headers({
 					"Content-Type": "application/json",
-					...auth.headers,
-				},
+					...Object.fromEntries(auth.headers ?? []),
+				}),
 				...(body && { body }),
 			});
 
@@ -410,10 +410,8 @@ export abstract class Client<
 					? this.getParserMethod(this.parser, key)
 					: this.getParserMethod(this.parser);
 
-				const options = resource.options;
-
 				const d = await reader(
-					{ resource, options, errorHandler: this.errorHandler.bind(this) },
+					{ resource, errorHandler: this.errorHandler.bind(this) },
 					parser,
 					data,
 				);

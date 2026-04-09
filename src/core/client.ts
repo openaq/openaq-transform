@@ -167,6 +167,7 @@ export abstract class Client<
 		}
 		if (this.#params?.flagsKey) {
 			this.flagsKey = this.#params.flagsKey;
+		}
 		if (this.#params?.numberFormat) {
 			this.numberFormat = this.#params.numberFormat;
 		}

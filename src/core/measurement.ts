@@ -110,7 +110,7 @@ export class Measurement {
 		this.value = null;
 		this.sensor = data.sensor;
 		this.timestamp = data.timestamp;
-		if (data.flags && data.flags?.length) {
+		if (data.flags?.length) {
 			this.flags = [...data.flags];
 		}
 		// the csv parser does not convert values to numbers

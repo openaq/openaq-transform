@@ -24,7 +24,10 @@ export class Measurements {
 	bounds?: BBox | null;
 	parameters: Map<string | PathExpression | ParameterKeyFunction, Metric>;
 
-	constructor(parameters: ClientParameters = PARAMETER_DEFAULTS) {
+	constructor(
+		parameters: ClientParameters = PARAMETER_DEFAULTS,
+		numberFormat: DecimalDigitGroup = { decimal: "point" },
+	) {
 		this.#measurements = new Map<string, Measurement>();
 		this.headers = [
 			"sensor_id",
@@ -41,7 +44,7 @@ export class Measurements {
 		>();
 		for (const p of parameters) {
 			const { parameter, unit, key } = p;
-			this.parameters.set(key, new Metric(parameter, unit));
+			this.parameters.set(key, new Metric(parameter, unit, numberFormat));
 		}
 	}
 
@@ -100,7 +103,7 @@ export class Measurement {
 	coordinates?: Coordinates;
 	flags?: Array<string>;
 
-	constructor(data: MeasurementData, format: DecimalDigitGroup) {
+	constructor(data: MeasurementData) {
 		if (!data.sensor) throw new MissingAttributeError("sensor", data);
 		if (!data.timestamp) throw new MissingAttributeError("timestamp", data);
 
@@ -115,7 +118,7 @@ export class Measurement {
 		// and then add a flag
 
 		try {
-			this.value = this.sensor?.metric.process(data.value, format);
+			this.value = this.sensor?.metric.process(data.value);
 		} catch (e: unknown) {
 			if (e instanceof TransformError) {
 				if (e?.flag) {

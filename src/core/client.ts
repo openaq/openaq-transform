@@ -231,7 +231,7 @@ export abstract class Client<
 
 	get measurements(): Measurements {
 		if (!this.#measurements) {
-			this.#measurements = new Measurements(this.parameters);
+			this.#measurements = new Measurements(this.parameters, this.numberFormat);
 		}
 		return this.#measurements;
 	}
@@ -671,14 +671,11 @@ export abstract class Client<
 							return;
 						}
 						this.measurements.add(
-							new Measurement(
-								{
-									sensor: sensor,
-									timestamp: datetime,
-									value: value,
-								},
-								this.numberFormat,
-							),
+							new Measurement({
+								sensor: sensor,
+								timestamp: datetime,
+								value: value,
+							}),
 						);
 					}
 				});

@@ -189,8 +189,13 @@ export class Metric {
 	numeric: boolean = true;
 	precision?: number;
 	converter: UnitConverter;
+	#numberFormat: DecimalDigitGroup;
 
-	constructor(parameter: string, unit: string) {
+	constructor(
+		parameter: string,
+		unit: string,
+		numberFormat: DecimalDigitGroup = { decimal: "point" },
+	) {
 		// check for parameter(s)
 		// should either be one or two (parts & mass
 		const parameterEntries = Object.entries(PARAMETERS).filter(
@@ -216,6 +221,7 @@ export class Metric {
 		this.parameter = resolvedParameter;
 		this.unit = unit;
 		this.numeric = this.parameter.numeric;
+		this.#numberFormat = numberFormat;
 
 		const converter = this.parameter.converters[this.unit];
 		if (!converter) {
@@ -228,10 +234,7 @@ export class Metric {
 		}
 	}
 
-	process(
-		v: unknown,
-		format: DecimalDigitGroup = { decimal: "point" },
-	): number | null {
+	process(v: unknown): number | null {
 		const range = this.parameter?.range;
 		let nv = null;
 
@@ -257,7 +260,7 @@ export class Metric {
 		}
 
 		if (typeof v === "string") {
-			nv = normalizeNumericString(v, format);
+			nv = normalizeNumericString(v, this.#numberFormat);
 			if (Number.isNaN(Number(nv))) {
 				throw new ProviderValueError(v);
 			}

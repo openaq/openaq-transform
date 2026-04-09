@@ -250,7 +250,6 @@ export class Metric {
 
 		if (typeof v === 'string') {
 			nv = normalizeNumericString(v, format);
-			nv = normalizeNumericString(v, format);
 			if (isNaN(Number(nv))) {
 					throw new ProviderValueError(v); 
 			}

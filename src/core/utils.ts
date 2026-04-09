@@ -130,6 +130,20 @@ export const getBoolean = (
 	return Boolean(value);
 };
 
+export const getArray = (
+	data: SourceRecord,
+	key: ParseFunction | string | PathExpression,
+): (string | number)[] | undefined => {
+	const value = getValueFromKey(data, key) as
+		| number
+		| null
+		| string
+		| number[]
+		| string[];
+	if (value == null || value === "") return undefined;
+	if (!Array.isArray(value)) return [value];
+	return value;
+};
 /**
  * Maps human-readable separator names to their corresponding Unicode
  * characters. Used to resolve decimal and digit-group separator keys in

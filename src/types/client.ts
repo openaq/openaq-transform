@@ -133,6 +133,7 @@ export interface ClientConfiguration {
 	locationLabelKey?: string | ParseFunction;
 	parameterNameKey?: string | ParseFunction;
 	parameterValueKey?: string | ParseFunction;
+	flagsKey?: string | ParseFunction;
 	numberFormat?: DecimalDigitGroup;
 	xGeometryKey?: string | ParseFunction;
 	yGeometryKey?: string | ParseFunction;

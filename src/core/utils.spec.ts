@@ -9,6 +9,7 @@ import {
   getBoolean,
   getNumber,
   getString,
+  getArray,
   getValueFromKey,
 } from './utils.ts';
 import { DecimalDigitGroup } from '../types/client.ts';
@@ -235,6 +236,30 @@ describe('getBoolean', () => {
   });
 });
 
+describe('getArray tests', () => {
+  test('returns array for string array', () => {
+    expect(getArray(record(['some-value']), key)).toStrictEqual(['some-value']);
+  });
+  test('returns array for string', () => {
+    expect(getArray(record('some-value'), key)).toStrictEqual(['some-value']);
+  });
+  test('returns array for numeric array', () => {
+    expect(getArray(record([0]), key)).toStrictEqual([0]);
+  });
+  test('returns array for number', () => {
+    expect(getArray(record(0), key)).toStrictEqual([0]);
+  });
+  test('returns undefined for undefined', () => {
+    expect(getArray(record(undefined), key)).toBeUndefined();
+  });
+  test('returns undefined for null', () => {
+    expect(getArray(record(null), key)).toBeUndefined();
+  });
+  test('returns empty array for array', () => {
+    expect(getArray(record([]), key)).toStrictEqual([]);
+  });
+
+});
 
 // Test cases based on "common" cases as described in the table here:
 // https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems

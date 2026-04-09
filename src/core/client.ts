@@ -39,6 +39,7 @@ import { Sensor, Sensors } from "./sensor";
 import {
 	cleanKey,
 	formatValueForLog,
+	getArray,
 	getBoolean,
 	getNumber,
 	getString,
@@ -71,6 +72,7 @@ export abstract class Client<
 	// if longFormat = false this value is ignored
 	parameterNameKey: string | PathExpression | ParseFunction = "parameter";
 	parameterValueKey: string | PathExpression | ParseFunction = "value";
+	flagsKey: string | PathExpression | ParseFunction = "flags";
 	numberFormat: DecimalDigitGroup = { decimal: "point" };
 	yGeometryKey: string | PathExpression | ParseFunction = "y";
 	xGeometryKey: string | PathExpression | ParseFunction = "x";
@@ -162,6 +164,9 @@ export abstract class Client<
 		}
 		if (this.#params?.parameterValueKey) {
 			this.parameterValueKey = this.#params.parameterValueKey;
+		}
+		if (this.#params?.flagsKey) {
+			this.flagsKey = this.#params.flagsKey;
 		}
 		if (this.#params?.numberFormat) {
 			this.numberFormat = this.#params.numberFormat;
@@ -729,6 +734,10 @@ export abstract class Client<
 					const valueName = this.longFormat ? this.parameterValueKey : p;
 
 					const value = getValueFromKey(measurementRow, valueName);
+					// flags must be an array so we need to check that somewhere
+					const flags = getArray(measurementRow, this.flagsKey)?.map(
+						(f) => `${this.provider}::${f}`,
+					);
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
@@ -763,6 +772,7 @@ export abstract class Client<
 								sensor: sensor,
 								timestamp: datetime,
 								value: value,
+								flags: flags,
 							}),
 						);
 					}

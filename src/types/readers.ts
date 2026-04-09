@@ -26,8 +26,6 @@ export type ErrorHandler = (err: string | Error, strict?: boolean) => void;
  */
 export interface UrlReaderParameters {
 	resource: Resource;
-	/** HTTP request options for the fetch */
-	options?: UrlReaderOptions;
 	/** Maximum number of concurrent fetches to allows */
 	concurrency?: number;
 	/** Optional error handler for fetch and parse errors */
@@ -94,6 +92,11 @@ export interface UrlReaderOptions
 		Omit<RequestInit, "method"> {
 	/** HTTP method for the request. Only GET and POST are supported */
 	method?: "GET" | "POST";
+
+	/**
+	 * Number of URLs to fetch in parallel.
+	 */
+	concurrency?: number;
 }
 
 export interface FileReaderParameters {

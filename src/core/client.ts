@@ -21,21 +21,18 @@ import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
 import type { ClientParameters, PathExpression } from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
-import {
-	type IndexedReaderOptions,
-	isReader,
-	type Reader,
-	type ReaderMethods,
-	type ReaderOptions,
-} from "../types/readers";
-import type { ResourceKeys } from "../types/resource";
+import { isReader, type Reader, type ReaderMethods } from "../types/readers";
+import type { BearerAuth, ResourceKeys } from "../types/resource";
 import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
-import { MissingAttributeError, UnsupportedParameterError } from "./errors";
+import {
+	FetchError,
+	MissingAttributeError,
+	UnsupportedParameterError,
+} from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
 import { type Metric, PARAMETER_DEFAULTS } from "./metric";
-import { getReaderOptions } from "./readers";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
 import {
@@ -60,7 +57,6 @@ export abstract class Client<
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;
 	protected readonly parsers: P;
-	readerOptions: ReaderOptions | IndexedReaderOptions = {};
 	fetched: boolean = false;
 	// source: Source;
 	timezone?: string;
@@ -132,9 +128,6 @@ export abstract class Client<
 	setup() {
 		if (this.#params?.resource) {
 			this.resource = this.#params.resource;
-		}
-		if (this.#params?.readerOptions) {
-			this.readerOptions = this.#params.readerOptions;
 		}
 		if (this.#params?.provider) {
 			this.provider = this.#params.provider;
@@ -222,10 +215,130 @@ export abstract class Client<
 		this.log = new Map();
 	}
 
+	private async initAuth() {
+		if (!this.resource || isIndexed(this.resource)) {
+			return;
+		}
+		const resource = this.resource;
+
+		const { auth } = resource;
+		if (auth?.type !== "Bearer") {
+			return;
+		}
+		if (!auth.tokenUrl) {
+			return;
+		}
+
+		if (auth.token) {
+			await this.refreshAuth(resource);
+			return;
+		}
+
+		await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+	}
+
+	private async refreshAuth(resource: Resource) {
+		const { auth } = resource;
+		if (auth?.type !== "Bearer") {
+			return;
+		}
+		if (!auth.token) {
+			return;
+		}
+		if (!auth.expiresAt) {
+			return;
+		}
+
+		const isExpired = Math.floor(Date.now() / 1000) > auth.expiresAt - 30;
+		if (!isExpired) {
+			return;
+		}
+
+		if (auth.refreshToken) {
+			const refreshUrl = auth.refreshUrl ?? auth.tokenUrl;
+			if (!refreshUrl) {
+				return;
+			}
+			await this.fetchBearerToken(
+				resource,
+				refreshUrl,
+				auth,
+				auth.refreshToken,
+			);
+		} else if (auth.tokenUrl) {
+			await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+		}
+	}
+
+	private async fetchBearerToken(
+		resource: Resource,
+		url: string,
+		auth: BearerAuth,
+		refreshToken?: string,
+	) {
+		try {
+			const body = refreshToken
+				? JSON.stringify({
+						grant_type: "refresh_token",
+						refresh_token: refreshToken,
+					})
+				: undefined;
+
+			const res = await fetch(url, {
+				method: "POST",
+				headers: new Headers({
+					"Content-Type": "application/json",
+					...Object.fromEntries(auth.headers ?? []),
+				}),
+				...(body && { body }),
+			});
+
+			if (!res.ok) {
+				throw new FetchError(
+					`Failed to obtain Bearer token: ${res.status} ${res.statusText}`,
+					url,
+					res.status,
+				);
+			}
+
+			const keys = auth.tokenResponseKeys ?? {};
+			const tokenKey = keys.token ?? "access_token";
+			const expiresKey = keys.expiresIn ?? "expires_in";
+			const refreshKey = keys.refreshToken ?? "refresh_token";
+
+			const data = await res.json();
+			const token = data[tokenKey];
+
+			if (!token) {
+				throw new Error(
+					`Bearer token response did not contain expected field "${tokenKey}"`,
+				);
+			}
+
+			const expiresIn = data[expiresKey]; // duration in seconds from now
+			const newRefreshToken = data[refreshKey]; // provider may rotate the refresh token
+
+			resource.auth = {
+				...auth,
+				token,
+				// expiresIn is seconds-from-now, convert to absolute unix timestamp
+				...(expiresIn && {
+					expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+				}),
+				// use rotated refresh token if provider returned one, otherwise keep existing
+				...(newRefreshToken
+					? { refreshToken: newRefreshToken }
+					: refreshToken
+						? { refreshToken }
+						: {}),
+			};
+		} catch (err) {
+			this.errorHandler(err instanceof Error ? err : new Error(String(err)));
+		}
+	}
+
 	async preLoad() {
-		// this is an opportunity for the developer to do some customizing
-		// this is where you would update any properties based on secrets or other values
-		log("No post configuration provided");
+		await this.initAuth();
 	}
 
 	get measurements(): Measurements {
@@ -309,13 +422,8 @@ export abstract class Client<
 					? this.getParserMethod(this.parser, key)
 					: this.getParserMethod(this.parser);
 
-				const options = getReaderOptions(
-					this.readerOptions,
-					key as keyof IndexedReaderOptions,
-				);
-
 				const d = await reader(
-					{ resource, options, errorHandler: this.errorHandler.bind(this) },
+					{ resource, errorHandler: this.errorHandler.bind(this) },
 					parser,
 					data,
 				);

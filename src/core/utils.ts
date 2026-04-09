@@ -19,8 +19,7 @@ export const stripNulls = <T extends object>(
 
 export const getValueFromKey = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
-	asNumber: boolean = false,
+	key: ParseFunction | string | PathExpression
 ) => {
 	let value = null;
 	if (isPathExpression(key)) {
@@ -47,11 +46,6 @@ export const getValueFromKey = (
 	} else if (typeof key === "string") {
 		log(`getting value from key using '${key}'`);
 		value = data ? data[key] : key;
-	}
-	// the csv method reads everything in as strings
-	// null values should remain null and not be converted to 0
-	if (value && asNumber && typeof value !== "number") {
-		value = Number(value);
 	}
 	return value;
 };
@@ -113,10 +107,14 @@ export const getString = (
 export const getNumber = (
 	data: SourceRecord,
 	key: ParseFunction | string | PathExpression,
+	numberFormat: DecimalDigitGroup,
 ): number | undefined => {
-	const value = getValueFromKey(data, key, true) as number | null | string;
+	let value = getValueFromKey(data, key) as number | null | string;
 	if (value == null || value === "") return undefined;
-	return Number.isNaN(value as number) ? undefined : (value as number);
+	if (typeof value === "string") {
+		value = normalizeNumericString(value, numberFormat);
+	}
+	return Number.isNaN(value as number) ? undefined : Number(value) as number;
 };
 
 export const getBoolean = (
@@ -173,28 +171,26 @@ const SPACE_RE = /[\s\u00A0\u202f]/g;
  *
  * @example
  * // Comma as decimal, period as thousands separator
- * cleanNumber("1.234,56", { decimal: "comma", digitGroup: "point" });
+ * normalizeNumericString("1.234,56", { decimal: "comma", digitGroup: "point" });
  * // => "1234.56"
  *
  * @example
  * // Space as thousands separator, comma as decimal
- * cleanNumber("1 234,56", { decimal: "comma", digitGroup: "space" });
+ * normalizeNumericString("1 234,56", { decimal: "comma", digitGroup: "space" });
  * // => "1234.56"
  *
  * @example
  * // Empty input passthrough
- * cleanNumber("   ", { decimal: "point", digitGroup: "comma" });
+ * normalizeNumericString("   ", { decimal: "point", digitGroup: "comma" });
  * // => ""
  */
-export function cleanNumber(value: string, format: DecimalDigitGroup): string {
+export function normalizeNumericString(value: string, format: DecimalDigitGroup): string {
 	let v = value.trim();
-
 	if (v === "") {
 		return "";
 	}
 
 	const { decimal, digitGroup } = format;
-
 	if (digitGroup) {
 		if (digitGroup === "space") {
 			v = v.replace(SPACE_RE, "");

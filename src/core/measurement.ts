@@ -15,6 +15,7 @@ import type { Datetime } from "./datetime";
 import { MissingAttributeError, TransformError } from "./errors";
 import { Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Sensor } from "./sensor";
+import { DecimalDigitGroup } from "../types/client";
 
 export class Measurements {
 	headers: string[];
@@ -99,8 +100,10 @@ export class Measurement {
 	value: number | null;
 	coordinates?: Coordinates;
 	flags?: Array<string>;
+	#format: DecimalDigitGroup;
 
-	constructor(data: MeasurementData) {
+
+	constructor(data: MeasurementData, format: DecimalDigitGroup) {
 		if (!data.sensor) throw new MissingAttributeError("sensor", data);
 		if (!data.timestamp) throw new MissingAttributeError("timestamp", data);
 
@@ -113,9 +116,10 @@ export class Measurement {
 		// at this stage we only want to get everything organized
 		// if we are sure that a flag was passed as a value we make it null
 		// and then add a flag
+		this.#format = format;
 
 		try {
-			this.value = this.sensor?.metric.process(data.value);
+			this.value = this.sensor?.metric.process(data.value, format);
 		} catch (e: unknown) {
 			if (e instanceof TransformError) {
 				if (e?.flag) {

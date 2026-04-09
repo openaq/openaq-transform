@@ -4,7 +4,7 @@ import { SourceRecord } from '../types/data.ts';
 
 import {
   cleanKey,
-  cleanNumber,
+  normalizeNumericString,
   countDecimals,
   getBoolean,
   getNumber,
@@ -153,32 +153,39 @@ describe('getString', () => {
 });
 
 describe('getNumber', () => {
+  const numberFormat: DecimalDigitGroup = { decimal: 'point' };
+
   test('returns a number value as-is', () => {
-    expect(getNumber(record(42), key)).toBe(42);
+    expect(getNumber(record(42), key, numberFormat)).toBe(42);
   });
 
   test('coerces a numeric string to number', () => {
-    expect(getNumber(record('3.14'), key)).toBe(3.14);
+    expect(getNumber(record('3.14'), key, numberFormat)).toBe(3.14);
   });
 
   test('returns undefined for null', () => {
-    expect(getNumber(record(null), key)).toBeUndefined();
+    expect(getNumber(record(null), key, numberFormat)).toBeUndefined();
   });
 
   test('returns undefined for undefined', () => {
-    expect(getNumber(record(undefined), key)).toBeUndefined();
+    expect(getNumber(record(undefined), key, numberFormat)).toBeUndefined();
   });
 
   test('returns undefined for non-numeric string', () => {
-    expect(getNumber(record('abc'), key)).toBeUndefined();
+    expect(getNumber(record('abc'), key, numberFormat)).toBeNaN();
   });
 
   test('returns undefined for empty string', () => {
-    expect(getNumber(record(''), key)).toBeUndefined();
+    expect(getNumber(record(''), key, numberFormat)).toBeUndefined();
   });
 
   test("returns 0 for '0'", () => {
-    expect(getNumber(record('0'), key)).toBe(0);
+    expect(getNumber(record('0'), key, numberFormat)).toBe(0);
+  });
+
+  test('parses a comma-decimal string with matching numberFormat', () => {
+    const format: DecimalDigitGroup = { decimal: 'comma' };
+    expect(getNumber(record('3,14'), key, format)).toBe(3.14);
   });
 });
 
@@ -232,33 +239,33 @@ describe('getBoolean', () => {
 // Test cases based on "common" cases as described in the table here:
 // https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
 
-describe("cleanNumber", () => {
+describe("normalizeNumericString", () => {
 
 	describe("comma grouped, point decimal", () => {
 		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
  
 		test("parses a fully-formatted number", () => {
-			expect(cleanNumber("1,234,567.89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1,234,567.89", format)).toBe("1234567.89");
 		});
  
 		test("parses an integer with group separators", () => {
-			expect(cleanNumber("1,234,567", format)).toBe("1234567");
+			expect(normalizeNumericString("1,234,567", format)).toBe("1234567");
 		});
  
 		test("parses a number without group separator", () => {
-			expect(cleanNumber("1234567.89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
 		});
  
 		test("parses zero", () => {
-			expect(cleanNumber("0.00", format)).toBe("0.00");
+			expect(normalizeNumericString("0.00", format)).toBe("0.00");
 		});
  
 		test("parses a negative number", () => {
-			expect(cleanNumber("-1,234.56", format)).toBe("-1234.56");
+			expect(normalizeNumericString("-1,234.56", format)).toBe("-1234.56");
 		});
  
 		test("returns empty string for empty input", () => {
-			expect(cleanNumber("  ", format)).toBe("");
+			expect(normalizeNumericString("  ", format)).toBe("");
 		});
 	});
  
@@ -267,15 +274,15 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "point" };
  
 		test("parses a plain integer", () => {
-			expect(cleanNumber("1234567", format)).toBe("1234567");
+			expect(normalizeNumericString("1234567", format)).toBe("1234567");
 		});
  
 		test("parses a number with decimal part", () => {
-			expect(cleanNumber("1234567.89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
 		});
  
 		test("returns empty string for empty input", () => {
-			expect(cleanNumber("", format)).toBe("");
+			expect(normalizeNumericString("", format)).toBe("");
 		});
 	});
  
@@ -284,11 +291,11 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "comma" };
  
 		test("parses a plain number and converts comma to period", () => {
-			expect(cleanNumber("1234567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1234567,89", format)).toBe("1234567.89");
 		});
  
 		test("parses an integer", () => {
-			expect(cleanNumber("1234567", format)).toBe("1234567");
+			expect(normalizeNumericString("1234567", format)).toBe("1234567");
 		});
 	});
 
@@ -296,15 +303,15 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "dot" };
  
 		test("parses a comma decimal got grouped number", () => {
-			expect(cleanNumber("1.234.567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1.234.567,89", format)).toBe("1234567.89");
 		});
  
 		test("parses an integer with dot separators", () => {
-			expect(cleanNumber("1.234.567", format)).toBe("1234567");
+			expect(normalizeNumericString("1.234.567", format)).toBe("1234567");
 		});
  
 		test("parses a small number", () => {
-			expect(cleanNumber("1.000,00", format)).toBe("1000.00");
+			expect(normalizeNumericString("1.000,00", format)).toBe("1000.00");
 		});
 
 	});
@@ -313,11 +320,11 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "interpunct", digitGroup: "comma" };
  
 		test("parses a interpunct comma grouped number", () => {
-			expect(cleanNumber("1,234,567\u00B789", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1,234,567\u00B789", format)).toBe("1234567.89");
 		});
  
 		test("parses without group separator", () => {
-			expect(cleanNumber("1234567\u00B789", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1234567\u00B789", format)).toBe("1234567.89");
 		});
 	});
  
@@ -325,7 +332,7 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
  
 		test("parses Indian-style grouping", () => {
-			expect(cleanNumber("12,34,567.89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("12,34,567.89", format)).toBe("1234567.89");
 		});
 	});
  
@@ -333,11 +340,11 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "apostrophe" };
  
 		test("parses an apostrophe grouped point decimal number", () => {
-			expect(cleanNumber("1'234'567.89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1'234'567.89", format)).toBe("1234567.89");
 		});
  
 		test("parses an integer with apostrophe groups", () => {
-			expect(cleanNumber("1'234'567", format)).toBe("1234567");
+			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
 		});
 	});
  
@@ -345,11 +352,11 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "apostrophe" };
  
 		test("parses an apostophe grouped comma decimal number", () => {
-			expect(cleanNumber("1'234'567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1'234'567,89", format)).toBe("1234567.89");
 		});
 
     test("parses an integer with apostrophe groups", () => {
-			expect(cleanNumber("1'234'567", format)).toBe("1234567");
+			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
 		});
 	});
  
@@ -357,19 +364,19 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "space" };
  
 		test("parses space as group separator", () => {
-			expect(cleanNumber("1 234 567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1 234 567,89", format)).toBe("1234567.89");
 		});
  
 		test("parses non-breaking space (U+00A0) as group separator", () => {
-			expect(cleanNumber("1\u00A0234\u00A0567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1\u00A0234\u00A0567,89", format)).toBe("1234567.89");
 		});
  
 		test("parses narrow no-break space (U+202F) as group separator", () => {
-			expect(cleanNumber("1\u202F234\u202F567,89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1\u202F234\u202F567,89", format)).toBe("1234567.89");
 		});
  
 		test("parses an integer with space separators", () => {
-			expect(cleanNumber("1 234 567", format)).toBe("1234567");
+			expect(normalizeNumericString("1 234 567", format)).toBe("1234567");
 		});
 	});
  
@@ -377,7 +384,7 @@ describe("cleanNumber", () => {
 		const format: DecimalDigitGroup = { decimal: "arabic" };
  
 		test("parses a number with arabic decimal comma", () => {
-			expect(cleanNumber("1234567\u066B89", format)).toBe("1234567.89");
+			expect(normalizeNumericString("1234567\u066B89", format)).toBe("1234567.89");
 		});
 	});
 });

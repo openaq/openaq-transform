@@ -2,6 +2,7 @@ import type { BBox } from "geojson";
 import { Resource } from "../core/resource";
 import type { SourceRecord } from "./data";
 import type { TimestampString } from "./datetime";
+import type { ErrorJSON, ErrorSummary } from "./errors";
 import type { LocationJSON } from "./location";
 import type { MeasurementJSON } from "./measurement";
 import type { ClientParameters } from "./metric";
@@ -32,8 +33,6 @@ export interface Source {
 	parameters: string[];
 }
 
-export type ErrorSummary = Record<string, number>;
-
 export interface Summary {
 	sourceName: string;
 	bounds: BBox | null;
@@ -59,6 +58,7 @@ export interface TransformData {
 	};
 	measurements: MeasurementJSON[];
 	locations: LocationJSON[];
+	errors: ErrorJSON;
 }
 
 export interface ClientInfoKey {

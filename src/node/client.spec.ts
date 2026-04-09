@@ -519,6 +519,7 @@ describe("Client with measurement errors", () => {
 			},
 		},
 		locations: expectedOutput.locations,
+		errors: {},
 		measurements: [
 			...expectedOutput.measurements,
 			{
@@ -637,6 +638,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 	};
 
 	const expected = {
+		errors: {},
 		meta: {
 			schema: "v0.1",
 			sourceName: "testing",
@@ -645,6 +647,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 			finishedOn: "2025-06-01T01:00:00-04:00",
 			exportedOn: "2025-06-01T01:00:00-04:00",
 			fetchSummary: {
+				errors: {},
 				sourceName: "testing",
 				locations: 1,
 				bounds: [-123.12121, 45.56665, -123.12121, 45.56665],
@@ -654,7 +657,6 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				measurements: 4,
 				datetimeFrom: "2024-01-01T00:00:00-08:00",
 				datetimeTo: "2024-01-02T01:00:00-08:00",
-				errors: {},
 			},
 		},
 		locations: expectedOutput.locations,

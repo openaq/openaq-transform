@@ -141,7 +141,6 @@ export async function apiReader(
  * @param resource - Resource configuration with URLs, output strategy, and error handling mode
  * @param parser - Function to transform raw content (text/blob/json) into structured data
  * @param data - Data context passed to both resource URL generation and parser
- * @param options - HTTP fetch options (method, headers, etc.)
  * @param concurrency - Number of URLs to fetch in parallel (default: 3)
  * @returns Response data based on resource.output strategy
  *
@@ -162,16 +161,13 @@ export async function apiReader(
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
  */ export async function apiReader(
-	{
-		resource,
-		options = { method: "GET" },
-		concurrency = 3,
-		errorHandler,
-	}: UrlReaderParameters,
+	{ resource, concurrency = 3, errorHandler }: UrlReaderParameters,
 	parser: Parser,
 	data: DataContext,
 ): Promise<unknown | unknown[] | Record<string, unknown>> {
 	resource.data = data;
+
+	const options = resource.options as UrlReaderOptions;
 
 	// overrides default if needed
 	const fetchOptions: UrlReaderOptions = {

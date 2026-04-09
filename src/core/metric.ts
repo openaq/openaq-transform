@@ -1,3 +1,4 @@
+import type { DecimalDigitGroup } from "../types/client";
 import type {
 	ClientParameters,
 	Parameter,
@@ -12,6 +13,7 @@ import {
 	UnsupportedParameterError,
 	UnsupportedUnitsError,
 } from "./errors";
+import { normalizeNumericString } from "./utils";
 
 const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb / 1000;
@@ -187,8 +189,13 @@ export class Metric {
 	numeric: boolean = true;
 	precision?: number;
 	converter: UnitConverter;
+	#numberFormat: DecimalDigitGroup;
 
-	constructor(parameter: string, unit: string) {
+	constructor(
+		parameter: string,
+		unit: string,
+		numberFormat: DecimalDigitGroup = { decimal: "point" },
+	) {
 		// check for parameter(s)
 		// should either be one or two (parts & mass
 		const parameterEntries = Object.entries(PARAMETERS).filter(
@@ -214,6 +221,7 @@ export class Metric {
 		this.parameter = resolvedParameter;
 		this.unit = unit;
 		this.numeric = this.parameter.numeric;
+		this.#numberFormat = numberFormat;
 
 		const converter = this.parameter.converters[this.unit];
 		if (!converter) {
@@ -231,21 +239,40 @@ export class Metric {
 		let nv = null;
 
 		// first check if its some form of missing
-		if (["", null, undefined, NaN].includes(v as number)) {
+		if (
+			v === "" ||
+			v === null ||
+			v === undefined ||
+			(typeof v === "number" && Number.isNaN(v))
+		) {
 			throw new MissingValueError(v);
 		}
 
+		if (typeof v !== "string" && typeof v !== "number") {
+			throw new ProviderValueError(v);
+		}
+
+		if (typeof v === "string" && PROVIDER_VALUE_FLAGS.includes(v)) {
+			throw new ProviderValueError(v);
+		}
+		if (typeof v === "number" && PROVIDER_VALUE_FLAGS.includes(v)) {
+			throw new ProviderValueError(v);
+		}
+
+		if (typeof v === "string") {
+			nv = normalizeNumericString(v, this.#numberFormat);
+			if (Number.isNaN(Number(nv))) {
+				throw new ProviderValueError(v);
+			}
+			nv = this.converter(nv);
+		} else {
+			nv = this.converter(v);
+		}
+
 		// next check if its a string but should be a number
-		if (this.numeric && !Number.isFinite(+(v as number))) {
-			throw new ProviderValueError(v);
+		if (this.numeric && !Number.isFinite(nv)) {
+			throw new ProviderValueError(nv);
 		}
-
-		// check for any error that the provider passed as a value
-		if (PROVIDER_VALUE_FLAGS.includes(v as string)) {
-			throw new ProviderValueError(v);
-		}
-
-		nv = this.converter(v as number);
 
 		// adjust the precision if needed
 		if (this.precision) {

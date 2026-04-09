@@ -19,7 +19,7 @@ export const stripNulls = <T extends object>(
 
 export const getValueFromKey = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression
+	key: ParseFunction | string | PathExpression,
 ) => {
 	let value = null;
 	if (isPathExpression(key)) {
@@ -114,7 +114,7 @@ export const getNumber = (
 	if (typeof value === "string") {
 		value = normalizeNumericString(value, numberFormat);
 	}
-	return Number.isNaN(value as number) ? undefined : Number(value) as number;
+	return Number.isNaN(value as number) ? undefined : (Number(value) as number);
 };
 
 export const getBoolean = (
@@ -184,7 +184,10 @@ const SPACE_RE = /[\s\u00A0\u202f]/g;
  * normalizeNumericString("   ", { decimal: "point", digitGroup: "comma" });
  * // => ""
  */
-export function normalizeNumericString(value: string, format: DecimalDigitGroup): string {
+export function normalizeNumericString(
+	value: string,
+	format: DecimalDigitGroup,
+): string {
 	let v = value.trim();
 	if (v === "") {
 		return "";

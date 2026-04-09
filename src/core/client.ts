@@ -501,7 +501,10 @@ export abstract class Client<
 				x: this.getNumber(data, this.xGeometryKey),
 				y: this.getNumber(data, this.yGeometryKey),
 				projection: getString(data, this.geometryProjectionKey),
-				averagingIntervalSeconds: this.getNumber(data, this.averagingIntervalKey),
+				averagingIntervalSeconds: this.getNumber(
+					data,
+					this.averagingIntervalKey,
+				),
 				loggingIntervalSeconds: this.getNumber(data, this.loggingIntervalKey),
 				status: getString(data, this.sensorStatusKey) ?? "",
 				owner: getString(data, this.ownerKey) ?? "",
@@ -670,11 +673,12 @@ export abstract class Client<
 						this.measurements.add(
 							new Measurement(
 								{
-								sensor: sensor,
-								timestamp: datetime,
-								value: value,
-								
-							}, this.numberFormat),
+									sensor: sensor,
+									timestamp: datetime,
+									value: value,
+								},
+								this.numberFormat,
+							),
 						);
 					}
 				});

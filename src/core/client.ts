@@ -6,7 +6,6 @@ import {
 	type ClientParser,
 	type ClientReader,
 	type DecimalDigitGroup,
-	type ErrorSummary,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -28,6 +27,7 @@ import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
 	Errors,
+	FetchError,
 	MissingAttributeError,
 	UnsupportedParameterError,
 } from "./errors";

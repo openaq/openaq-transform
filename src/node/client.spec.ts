@@ -655,7 +655,6 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				measurements: 4,
 				datetimeFrom: "2024-01-01T00:00:00-08:00",
 				datetimeTo: "2024-01-02T01:00:00-08:00",
-				errors: {},
 			},
 		},
 		locations: expectedOutput.locations,

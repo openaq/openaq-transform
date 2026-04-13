@@ -297,7 +297,6 @@ export async function apiReader(
 					}
 				} else if (resource.output === "object") {
 					if (Array.isArray(parsed)) {
-            log('we are now here')
 						// Array response - spread items into results
 						results.push(...parsed);
 					} else {
@@ -306,7 +305,6 @@ export async function apiReader(
 					}
 				} else {
 					// No output specified (default): return as-is, no transformation
-          log('we are here')
 					results.push(parsed);
 				}
 			}),

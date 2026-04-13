@@ -262,6 +262,7 @@ export async function apiReader(
 					}
 
 					parsed = result as SourceRecord | SourceRecord[];
+
 				} catch (error) {
 					const parseError =
 						error instanceof ParseError
@@ -295,8 +296,13 @@ export async function apiReader(
 						results.push(parsed);
 					}
 				} else if (resource.output === "object") {
-					// Object output: collect objects for merging
-					results.push(parsed);
+					if (Array.isArray(parsed)) {
+						// Array response - spread items into results
+						results.push(...parsed);
+					} else {
+						// Object/primitive response - collect as-is
+						results.push(parsed);
+					}
 				} else {
 					// No output specified (default): return as-is, no transformation
 					results.push(parsed);

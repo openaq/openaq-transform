@@ -1,10 +1,10 @@
 import type { DecimalDigitGroup } from "../types/client";
 import type {
 	ClientParameters,
-	ValueFlagMap,
 	Parameter,
 	ParameterMap,
 	UnitConverter,
+	ValueFlagMap,
 } from "../types/metric";
 import {
 	HighValueError,
@@ -176,12 +176,11 @@ export const PARAMETERS: ParameterMap = {
 	},
 };
 
-
 const PROVIDER_VALUE_FLAGS: ValueFlagMap = new Map<string | number, string>([
-  [-99, 'ERROR'],
-  [-999, 'ERROR'],
-  ['-99', 'ERROR'],
-  ['-999', 'ERROR']
+	[-99, "ERROR"],
+	[-999, "ERROR"],
+	["-99", "ERROR"],
+	["-999", "ERROR"],
 ]);
 
 export const PARAMETER_DEFAULTS: ClientParameters = [
@@ -197,7 +196,7 @@ export class Metric {
 	precision?: number;
 	converter: UnitConverter;
 	#numberFormat: DecimalDigitGroup;
-	#providerValueFlag: ValueFlagMap = PROVIDER_VALUE_FLAGS
+	#providerValueFlag: ValueFlagMap = PROVIDER_VALUE_FLAGS;
 
 	constructor(
 		parameter: string,
@@ -235,7 +234,7 @@ export class Metric {
 		for (const [key, value] of providerValueFlag ?? []) {
 			this.#providerValueFlag.set(key, value);
 		}
-		 
+
 		const converter = this.parameter.converters[this.unit];
 		if (!converter) {
 			throw new UnsupportedUnitsError(parameter, unit);

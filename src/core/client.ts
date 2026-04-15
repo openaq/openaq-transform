@@ -18,7 +18,11 @@ import {
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
-import type { ClientParameters, PathExpression, ValueFlagMap } from "../types/metric";
+import type {
+	ClientParameters,
+	PathExpression,
+	ValueFlagMap,
+} from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "../types/readers";
 import type { BearerAuth, ResourceKeys } from "../types/resource";
@@ -215,7 +219,7 @@ export abstract class Client<
 			this.parameters = this.#params.parameters;
 		}
 		if (this.#params?.providerValues) {
-			this.providerValues = this.#params.providerValues
+			this.providerValues = this.#params.providerValues;
 		}
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
@@ -354,7 +358,11 @@ export abstract class Client<
 
 	get measurements(): Measurements {
 		if (!this.#measurements) {
-			this.#measurements = new Measurements(this.parameters, this.providerValues, this.numberFormat);
+			this.#measurements = new Measurements(
+				this.parameters,
+				this.providerValues,
+				this.numberFormat,
+			);
 		}
 		return this.#measurements;
 	}

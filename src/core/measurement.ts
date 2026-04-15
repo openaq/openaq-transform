@@ -46,7 +46,10 @@ export class Measurements {
 		>();
 		for (const p of parameters) {
 			const { parameter, unit, key } = p;
-			this.parameters.set(key, new Metric(parameter, unit, providerValues, numberFormat));
+			this.parameters.set(
+				key,
+				new Metric(parameter, unit, providerValues, numberFormat),
+			);
 		}
 	}
 

@@ -93,7 +93,11 @@ export abstract class Client<
 	datasources: object = {};
 	missingDatasources: string[] = [];
 
-	// TODO _secrets = {}
+  // offset, to, from support
+  // limit the returned values to the following periods
+  datetimeFrom?: string;
+  datetimeTo?: string;
+  offset?: number;
 
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
@@ -216,6 +220,33 @@ export abstract class Client<
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
 		}
+		if (this.#params?.datetimeFrom) {
+			this.datetimeFrom = new Datetime(this.#params.datetimeFrom);
+      if(!this.datetimeFrom) throw new Error(`Config error: could not parse datetimeFrom value - ${this.#params?.datetimeFrom}`)
+		}
+		if (this.#params?.datetimeTo) {
+			this.datetimeTo = new Datetime(this.#params.datetimeTo);
+      if(!this.datetimeTo) throw new Error(`Config error: could not parse datetimeTo value - ${this.#params?.datetimeTo}`)
+		}
+		if (this.#params?.offset) {
+			this.offset = this.#params.offset;
+      // check if its a number
+		}
+
+    // if there is no offset we default to 3 hours
+    if (!this.offset) {
+      this.offset = 3 * 3600;
+    }
+    // if there is no datetimeTo we default to now
+    // minus any buffer to deal with hourly data that might be time begining
+    if (!this.datetimeTo) {
+      this.datetimeTo = Datetime.now();
+    }
+
+    // if there is no datetimeFrom we default to using datetimeTo - offset
+    if (!this.datetimeFrom) {
+      this.datetimeFrom = this.datetimeTo.minus(this.offset);
+    }
 
 		this.#locations = new Locations();
 		this.#sensors = new Sensors();
@@ -723,6 +754,10 @@ export abstract class Client<
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
 				const datetime = this.getDatetime(measurementRow);
+
+        if (datetime.isLessThan(this.datetimeFrom) || datetime.isGreaterThan(this.datetimeTo)) {
+          return;
+        }
 
 				params.forEach((p) => {
 					// for long format data we will need to extract the parameter name from the field

@@ -269,3 +269,5 @@ interface ClientParameter {
  * ```
  */
 export type ClientParameters = ClientParameter[];
+
+export type ValueFlagMap = Map<string | number, string>;

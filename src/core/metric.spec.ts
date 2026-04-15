@@ -62,6 +62,12 @@ test("Error flag (-99) as values throw flag error (c)", () => {
 	expect(() => m.process(-99)).toThrowError(ProviderValueError);
 });
 
+test("Custom Error flag (42.0) as values throw flag error (c)", () => {
+	const providerValues = new Map<string | number, string>([[42.0, 'ERROR']]);
+	const m = new Metric("temperature", "c", providerValues);
+	expect(() => m.process(42.0)).toThrowError(ProviderValueError);
+});
+
 test("Non-numeric string throws provider value error", () => {
 	const m = new Metric("temperature", "c");
 	const v = "TOO_HIGH";

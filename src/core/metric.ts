@@ -1,6 +1,7 @@
 import type { DecimalDigitGroup } from "../types/client";
 import type {
 	ClientParameters,
+	ValueFlagMap,
 	Parameter,
 	ParameterMap,
 	UnitConverter,
@@ -175,7 +176,13 @@ export const PARAMETERS: ParameterMap = {
 	},
 };
 
-const PROVIDER_VALUE_FLAGS: Array<number | string> = [-99, -999, "-99", "-999"];
+
+const PROVIDER_VALUE_FLAGS: ValueFlagMap = new Map<string | number, string>([
+  [-99, 'ERROR'],
+  [-999, 'ERROR'],
+  ['-99', 'ERROR'],
+  ['-999', 'ERROR']
+]);
 
 export const PARAMETER_DEFAULTS: ClientParameters = [
 	{ parameter: "pm25", unit: "ugm3", key: "pm_25" },
@@ -190,10 +197,12 @@ export class Metric {
 	precision?: number;
 	converter: UnitConverter;
 	#numberFormat: DecimalDigitGroup;
+	#providerValueFlag: ValueFlagMap = PROVIDER_VALUE_FLAGS
 
 	constructor(
 		parameter: string,
 		unit: string,
+		providerValueFlag?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
 	) {
 		// check for parameter(s)
@@ -223,6 +232,10 @@ export class Metric {
 		this.numeric = this.parameter.numeric;
 		this.#numberFormat = numberFormat;
 
+		for (const [key, value] of providerValueFlag ?? []) {
+			this.#providerValueFlag.set(key, value);
+		}
+		 
 		const converter = this.parameter.converters[this.unit];
 		if (!converter) {
 			throw new UnsupportedUnitsError(parameter, unit);
@@ -252,10 +265,7 @@ export class Metric {
 			throw new ProviderValueError(v);
 		}
 
-		if (typeof v === "string" && PROVIDER_VALUE_FLAGS.includes(v)) {
-			throw new ProviderValueError(v);
-		}
-		if (typeof v === "number" && PROVIDER_VALUE_FLAGS.includes(v)) {
+		if (this.#providerValueFlag.has(v)) {
 			throw new ProviderValueError(v);
 		}
 

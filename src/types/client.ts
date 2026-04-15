@@ -5,7 +5,7 @@ import type { TimestampString } from "./datetime";
 import type { ErrorJSON, ErrorSummary } from "./errors";
 import type { LocationJSON } from "./location";
 import type { MeasurementJSON } from "./measurement";
-import type { ClientParameters } from "./metric";
+import type { ClientParameters, ValueFlagMap } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
 import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { ResourceKeys } from "./resource";
@@ -147,6 +147,7 @@ export interface ClientConfiguration {
 	loggingIntervalKey?: string | ParseFunction;
 	averagingIntervalKey?: string | ParseFunction;
 	sensorStatusKey?: string | ParseFunction;
+	providerValues?: ValueFlagMap;
 
 	datasources?: object;
 	missingDatasources?: string[];

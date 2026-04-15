@@ -221,6 +221,28 @@ export class Datetime {
 	}
 
 	/**
+	 * Creates a new Datetime instance representing the internal date/time,
+	 * minus the required offset value.
+	 *
+	 * @param {number | Duration | TimeOffset} [timeOffset=0] - The amount to subtract from the current time.
+	 *
+	 * @returns {Datetime} A new Datetime instance adjusted by the specified offset
+	 */
+	minus(timeOffset: number | Duration | TimeOffset): Datetime {
+		let dt: DateTime;
+
+		if (typeof timeOffset === "number") {
+			dt = this.date.minus(Math.abs(timeOffset) * 1000);
+		} else if (timeOffset instanceof Duration) {
+			dt = this.date.minus(timeOffset);
+		} else {
+			dt = this.date.minus(timeOffset);
+		}
+
+		return new Datetime(dt);
+	}
+
+	/**
 	 * Creates a new Datetime instance representing the current date and time,
 	 * optionally adjusted by a specified offset into the past.
 	 *
@@ -242,4 +264,6 @@ export class Datetime {
 
 		return new Datetime(dt);
 	}
+
+
 }

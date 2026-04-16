@@ -171,6 +171,7 @@ export const PARAMETERS: ParameterMap = {
 			hpa: noConversion,
 			mb: noConversion,
 			mbar: noConversion,
+			kpa: (d: number | string) => +d * 10,
 		},
 	},
 };

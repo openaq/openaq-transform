@@ -143,7 +143,7 @@ export const PARAMETERS: ParameterMap = {
 			ppb: ppbToPpm,
 		},
 	},
-	"so2:parts": {x
+	"so2:parts": {
 		name: "so2",
 		numeric: true,
 		units: "ppm",

@@ -87,6 +87,7 @@ export const expectedOutput = {
 			key: "testing-ts1",
 			site_id: "ts1",
 			site_name: "test site #1",
+			owner: "test_owner",
 			coordinates: {
 				latitude: 45.56665,
 				longitude: -123.12121,

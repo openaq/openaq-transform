@@ -1,3 +1,34 @@
+// based on common groups in Examples of Use table https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
+/**
+ * Describes the decimal and digit-group separator conventions for a numeric
+ * locale format.
+ *
+ * Each variant pairs a {@link CHAR_MAP decimal separator} with the set of
+ * digit-group (thousands) separators that are valid alongside it, reflecting
+ * common real-world usage documented in the
+ * {@link https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems Wikipedia — Decimal separator} reference.
+ *
+ * The `digitGroup` property is optional; omit it when the number has no
+ * thousands separators.
+ *
+ * @example
+ * const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
+ *
+ * @example
+ * const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "dot" };
+ *
+ * @example
+ * const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "space" };
+ *
+ * @example
+ * const foramt: DecimalDigitGroup = { decimal: "arabic" };
+ */
+export type DecimalDigitGroup =
+	| { decimal: "point"; digitGroup?: "comma" | "space" | "apostrophe" }
+	| { decimal: "comma"; digitGroup?: "dot" | "space" | "apostrophe" }
+	| { decimal: "arabic"; digitGroup?: "comma" | "space" }
+	| { decimal: "interpunct"; digitGroup?: "comma" };
+
 /**
  * Converter function that transforms values between units.
  *
@@ -130,6 +161,8 @@ export interface ParameterMap {
 	[key: string]: Parameter;
 }
 
+export type ValueFlagMap = Map<string | number, string>;
+
 /**
  * Parameter-unit pairing used for parameter specification.
  *
@@ -147,6 +180,12 @@ export interface ParameterUnit {
 
 	/** The unit for this parameter */
 	unit: string;
+
+	/** the flags for this paramter */
+	providerFlags?: ValueFlagMap;
+
+	/** the number format for this paramter */
+	numberFormat?: DecimalDigitGroup;
 }
 
 /**
@@ -269,5 +308,3 @@ interface ClientParameter {
  * ```
  */
 export type ClientParameters = ClientParameter[];
-
-export type ValueFlagMap = Map<string | number, string>;

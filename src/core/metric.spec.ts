@@ -52,22 +52,6 @@ test("high values throw range error", () => {
 	expect(() => m.process(100)).toThrowError(HighValueError);
 });
 
-test("Error flag (-99) as values throw flag error (f)", () => {
-	const m = new Metric("temperature", "f");
-	expect(() => m.process(-99)).toThrowError(ProviderValueError);
-});
-
-test("Error flag (-99) as values throw flag error (c)", () => {
-	const m = new Metric("temperature", "c");
-	expect(() => m.process(-99)).toThrowError(ProviderValueError);
-});
-
-test("Custom Error flag (42.0) as values throw flag error (c)", () => {
-	const providerValues = new Map<string | number, string>([[42.0, 'ERROR']]);
-	const m = new Metric("temperature", "c", providerValues);
-	expect(() => m.process(42.0)).toThrowError(ProviderValueError);
-});
-
 test("Non-numeric string throws provider value error", () => {
 	const m = new Metric("temperature", "c");
 	const v = "TOO_HIGH";
@@ -92,4 +76,15 @@ test("empty string throws missing value error", () => {
 	expect(() => m.process(v)).toThrowError(MissingValueError);
 });
 
-test.todo("missing value throws range error");
+// essentially all numeric values as errors need to be passed in
+// so -99 and 42.0 tests the same thing
+test("Error flags as values throw ProviderValueError (f)", () => {
+  const flags = new Map<string | number, string>([
+    [-99, 'ERROR'],
+  ]);
+	const m = new Metric("temperature", "f", flags);
+	expect(() => m.process(-99)).toThrowError(ProviderValueError);
+	expect(() => m.process(-99.0)).toThrowError(ProviderValueError);
+	expect(() => m.process('-99')).toThrowError(ProviderValueError);
+	expect(() => m.process('-99.0')).toThrowError(ProviderValueError);
+});

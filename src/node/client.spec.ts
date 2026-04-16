@@ -531,7 +531,7 @@ describe("Client with measurement errors", () => {
 				key: "testing-ts1-temperature",
 				timestamp: "2024-01-01T03:00:00-08:00",
 				value: null, // numeric error code
-				flags: ["-99"],
+				flags: ["ERROR"],
 			},
 			{
 				key: "testing-ts1-temperature",
@@ -620,13 +620,13 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				station: "ts1",
 				datetime: "2024-01-02T01:00:00-08:00",
 				parameter: "particulate_matter_25",
-				value: "45", 
+				value: "45",
 			},
 			{
 				station: "ts1",
 				datetime: "2024-01-02T01:00:00-08:00",
 				parameter: "tempf",
-				value: "45", 
+				value: "45",
 			},
 			{
 				station: "ts1",

@@ -3,10 +3,10 @@ import debug from "debug";
 const log = debug("openaq-transform measurements: DEBUG");
 
 import type { BBox } from "geojson";
-import type { DecimalDigitGroup } from "../types/client";
 import type { MeasurementData, MeasurementJSON } from "../types/measurement";
 import type {
 	ClientParameters,
+	DecimalDigitGroup,
 	ParameterKeyFunction,
 	PathExpression,
 	ValueFlagMap,

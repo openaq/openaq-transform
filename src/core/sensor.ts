@@ -57,7 +57,12 @@ export class Sensor {
 		if (data.metric instanceof Metric) {
 			this.metric = data.metric;
 		} else {
-			this.metric = new Metric(data.metric?.parameter, data.metric?.unit);
+			this.metric = new Metric(
+				data.metric?.parameter,
+				data.metric?.unit,
+				data.metric?.providerFlags,
+				data.metric?.numberFormat,
+			);
 		}
 
 		this.averagingIntervalSeconds = data.averagingIntervalSeconds;

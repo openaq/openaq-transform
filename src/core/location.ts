@@ -189,6 +189,7 @@ export class Location {
 			key: this.key,
 			site_id: this.siteId,
 			site_name: this.siteName,
+			owner: this.owner,
 			coordinates: this.coordinates.json(),
 			ismobile: this.ismobile,
 			systems: Array.from(this.#systems.values(), (s) => s.json()),

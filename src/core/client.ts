@@ -5,7 +5,6 @@ import {
 	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
-	type DecimalDigitGroup,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -18,7 +17,12 @@ import {
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
-import {  type ClientParameters, type PathExpression } from "../types/metric";
+import type {
+	ClientParameters,
+	DecimalDigitGroup,
+	PathExpression,
+	ValueFlagMap,
+} from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "../types/readers";
 import type { BearerAuth, ResourceKeys } from "../types/resource";
@@ -33,7 +37,7 @@ import {
 } from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
-import { type Metric, PARAMETER_DEFAULTS } from "./metric";
+import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
 import { type JSONValue, search } from "@jmespath-community/jmespath";
@@ -90,6 +94,7 @@ export abstract class Client<
 	averagingIntervalKey: string | PathExpression | ParseFunction =
 		"averaging_interval_seconds";
 	sensorStatusKey: string | PathExpression | ParseFunction = "status";
+	providerFlags?: ValueFlagMap = FLAG_DEFAULTS;
 	ingestMatchingMethod: IngestMatchingMethod = "ingest-id";
 
 	datasources: object = {};
@@ -214,6 +219,9 @@ export abstract class Client<
 		}
 		if (this.#params?.parameters) {
 			this.parameters = this.#params.parameters;
+		}
+		if (this.#params?.providerFlags) {
+			this.providerFlags = this.#params.providerFlags;
 		}
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
@@ -352,7 +360,11 @@ export abstract class Client<
 
 	get measurements(): Measurements {
 		if (!this.#measurements) {
-			this.#measurements = new Measurements(this.parameters, this.numberFormat);
+			this.#measurements = new Measurements(
+				this.parameters,
+				this.providerFlags,
+				this.numberFormat,
+			);
 		}
 		return this.#measurements;
 	}
@@ -754,9 +766,13 @@ export abstract class Client<
 
 					const value = getValueFromKey(measurementRow, valueName);
 					// flags must be an array so we need to check that somewhere
-					const flags = getArray(measurementRow, this.flagsKey)?.map(
-						(f) => `${this.provider}::${f}`,
-					);
+					const flags = getArray(measurementRow, this.flagsKey)?.map((f) => {
+						if (this.providerFlags?.has(f)) {
+							return this.providerFlags.get(f);
+						} else {
+							return `${this.provider}::${f}`;
+						}
+					});
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
@@ -791,7 +807,7 @@ export abstract class Client<
 								sensor: sensor,
 								timestamp: datetime,
 								value: value,
-								flags: flags,
+								flags: flags?.filter((f): f is string => f !== undefined),
 							}),
 						);
 					}

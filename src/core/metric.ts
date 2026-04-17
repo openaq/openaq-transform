@@ -1,9 +1,10 @@
-import type { DecimalDigitGroup } from "../types/client";
 import type {
 	ClientParameters,
+	DecimalDigitGroup,
 	Parameter,
 	ParameterMap,
 	UnitConverter,
+	ValueFlagMap,
 } from "../types/metric";
 import {
 	HighValueError,
@@ -176,12 +177,17 @@ export const PARAMETERS: ParameterMap = {
 	},
 };
 
-const PROVIDER_VALUE_FLAGS: Array<number | string> = [-99, -999, "-99", "-999"];
-
 export const PARAMETER_DEFAULTS: ClientParameters = [
 	{ parameter: "pm25", unit: "ugm3", key: "pm_25" },
 	{ parameter: "o_3", unit: "ppm", key: "o3" },
 ];
+
+export const FLAG_DEFAULTS: ValueFlagMap = new Map<string | number, string>([
+	[-99, "ERROR"],
+	[-999, "ERROR"],
+	["-99", "ERROR"],
+	["-999", "ERROR"],
+]);
 
 export class Metric {
 	key: string;
@@ -191,10 +197,12 @@ export class Metric {
 	precision?: number;
 	converter: UnitConverter;
 	#numberFormat: DecimalDigitGroup;
+	#providerFlags: ValueFlagMap = new Map();
 
 	constructor(
 		parameter: string,
 		unit: string,
+		providerFlags?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
 	) {
 		// check for parameter(s)
@@ -223,6 +231,10 @@ export class Metric {
 		this.unit = unit;
 		this.numeric = this.parameter.numeric;
 		this.#numberFormat = numberFormat;
+
+		for (const [key, value] of providerFlags ?? []) {
+			this.#providerFlags.set(key, value);
+		}
 
 		const converter = this.parameter.converters[this.unit];
 		if (!converter) {
@@ -253,16 +265,20 @@ export class Metric {
 			throw new ProviderValueError(v);
 		}
 
-		if (typeof v === "string" && PROVIDER_VALUE_FLAGS.includes(v)) {
-			throw new ProviderValueError(v);
-		}
-		if (typeof v === "number" && PROVIDER_VALUE_FLAGS.includes(v)) {
-			throw new ProviderValueError(v);
+		if (this.#providerFlags.has(v)) {
+			// get the flag value that corresponds to the key
+			throw new ProviderValueError(this.#providerFlags.get(v));
 		}
 
 		if (typeof v === "string") {
 			nv = normalizeNumericString(v, this.#numberFormat);
-			if (Number.isNaN(Number(nv))) {
+			// this is an extra check to deal with numeric error codes
+			// so that we dont have to have both -99 and '-99'
+			if (this.#providerFlags.has(Number(nv))) {
+				// get the flag value that corresponds to the key
+				throw new ProviderValueError(this.#providerFlags.get(Number(nv)));
+			} else if (Number.isNaN(Number(nv))) {
+				// pass the original value back as the flag
 				throw new ProviderValueError(v);
 			}
 			nv = this.converter(nv);

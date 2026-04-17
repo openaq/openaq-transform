@@ -1,8 +1,12 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
-import type { DecimalDigitGroup, ParseFunction } from "../types/client";
+import type { ParseFunction } from "../types/client";
 import type { SourceRecord } from "../types/data";
-import { isPathExpression, type PathExpression } from "../types/metric";
+import {
+	type DecimalDigitGroup,
+	isPathExpression,
+	type PathExpression,
+} from "../types/metric";
 
 const log = debug("openaq-transform utils: DEBUG");
 

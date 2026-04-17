@@ -18,7 +18,7 @@ import {
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
-import type { ClientParameters, PathExpression } from "../types/metric";
+import {  type ClientParameters, type PathExpression } from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "../types/readers";
 import type { BearerAuth, ResourceKeys } from "../types/resource";
@@ -36,6 +36,8 @@ import { Measurement, Measurements } from "./measurement";
 import { type Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
+import { type JSONValue, search } from "@jmespath-community/jmespath";
+
 import {
 	cleanKey,
 	formatValueForLog,
@@ -429,11 +431,17 @@ export abstract class Client<
 					? this.getParserMethod(this.parser, key)
 					: this.getParserMethod(this.parser);
 
-				const d = await reader(
+				let d = await reader(
 					{ resource, errorHandler: this.errorHandler.bind(this) },
 					parser,
 					data,
 				);
+
+				d = (
+				resource.responsePath?.type === "jmespath"
+					? search(d as JSONValue, resource.responsePath.expression)
+					: d
+				) as SourceRecord[] | ResourceData;
 
 				if (Array.isArray(d)) {
 					data[key] = d as SourceRecord[];
@@ -442,8 +450,11 @@ export abstract class Client<
 					// and it should replace the current data object
 					data = d as ResourceData;
 				}
+
 			} // should we do something here if there is no resource?
 		}
+
+		
 
 		return data;
 	}
@@ -466,7 +477,7 @@ export abstract class Client<
 			parser = this.getParserMethod(this.parser);
 		}
 
-		const d = await reader(
+		let d = await reader(
 			{ resource, errorHandler: this.errorHandler.bind(this) },
 			parser,
 			data,
@@ -479,6 +490,14 @@ export abstract class Client<
 		if (typeof d !== "object") {
 			throw new Error("Reader did not return an object");
 		}
+
+		if (resource.responsePath?.type === "jmespath") {
+        const searchTarget = Array.isArray(d) && d.length === 1 ? d[0] : d;
+        d = search(searchTarget as JSONValue, resource.responsePath.expression) as typeof d;
+        if (d === null || d === undefined) {
+            throw new Error(`jmespath expression "${resource.responsePath.expression}" returned no results`);
+        }
+    }
 
 		return this.normalizeDataStructure(d);
 	}

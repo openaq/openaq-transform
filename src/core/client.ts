@@ -1,3 +1,4 @@
+import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
 import {
 	type ClientConfiguration,
@@ -40,7 +41,6 @@ import { Measurement, Measurements } from "./measurement";
 import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
-import { type JSONValue, search } from "@jmespath-community/jmespath";
 
 import {
 	cleanKey,
@@ -450,9 +450,9 @@ export abstract class Client<
 				);
 
 				d = (
-				resource.responsePath?.type === "jmespath"
-					? search(d as JSONValue, resource.responsePath.expression)
-					: d
+					resource.responsePath?.type === "jmespath"
+						? search(d as JSONValue, resource.responsePath.expression)
+						: d
 				) as SourceRecord[] | ResourceData;
 
 				if (Array.isArray(d)) {
@@ -462,11 +462,8 @@ export abstract class Client<
 					// and it should replace the current data object
 					data = d as ResourceData;
 				}
-
 			} // should we do something here if there is no resource?
 		}
-
-		
 
 		return data;
 	}
@@ -504,12 +501,17 @@ export abstract class Client<
 		}
 
 		if (resource.responsePath?.type === "jmespath") {
-        const searchTarget = Array.isArray(d) && d.length === 1 ? d[0] : d;
-        d = search(searchTarget as JSONValue, resource.responsePath.expression) as typeof d;
-        if (d === null || d === undefined) {
-            throw new Error(`jmespath expression "${resource.responsePath.expression}" returned no results`);
-        }
-    }
+			const searchTarget = Array.isArray(d) && d.length === 1 ? d[0] : d;
+			d = search(
+				searchTarget as JSONValue,
+				resource.responsePath.expression,
+			) as typeof d;
+			if (d === null || d === undefined) {
+				throw new Error(
+					`jmespath expression "${resource.responsePath.expression}" returned no results`,
+				);
+			}
+		}
 
 		return this.normalizeDataStructure(d);
 	}

@@ -93,12 +93,6 @@ export abstract class Client<
 	datasources: object = {};
 	missingDatasources: string[] = [];
 
-  // offset, to, from support
-  // limit the returned values to the following periods
-  datetimeFrom?: string;
-  datetimeTo?: string;
-  offset?: number;
-
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
 	parameters: ClientParameters = PARAMETER_DEFAULTS;
@@ -115,6 +109,12 @@ export abstract class Client<
 	#sensors: Sensors;
 	#errors: Errors;
 	#params: ClientConfiguration;
+  // offset, to, from support
+  // limit the returned values to the following periods
+  #datetimeFrom?: Datetime;
+  #datetimeTo?: Datetime;
+  #offset?: number;
+
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
@@ -221,31 +221,36 @@ export abstract class Client<
 			this.secrets = this.#params.secrets;
 		}
 		if (this.#params?.datetimeFrom) {
-			this.datetimeFrom = new Datetime(this.#params.datetimeFrom);
-      if(!this.datetimeFrom) throw new Error(`Config error: could not parse datetimeFrom value - ${this.#params?.datetimeFrom}`)
+      try {
+        this.#datetimeFrom = new Datetime(this.#params.datetimeFrom);
+      } catch (e) {
+        throw new Error(`Config error: could not parse datetimeFrom value - ${this.#params.datetimeFrom}`);
+      }
 		}
 		if (this.#params?.datetimeTo) {
-			this.datetimeTo = new Datetime(this.#params.datetimeTo);
-      if(!this.datetimeTo) throw new Error(`Config error: could not parse datetimeTo value - ${this.#params?.datetimeTo}`)
+      try {
+        this.#datetimeTo = new Datetime(this.#params.datetimeTo);
+      } catch (e) {
+        throw new Error(`Config error: could not parse datetimeTo value - ${this.#params.datetimeTo}`);
+      }
 		}
-		if (this.#params?.offset) {
-			this.offset = this.#params.offset;
-      // check if its a number
-		}
-
-    // if there is no offset we default to 3 hours
-    if (!this.offset) {
-      this.offset = 3 * 3600;
+    if (this.#params?.offset !== undefined) {
+      if (typeof this.#params.offset !== 'number' || this.#params.offset <= 0) {
+        throw new Error(`Config error: offset must be a positive number, got ${this.#params.offset}`);
+      }
+      this.#offset = this.#params.offset;
     }
+
     // if there is no datetimeTo we default to now
     // minus any buffer to deal with hourly data that might be time begining
-    if (!this.datetimeTo) {
-      this.datetimeTo = Datetime.now();
+    if (!this.#datetimeTo) {
+      this.#datetimeTo = Datetime.now();
     }
 
-    // if there is no datetimeFrom we default to using datetimeTo - offset
-    if (!this.datetimeFrom) {
-      this.datetimeFrom = this.datetimeTo.minus(this.offset);
+    // if there is no datetimeFrom but we have an offset
+    // we default to using datetimeTo - offset
+    if (!this.#datetimeFrom && this.#offset) {
+      this.#datetimeFrom = this.#datetimeTo.minus(this.#offset);
     }
 
 		this.#locations = new Locations();
@@ -755,7 +760,10 @@ export abstract class Client<
 			try {
 				const datetime = this.getDatetime(measurementRow);
 
-        if (datetime.isLessThan(this.datetimeFrom) || datetime.isGreaterThan(this.datetimeTo)) {
+        if (
+          datetime.isGreaterThan(this.#datetimeTo)
+            || (this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
+        ) {
           return;
         }
 

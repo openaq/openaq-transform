@@ -285,26 +285,11 @@ export async function apiReader(
 					return;
 				}
 
-				// Success - combine based on output strategy
-				if (resource.output === "array") {
-					// Array output: flatten arrays, collect objects
-					if (Array.isArray(parsed)) {
-						// Array response - spread items into results
-						results.push(...parsed);
-					} else {
-						// Object/primitive response - collect as-is
-						results.push(parsed);
-					}
-				} else if (resource.output === "object") {
-					if (Array.isArray(parsed)) {
-						// Array response - spread items into results
-						results.push(...parsed);
-					} else {
-						// Object/primitive response - collect as-is
-						results.push(parsed);
-					}
+	      if (resource.output && Array.isArray(parsed)) {
+					// Array response - spread items into results
+					results.push(...parsed);
 				} else {
-					// No output specified (default): return as-is, no transformation
+					// Object/primitive response - collect as-is
 					results.push(parsed);
 				}
 			}),

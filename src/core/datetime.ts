@@ -264,6 +264,4 @@ export class Datetime {
 
 		return new Datetime(dt);
 	}
-
-
 }

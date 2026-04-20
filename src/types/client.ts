@@ -153,10 +153,9 @@ export interface ClientConfiguration {
 	parameters?: ClientParameters;
 	ingestMatchingMethod?: IngestMatchingMethod;
 
-  datetimeFrom?: string;
-  datetimeTo?: string;
-  offset?: number;
-
+	datetimeFrom?: string;
+	datetimeTo?: string;
+	offset?: number;
 }
 
 export type IndexedReader<T> = Partial<Record<ResourceKeys, keyof T | Reader>>;

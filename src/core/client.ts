@@ -224,7 +224,7 @@ export abstract class Client<
 				this.#datetimeFrom = new Datetime(this.#params.datetimeFrom);
 			} catch (e) {
 				throw new Error(
-					`Config error: could not parse datetimeFrom value - ${e.message}`,
+					`Config error: could not parse datetimeFrom value - ${e instanceof Error ? e.message : String(e)}`,
 				);
 			}
 		}
@@ -233,7 +233,7 @@ export abstract class Client<
 				this.#datetimeTo = new Datetime(this.#params.datetimeTo);
 			} catch (e) {
 				throw new Error(
-					`Config error: could not parse datetimeTo value - ${e.message}`,
+					`Config error: could not parse datetimeTo value - ${e instanceof Error ? e.message : String(e)}`,
 				);
 			}
 		}

@@ -158,7 +158,7 @@ export const PARAMETERS: ParameterMap = {
 		numeric: true,
 		units: "c",
 		precision: 1,
-		range: [-50, 50],
+		range: [-50, 60],
 		converters: {
 			c: noConversion,
 			f: (d: number | string) => ((+d - 32) * 5) / 9,

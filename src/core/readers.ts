@@ -262,7 +262,6 @@ export async function apiReader(
 					}
 
 					parsed = result as SourceRecord | SourceRecord[];
-
 				} catch (error) {
 					const parseError =
 						error instanceof ParseError
@@ -285,7 +284,7 @@ export async function apiReader(
 					return;
 				}
 
-	      if (resource.output && Array.isArray(parsed)) {
+				if (resource.output && Array.isArray(parsed)) {
 					// Array response - spread items into results
 					results.push(...parsed);
 				} else {

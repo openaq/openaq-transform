@@ -232,23 +232,24 @@ export class Datetime {
 		let dt: DateTime;
 
 		if (typeof timeOffset === "number") {
-      if (timeOffset < 0) {
-        throw new RangeError("timeOffset must be a positive number");
-      }
+			if (timeOffset < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
 			dt = this.date.minus(timeOffset * 1000);
 		} else {
-      if (!(timeOffset instanceof Duration)) {
-        timeOffset = Duration.fromObject(timeOffset)
-      }
-      if (timeOffset.as('seconds') < 0 ) {
-        throw new RangeError("timeOffset must be a positive number");
-      }
-			dt = this.date.minus(timeOffset);
+			const dur =
+				timeOffset instanceof Duration
+					? timeOffset
+					: Duration.fromObject(timeOffset);
+			if (dur.as("seconds") < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
+			dt = this.date.minus(dur);
 		}
 
 		return new Datetime(dt, {
-      locationTimezone: this.locationTimezone,
-    });
+			locationTimezone: this.locationTimezone,
+		});
 	}
 
 	/**

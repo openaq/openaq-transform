@@ -56,7 +56,7 @@ type ResourceConfig =
 			file?: never;
 			parameters?: Parameters[] | ParametersFunction | PathExpression;
 			body?: Body;
-			responsePath?: PathExpression;
+			responsePath?: PathExpression | string;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
@@ -68,7 +68,7 @@ type ResourceConfig =
 			file: File;
 			parameters?: never;
 			body?: never;
-			responsePath?: PathExpression;
+			responsePath?: PathExpression | string;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
@@ -105,7 +105,7 @@ export class Resource {
 	#parameters?: Parameters[] | ParametersFunction | PathExpression;
 	#body?: Body;
 	#data: DataContext;
-	#responsePath?: PathExpression;
+	#responsePath?: PathExpression | string;
 	#output?: ResourceOutput;
 	#readAs?: ReadAs;
 	#strict: boolean;
@@ -186,7 +186,7 @@ export class Resource {
 	 * Optional PathExpression used to extract nested data from an API response
 	 * before processing (e.g. `"data.measurements"` for `{ data: { measurements: [...] } }`).
 	 */
-	get responsePath(): PathExpression | undefined {
+	get responsePath(): PathExpression | string |  undefined {
 		return this.#responsePath;
 	}
 

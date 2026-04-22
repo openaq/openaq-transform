@@ -18,11 +18,12 @@ import {
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
-import type {
-	ClientParameters,
-	DecimalDigitGroup,
-	PathExpression,
-	ValueFlagMap,
+import {
+	type ClientParameters,
+	type DecimalDigitGroup,
+	isPathExpression,
+	type PathExpression,
+	type ValueFlagMap,
 } from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "../types/readers";
@@ -500,20 +501,42 @@ export abstract class Client<
 			throw new Error("Reader did not return an object");
 		}
 
-		if (resource.responsePath?.type === "jmespath") {
-			const searchTarget = Array.isArray(d) && d.length === 1 ? d[0] : d;
-			d = search(
-				searchTarget as JSONValue,
-				resource.responsePath.expression,
-			) as typeof d;
-			if (d === null || d === undefined) {
-				throw new Error(
-					`jmespath expression "${resource.responsePath.expression}" returned no results`,
-				);
+		if (resource.responsePath) {
+			const responsePath = resource.responsePath;
+
+			if (typeof responsePath === "string") {
+				log(`getting value from key using '${responsePath}'`);
+				d = ((d as Record<string, unknown>)[responsePath] ??
+					responsePath) as JSONValue;
+			}
+			if (isPathExpression(responsePath)) {
+				if (responsePath?.type === "jmespath") {
+					const data = d as JSONValue;
+					const searchTarget =
+						Array.isArray(data) && data.length === 1 ? data[0] : data;
+					d = search(
+						searchTarget as JSONValue,
+						resource.responsePath.expression,
+					) as JSONValue;
+					if (d === null || d === undefined) {
+						throw new Error(
+							`jmespath expression "${resource.responsePath.expression}" returned no results`,
+						);
+					}
+				}
 			}
 		}
 
-		return this.normalizeDataStructure(d);
+		return this.normalizeDataStructure(
+			d as
+				| Partial<
+						Record<
+							"measurements" | "locations" | "meta" | "flags" | "sensors",
+							SourceRecord[]
+						>
+				  >
+				| SourceRecord[],
+		);
 	}
 
 	private normalizeDataStructure(

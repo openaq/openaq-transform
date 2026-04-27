@@ -69,6 +69,54 @@ const handlers = [
 		  ]
 		});
 	}),
+	http.get("https://blah.org/test-provider/wrapped", async () => {
+    return HttpResponse.json({
+        data: {
+            measurements: [
+                {
+                    station: "ts1",
+                    datetime: "2024-01-01T00:00:00-08:00",
+                    particulate_matter_25: 10,
+                    tempf: 80,
+                },
+                { station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+            ],
+            locations: [
+                {
+                    station: "ts1",
+                    site_name: "test site #1",
+                    latitude: 45.56665,
+                    longitude: -123.12121,
+                    averaging: 3600,
+                },
+            ],
+        },
+    });
+}),
+
+http.get("https://blah.org/test-provider/wrapped-wide", async () => {
+    return HttpResponse.json({
+        data: [
+            {
+                station: "ts1",
+                site_name: "test site #1",
+                latitude: 45.56665,
+                longitude: -123.12121,
+                datetime: "2024-01-01T00:00:00-08:00",
+                particulate_matter_25: 10,
+                tempf: 80,
+            },
+            {
+                station: "ts1",
+                site_name: "test site #1",
+                latitude: 45.56665,
+                longitude: -123.12121,
+                datetime: "2024-01-01T01:00:00-08:00",
+                tempf: 80,
+            },
+        ],
+    });
+}),
 	http.get("https://blah.org/long", async () => {
 		return HttpResponse.json({
 			locations: [
@@ -723,4 +771,71 @@ describe("Client with digit group and decimal delimiter setting", () => {
 		expect(data).toStrictEqual(expected);
 	});
 
+});
+
+
+describe("Client with jmespath responsePath nested data key", () => {
+    class JsonClient extends Client {
+        resource = { measurements: new Resource({
+                url: "https://blah.org/test-provider/wrapped",
+                output: "object",
+                responsePath: { type: "jmespath", expression: "data.measurements" }
+            }),
+			locations:  new Resource({
+                url: "https://blah.org/test-provider/wrapped",
+                output: "object",
+                responsePath: { type: "jmespath", expression: "data.locations" }
+            })
+		}
+        provider = "testing";
+        xGeometryKey = "longitude";
+        averagingIntervalKey = "averaging";
+        sensorStatusKey = () => "asdf";
+        yGeometryKey = "latitude";
+        locationIdKey = "station";
+        locationLabelKey = "site_name";
+        geometryProjectionKey = () => "WGS84";
+        ownerKey = () => "test_owner";
+        isMobileKey = () => false;
+        parameters = [
+            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+            { parameter: "temperature", unit: "f", key: "tempf" },
+        ];
+    }
+
+    test("extracts nested arrays via jmespath responsePath", async () => {
+        const cln = new JsonClient();
+        const data = await cln.load();
+        expect(data).toStrictEqual(expectedOutput);
+    });
+});
+
+describe("Client with jmespath responsePath on single resource", () => {
+    class JsonClient extends Client {
+        resource = new Resource({
+            url: "https://blah.org/test-provider/wrapped-wide",
+			output: "object",
+            responsePath: { type: "jmespath", expression: "data" },
+        });
+        provider = "testing";
+        xGeometryKey = "longitude";
+        averagingIntervalKey = () => 3600;
+        sensorStatusKey = () => "asdf";
+        yGeometryKey = "latitude";
+        locationIdKey = "station";
+        locationLabelKey = "site_name";
+        geometryProjectionKey = () => "WGS84";
+        ownerKey = () => "test_owner";
+        isMobileKey = () => false;
+        parameters = [
+            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+            { parameter: "temperature", unit: "f", key: "tempf" },
+        ];
+    }
+
+    test("extracts wide format array via jmespath from single resource", async () => {
+        const cln = new JsonClient();
+        const data = await cln.load();
+        expect(data).toStrictEqual(expectedOutput);
+    });
 });

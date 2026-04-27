@@ -73,6 +73,27 @@ const handlers = [
 		}
 		return HttpResponse.json([]);
 	}),
+	// this one is even edgier :)
+	http.get("https://api.test.com/objects-as-array", async ({ request }) => {
+		const url = new URL(request.url);
+		const page = url.searchParams.get("page");
+		if (page === "1") {
+			return HttpResponse.json([
+        {
+				  stations: objectData.stations.slice(0, 2),
+				  measurements: objectData.measurements.slice(0, 2),
+			  }
+      ]);
+		} else if (page === "2") {
+			return HttpResponse.json([
+        {
+				  stations: objectData.stations.slice(2),
+				  measurements: objectData.measurements.slice(2),
+			  }
+      ]);
+		}
+		return HttpResponse.json([objectData]);
+	}),
 	// endpoints for error handling tests
 	http.get("https://api.test.com/error-data", async ({ request }) => {
 		const url = new URL(request.url);
@@ -167,6 +188,26 @@ describe("apiReader", () => {
 		expect(result as any).toEqual(sampleData);
 	});
 
+
+	test("paginated endpoint with multiple URLs that each return arrays should flatten into single array", async () => {
+		// Create a resource with URL template and parameters
+		const resource = new Resource({
+			url: "https://api.test.com/data?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "array",
+		});
+
+		// Parser just passes content through
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
+
+		// Expect content to be a flattened array of all items from both pages
+		expect(result as any).toEqual(sampleData);
+	});
+
 	test("multiple station URLs that each return an object should return array of objects", async () => {
 		// Create a resource with URL template and parameters for different stations
 		// Default behavior (no output): multiple URLs return array of responses
@@ -200,7 +241,7 @@ describe("apiReader", () => {
 		expect(result as any).toEqual(objectData);
 	});
 
-	test("endpoint that returns paginated object remains an object", async () => {
+	test("EDGE CASE: endpoint that returns paginated object remains an object", async () => {
 		// this one might be overkill becaause I doubt we would run into this issue very often
 		const resource = new Resource({
 			url: "https://api.test.com/pagedobjects?page=:page",
@@ -215,6 +256,37 @@ describe("apiReader", () => {
 		);
 
 		// Expect content to be an array of station objects
+		expect(result as any).toEqual(objectData);
+	});
+
+	test("EDGE CASE: endpoint that returns object AS AN ARRAY converts to an object", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/objects-as-array",
+			output: "object",
+		});
+
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
+
+		expect(result as any).toEqual(objectData);
+	});
+
+	test("EDGE CASE: endpoint that returns paginated object AS AN ARRAY converts to an object", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/objects-as-array?page=:page",
+			parameters: [{ page: 1 }, { page: 2 }],
+			output: "object",
+		});
+
+		const result = await apiReader(
+			{ resource },
+			async (content: any) => content,
+			{},
+		);
+
 		expect(result as any).toEqual(objectData);
 	});
 

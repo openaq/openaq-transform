@@ -98,8 +98,6 @@ export abstract class Client<
 	datasources: object = {};
 	missingDatasources: string[] = [];
 
-	// TODO _secrets = {}
-
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
 	parameters: ClientParameters = PARAMETER_DEFAULTS;
@@ -116,6 +114,11 @@ export abstract class Client<
 	#sensors: Sensors;
 	#errors: Errors;
 	#params: ClientConfiguration;
+	// offset, to, from support
+	// limit the returned values to the following periods
+	#datetimeTo: Datetime;
+	#datetimeFrom?: Datetime;
+	#offset?: number;
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
@@ -223,6 +226,44 @@ export abstract class Client<
 		}
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
+		}
+		if (this.#params?.datetimeFrom) {
+			try {
+				this.#datetimeFrom = new Datetime(this.#params.datetimeFrom);
+			} catch (e) {
+				throw new Error(
+					`Config error: could not parse datetimeFrom value - ${e instanceof Error ? e.message : String(e)}`,
+				);
+			}
+		}
+		if (this.#params?.datetimeTo) {
+			try {
+				this.#datetimeTo = new Datetime(this.#params.datetimeTo);
+			} catch (e) {
+				throw new Error(
+					`Config error: could not parse datetimeTo value - ${e instanceof Error ? e.message : String(e)}`,
+				);
+			}
+		}
+		if (this.#params?.offset !== undefined) {
+			if (typeof this.#params.offset !== "number" || this.#params.offset <= 0) {
+				throw new Error(
+					`Config error: offset must be a positive number, got ${this.#params.offset}`,
+				);
+			}
+			this.#offset = this.#params.offset;
+		}
+
+		// if there is no datetimeTo we default to now
+		// minus any buffer to deal with hourly data that might be time begining
+		if (!this.#datetimeTo) {
+			this.#datetimeTo = Datetime.now();
+		}
+
+		// if there is no datetimeFrom but we have an offset
+		// we default to using datetimeTo - offset
+		if (!this.#datetimeFrom && this.#offset) {
+			this.#datetimeFrom = this.#datetimeTo.minus(this.#offset);
 		}
 
 		this.#locations = new Locations();
@@ -735,6 +776,13 @@ export abstract class Client<
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
 				const datetime = this.getDatetime(measurementRow);
+
+				if (
+					datetime.isGreaterThan(this.#datetimeTo) ||
+					(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
+				) {
+					return;
+				}
 
 				params.forEach((p) => {
 					// for long format data we will need to extract the parameter name from the field

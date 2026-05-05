@@ -839,3 +839,34 @@ describe("Client with jmespath responsePath on single resource", () => {
         expect(data).toStrictEqual(expectedOutput);
     });
 });
+
+
+describe("Client with string responsePath on single resource", () => {
+    class JsonClient extends Client {
+        resource = new Resource({
+            url: "https://blah.org/test-provider/wrapped-wide",
+            output: "object",
+            responsePath: "data",
+        });
+        provider = "testing";
+        xGeometryKey = "longitude";
+        averagingIntervalKey = () => 3600;
+        sensorStatusKey = () => "asdf";
+        yGeometryKey = "latitude";
+        locationIdKey = "station";
+        locationLabelKey = "site_name";
+        geometryProjectionKey = () => "WGS84";
+        ownerKey = () => "test_owner";
+        isMobileKey = () => false;
+        parameters = [
+            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+            { parameter: "temperature", unit: "f", key: "tempf" },
+        ];
+    }
+
+    test("extracts wide format array via string key from single resource", async () => {
+        const cln = new JsonClient();
+        const data = await cln.load();
+        expect(data).toStrictEqual(expectedOutput);
+    });
+});

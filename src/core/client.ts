@@ -450,11 +450,12 @@ export abstract class Client<
 					data,
 				);
 
-				d = (
-					resource.responsePath?.type === "jmespath"
-						? search(d as JSONValue, resource.responsePath.expression)
-						: d
-				) as SourceRecord[] | ResourceData;
+
+				if (resource.responsePath) {
+					const responsePath = resource.responsePath;
+					d = getValueFromKey(d as SourceRecord, responsePath);
+				}
+
 
 				if (Array.isArray(d)) {
 					data[key] = d as SourceRecord[];
@@ -504,27 +505,7 @@ export abstract class Client<
 		if (resource.responsePath) {
 			const responsePath = resource.responsePath;
 
-			if (typeof responsePath === "string") {
-				log(`getting value from key using '${responsePath}'`);
-				d = ((d as Record<string, unknown>)[responsePath] ??
-					responsePath) as JSONValue;
-			}
-			if (isPathExpression(responsePath)) {
-				if (responsePath?.type === "jmespath") {
-					const data = d as JSONValue;
-					const searchTarget =
-						Array.isArray(data) && data.length === 1 ? data[0] : data;
-					d = search(
-						searchTarget as JSONValue,
-						resource.responsePath.expression,
-					) as JSONValue;
-					if (d === null || d === undefined) {
-						throw new Error(
-							`jmespath expression "${resource.responsePath.expression}" returned no results`,
-						);
-					}
-				}
-			}
+			d = getValueFromKey(d as SourceRecord, responsePath)
 		}
 
 		return this.normalizeDataStructure(

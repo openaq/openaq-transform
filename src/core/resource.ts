@@ -186,7 +186,7 @@ export class Resource {
 	 * Optional PathExpression used to extract nested data from an API response
 	 * before processing (e.g. `"data.measurements"` for `{ data: { measurements: [...] } }`).
 	 */
-	get responsePath(): PathExpression | string |  undefined {
+	get responsePath(): PathExpression | string | undefined {
 		return this.#responsePath;
 	}
 

@@ -1,4 +1,3 @@
-import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
 import {
 	type ClientConfiguration,
@@ -18,12 +17,11 @@ import {
 } from "../types/client";
 import type { ResourceData, SourceRecord } from "../types/data";
 import type { FlagInput } from "../types/flag";
-import {
-	type ClientParameters,
-	type DecimalDigitGroup,
-	isPathExpression,
-	type PathExpression,
-	type ValueFlagMap,
+import type {
+	ClientParameters,
+	DecimalDigitGroup,
+	PathExpression,
+	ValueFlagMap,
 } from "../types/metric";
 import { isParser, type Parser, type ParserMethods } from "../types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "../types/readers";
@@ -450,12 +448,10 @@ export abstract class Client<
 					data,
 				);
 
-
 				if (resource.responsePath) {
 					const responsePath = resource.responsePath;
 					d = getValueFromKey(d as SourceRecord, responsePath);
 				}
-
 
 				if (Array.isArray(d)) {
 					data[key] = d as SourceRecord[];
@@ -505,7 +501,7 @@ export abstract class Client<
 		if (resource.responsePath) {
 			const responsePath = resource.responsePath;
 
-			d = getValueFromKey(d as SourceRecord, responsePath)
+			d = getValueFromKey(d as SourceRecord, responsePath);
 		}
 
 		return this.normalizeDataStructure(

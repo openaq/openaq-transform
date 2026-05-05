@@ -227,3 +227,60 @@ test("toString with format string returns formatted date", () => {
     const datetime = new Datetime("2025-01-01T00:00:00-05:00");
     expect(datetime.toString("yyyy-MM-dd")).toBe("2025-01-01");
 });
+
+test("minus returns a new Datetime instance", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	const result = datetime.minus(60);
+	expect(result).toBeInstanceOf(Datetime);
+	expect(result).not.toBe(datetime);
+});
+
+test("minus does not mutate original instance", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	datetime.minus(3600);
+	expect(datetime.toUTC()).toBe("2025-01-01T12:00:00Z");
+});
+
+test("minus with string throws luxon error", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.minus('60')).toThrow();
+});
+
+test("object with misnamed key throws luxon error", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.minus({ h: 2 })).toThrow();
+});
+
+test("minus with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.minus(-60)).toThrow(RangeError);
+});
+
+test("object with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.minus({ hours: -1 })).toThrow(RangeError);
+});
+
+test("Duration with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.minus(Duration.fromObject({ hours: -1 }))).toThrow(RangeError);
+});
+
+test("minus preserves locationTimezone", () => {
+	const datetime = new Datetime("2025-01-01 12:00", {
+		format: "yyyy-MM-dd HH:mm",
+		timezone: "America/Denver",
+		locationTimezone: "America/Denver",
+	});
+	const result = datetime.minus(3600);
+	expect(result.toLocal()).toBe("2025-01-01T11:00:00-07:00");
+});
+
+test("minus with all three input types produces the same result", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	const fromNumber = datetime.minus(3600);
+	const fromDuration = datetime.minus(Duration.fromObject({ hours: 1 }));
+	const fromOffset = datetime.minus({ hours: 1 });
+	expect(fromNumber.toUTC()).toBe(fromDuration.toUTC());
+	expect(fromDuration.toUTC()).toBe(fromOffset.toUTC());
+});

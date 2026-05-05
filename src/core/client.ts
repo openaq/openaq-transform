@@ -40,6 +40,7 @@ import { Measurement, Measurements } from "./measurement";
 import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
+
 import {
 	cleanKey,
 	formatValueForLog,
@@ -482,11 +483,16 @@ export abstract class Client<
 					? this.getParserMethod(this.parser, key)
 					: this.getParserMethod(this.parser);
 
-				const d = await reader(
+				let d = await reader(
 					{ resource, errorHandler: this.errorHandler.bind(this) },
 					parser,
 					data,
 				);
+
+				if (resource.responsePath) {
+					const responsePath = resource.responsePath;
+					d = getValueFromKey(d as SourceRecord, responsePath);
+				}
 
 				if (Array.isArray(d)) {
 					data[key] = d as SourceRecord[];
@@ -519,7 +525,7 @@ export abstract class Client<
 			parser = this.getParserMethod(this.parser);
 		}
 
-		const d = await reader(
+		let d = await reader(
 			{ resource, errorHandler: this.errorHandler.bind(this) },
 			parser,
 			data,
@@ -533,7 +539,22 @@ export abstract class Client<
 			throw new Error("Reader did not return an object");
 		}
 
-		return this.normalizeDataStructure(d);
+		if (resource.responsePath) {
+			const responsePath = resource.responsePath;
+
+			d = getValueFromKey(d as SourceRecord, responsePath);
+		}
+
+		return this.normalizeDataStructure(
+			d as
+				| Partial<
+						Record<
+							"measurements" | "locations" | "meta" | "flags" | "sensors",
+							SourceRecord[]
+						>
+				  >
+				| SourceRecord[],
+		);
 	}
 
 	private normalizeDataStructure(

@@ -221,6 +221,38 @@ export class Datetime {
 	}
 
 	/**
+	 * Creates a new Datetime instance representing the internal date/time,
+	 * minus the required offset value.
+	 *
+	 * @param {number | Duration | TimeOffset} [timeOffset=0] - The amount to subtract from the current time.
+	 *
+	 * @returns {Datetime} A new Datetime instance adjusted by the specified offset
+	 */
+	minus(timeOffset: number | Duration | TimeOffset): Datetime {
+		let dt: DateTime;
+
+		if (typeof timeOffset === "number") {
+			if (timeOffset < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
+			dt = this.date.minus(timeOffset * 1000);
+		} else {
+			const dur =
+				timeOffset instanceof Duration
+					? timeOffset
+					: Duration.fromObject(timeOffset);
+			if (dur.as("seconds") < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
+			dt = this.date.minus(dur);
+		}
+
+		return new Datetime(dt, {
+			locationTimezone: this.locationTimezone,
+		});
+	}
+
+	/**
 	 * Creates a new Datetime instance representing the current date and time,
 	 * optionally adjusted by a specified offset into the past.
 	 *

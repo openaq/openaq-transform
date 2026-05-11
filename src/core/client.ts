@@ -40,6 +40,7 @@ import { Measurement, Measurements } from "./measurement";
 import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
+
 import {
 	cleanKey,
 	formatValueForLog,
@@ -98,8 +99,6 @@ export abstract class Client<
 	datasources: object = {};
 	missingDatasources: string[] = [];
 
-	// TODO _secrets = {}
-
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
 	parameters: ClientParameters = PARAMETER_DEFAULTS;
@@ -116,6 +115,11 @@ export abstract class Client<
 	#sensors: Sensors;
 	#errors: Errors;
 	#params: ClientConfiguration;
+	// offset, to, from support
+	// limit the returned values to the following periods
+	#datetimeTo: Datetime;
+	#datetimeFrom?: Datetime;
+	#offset?: number;
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
@@ -223,6 +227,44 @@ export abstract class Client<
 		}
 		if (this.#params?.secrets) {
 			this.secrets = this.#params.secrets;
+		}
+		if (this.#params?.datetimeFrom) {
+			try {
+				this.#datetimeFrom = new Datetime(this.#params.datetimeFrom);
+			} catch (e) {
+				throw new Error(
+					`Config error: could not parse datetimeFrom value - ${e instanceof Error ? e.message : String(e)}`,
+				);
+			}
+		}
+		if (this.#params?.datetimeTo) {
+			try {
+				this.#datetimeTo = new Datetime(this.#params.datetimeTo);
+			} catch (e) {
+				throw new Error(
+					`Config error: could not parse datetimeTo value - ${e instanceof Error ? e.message : String(e)}`,
+				);
+			}
+		}
+		if (this.#params?.offset !== undefined) {
+			if (typeof this.#params.offset !== "number" || this.#params.offset <= 0) {
+				throw new Error(
+					`Config error: offset must be a positive number, got ${this.#params.offset}`,
+				);
+			}
+			this.#offset = this.#params.offset;
+		}
+
+		// if there is no datetimeTo we default to now
+		// minus any buffer to deal with hourly data that might be time begining
+		if (!this.#datetimeTo) {
+			this.#datetimeTo = Datetime.now();
+		}
+
+		// if there is no datetimeFrom but we have an offset
+		// we default to using datetimeTo - offset
+		if (!this.#datetimeFrom && this.#offset) {
+			this.#datetimeFrom = this.#datetimeTo.minus(this.#offset);
 		}
 
 		this.#locations = new Locations();
@@ -441,11 +483,16 @@ export abstract class Client<
 					? this.getParserMethod(this.parser, key)
 					: this.getParserMethod(this.parser);
 
-				const d = await reader(
+				let d = await reader(
 					{ resource, errorHandler: this.errorHandler.bind(this) },
 					parser,
 					data,
 				);
+
+				if (resource.responsePath) {
+					const responsePath = resource.responsePath;
+					d = getValueFromKey(d as SourceRecord, responsePath);
+				}
 
 				if (Array.isArray(d)) {
 					data[key] = d as SourceRecord[];
@@ -478,7 +525,7 @@ export abstract class Client<
 			parser = this.getParserMethod(this.parser);
 		}
 
-		const d = await reader(
+		let d = await reader(
 			{ resource, errorHandler: this.errorHandler.bind(this) },
 			parser,
 			data,
@@ -492,7 +539,22 @@ export abstract class Client<
 			throw new Error("Reader did not return an object");
 		}
 
-		return this.normalizeDataStructure(d);
+		if (resource.responsePath) {
+			const responsePath = resource.responsePath;
+
+			d = getValueFromKey(d as SourceRecord, responsePath);
+		}
+
+		return this.normalizeDataStructure(
+			d as
+				| Partial<
+						Record<
+							"measurements" | "locations" | "meta" | "flags" | "sensors",
+							SourceRecord[]
+						>
+				  >
+				| SourceRecord[],
+		);
 	}
 
 	private normalizeDataStructure(
@@ -735,6 +797,13 @@ export abstract class Client<
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
 				const datetime = this.getDatetime(measurementRow);
+
+				if (
+					datetime.isGreaterThan(this.#datetimeTo) ||
+					(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
+				) {
+					return;
+				}
 
 				params.forEach((p) => {
 					// for long format data we will need to extract the parameter name from the field

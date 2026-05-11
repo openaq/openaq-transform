@@ -20,13 +20,97 @@ const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb / 1000;
 const ppmToPpb = (ppm: number | string) => +ppm * 1000;
 const mgm3ToUgm3 = (mgm3: number | string) => +mgm3 * 1000;
+const ugm3ToMgm3 = (mgm3: number | string) => +ugm3 / 1000;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMap = {
-	"pm1:mass": {
-		name: "pm1",
+	"bc": { // typically in the 0-3,000 ng/m3 range
+		name: "bc",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@370": {
+		name: "bc_370",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@375": {
+		name: "bc_375",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@470": {
+		name: "bc_470",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@528": {
+		name: "bc_528",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@625": {
+		name: "bc_625",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"bc@880": {
+		name: "bc_880",
+		numeric: true,
+		units: "ng/m3",
+		converters: {
+			"ng/m3": noConversion,
+		},
+	},
+	"ch4:parts": {
+		name: "ch4",
+		numeric: true,
+		units: "ppb",
+		converters: {
+			"ppb": noConversion,
+      "ppm": ppmToPpb,
+		},
+	},
+	"co:mass": { // units reported by WHO
+		name: "co",
+		numeric: true,
+		units: "mg/m3",
+		converters: {
+			"mg/m3": noConversion,
+			"ug/m3": ugm3ToMgm3,
+		},
+	},
+	"co:parts": {
+		name: "co",
+		numeric: true,
+		units: "ppm",
+		converters: {
+			ppm: noConversion,
+			ppb: ppbToPpm,
+		},
+	},
+	"no:mass": {
+		name: "no",
 		numeric: true,
 		units: "ug/m3",
 		converters: {
@@ -34,34 +118,7 @@ export const PARAMETERS: ParameterMap = {
 			"mg/m3": mgm3ToUgm3,
 		},
 	},
-	"pm25:mass": {
-		name: "pm25",
-		numeric: true,
-		units: "ug/m3",
-		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"pm4:mass": {
-		name: "pm4",
-		numeric: true,
-		units: "ug/m3",
-		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"pm10:mass": {
-		name: "pm10",
-		numeric: true,
-		units: "ug/m3",
-		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"no2:mass": {
+	"no2:mass": { // units reported by WHO
 		name: "no2",
 		numeric: true,
 		units: "ug/m3",
@@ -79,49 +136,13 @@ export const PARAMETERS: ParameterMap = {
 			"mg/m3": mgm3ToUgm3,
 		},
 	},
-	"so2:mass": {
-		name: "so2",
+	"no:parts": {
+		name: "no",
 		numeric: true,
-		units: "ug/m3",
+		units: "ppb",
 		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"o3:parts": {
-		name: "o3",
-		numeric: true,
-		units: "ppm",
-		converters: {
-			ppm: noConversion,
-			ppb: ppbToPpm,
-		},
-	},
-	"o3:mass": {
-		name: "o3",
-		numeric: true,
-		units: "ug/m3",
-		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"co:mass": {
-		name: "co",
-		numeric: true,
-		units: "ug/m3",
-		converters: {
-			"ug/m3": noConversion,
-			"mg/m3": mgm3ToUgm3,
-		},
-	},
-	"co:parts": {
-		name: "co",
-		numeric: true,
-		units: "ppm",
-		converters: {
-			ppm: noConversion,
-			ppb: ppbToPpm,
+			ppb: noConversion,
+			ppm: ppmToPpb,
 		},
 	},
 	"no2:parts": {
@@ -142,13 +163,136 @@ export const PARAMETERS: ParameterMap = {
 			ppm: ppmToPpb,
 		},
 	},
+	"pm1:mass": {
+		name: "pm1",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
+	"pm4:mass": { // only sentate
+		name: "pm4",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
+	"pm10:mass": {
+		name: "pm1",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
+	"pm25:mass": {
+		name: "pm25",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
+	"um003:conc": { // only airgradient
+		name: "um003",
+		numeric: true,
+		units: "particles/cm3",
+		converters: {
+			"particles/cm3": noConversion,
+		},
+	},
+	"ufp:conc": { // only bay_area_mobile_analysis
+		name: "ufp",
+		numeric: true,
+		units: "particles/cm3",
+		converters: {
+			"particles/cm3": noConversion,
+		},
+	},
+	"um010:conc": { // only nyc_mobile_mit_city_scanner
+		name: "um010",
+		numeric: true,
+		units: "particles/cm3",
+		converters: {
+			"particles/cm3": noConversion,
+		},
+	},
+	"um025:conc": { // only houston_mobile
+		name: "um025",
+		numeric: true,
+		units: "particles/cm3",
+		converters: {
+			"particles/cm3": noConversion,
+		},
+	},
+	"um100:conc": { // only nyc_mobile_mit_city_scanner
+		name: "um100",
+		numeric: true,
+		units: "particles/cm3",
+		converters: {
+			"particles/cm3": noConversion,
+		},
+	},
+	"so2:mass": { // units reported by WHO
+		name: "so2",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
 	"so2:parts": {
 		name: "so2",
 		numeric: true,
-		units: "ppm",
+		units: "ppb",
 		converters: {
-			ppm: noConversion,
-			ppb: ppbToPpm,
+			ppb: noConversion,
+			ppm: ppmToPpb,
+		},
+	},
+	"o3:parts": {
+		name: "o3",
+		numeric: true,
+		units: "ppb",
+		converters: {
+			ppb: noConversion,
+			ppm: ppmToPpb,
+		},
+	},
+	"o3:mass": { // units reported by WHO
+		name: "o3",
+		numeric: true,
+		units: "ug/m3",
+		converters: {
+			"ug/m3": noConversion,
+			"mg/m3": mgm3ToUgm3,
+		},
+	},
+	ws: {
+		name: "ws",
+		numeric: true,
+		units: "m/s",
+		precision: 1,
+		range: [0, 100],
+		converters: {
+			"m/s": noConversion,
+		},
+	},
+	wd: {
+		name: "wd",
+		numeric: true,
+		units: "deg",
+		precision: 1,
+		range: [0, 360],
+		converters: {
+			"deg": noConversion,
 		},
 	},
 	temperature: {

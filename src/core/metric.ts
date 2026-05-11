@@ -18,6 +18,7 @@ import { normalizeNumericString } from "./utils";
 
 const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb / 1000;
+const ppmToPpb = (ppm: number | string) => +ppm * 1000;
 const mgm3ToUgm3 = (mgm3: number | string) => +mgm3 * 1000;
 
 // this should be tranform methods that all orgs will use
@@ -130,6 +131,15 @@ export const PARAMETERS: ParameterMap = {
 		converters: {
 			ppm: noConversion,
 			ppb: ppbToPpm,
+		},
+	},
+	"nox:parts": {
+		name: "nox",
+		numeric: true,
+		units: "ppb",
+		converters: {
+			ppb: noConversion,
+			ppm: ppmToPpb,
 		},
 	},
 	"so2:parts": {

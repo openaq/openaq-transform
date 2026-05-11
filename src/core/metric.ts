@@ -30,6 +30,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -38,6 +39,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_370",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -46,6 +48,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_375",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -54,6 +57,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_470",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -62,6 +66,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_528",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -70,6 +75,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_625",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -78,6 +84,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "bc_880",
 		numeric: true,
 		units: "ng/m3",
+		range: [0, 10000],
 		converters: {
 			"ng/m3": noConversion,
 		},
@@ -86,6 +93,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "ch4",
 		numeric: true,
 		units: "ppb",
+		range: [0, 10000],
 		converters: {
 			"ppb": noConversion,
       "ppm": ppmToPpb,
@@ -95,6 +103,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "co",
 		numeric: true,
 		units: "mg/m3",
+		range: [0, 100000],
 		converters: {
 			"mg/m3": noConversion,
 			"ug/m3": ugm3ToMgm3,
@@ -104,6 +113,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "co",
 		numeric: true,
 		units: "ppm",
+		range: [0, 100000],
 		converters: {
 			ppm: noConversion,
 			ppb: ppbToPpm,
@@ -113,6 +123,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "no",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 500],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -122,6 +133,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "no2",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 500],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -131,6 +143,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "nox",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 1000],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -140,6 +153,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "no",
 		numeric: true,
 		units: "ppb",
+		range: [0, 500],
 		converters: {
 			ppb: noConversion,
 			ppm: ppmToPpb,
@@ -148,16 +162,18 @@ export const PARAMETERS: ParameterMap = {
 	"no2:parts": {
 		name: "no2",
 		numeric: true,
-		units: "ppm",
+		units: "ppb",
+		range: [0, 500],
 		converters: {
-			ppm: noConversion,
-			ppb: ppbToPpm,
+			ppb: noConversion,
+			ppm: ppmToPpb,
 		},
 	},
 	"nox:parts": {
 		name: "nox",
 		numeric: true,
 		units: "ppb",
+		range: [0, 5000],
 		converters: {
 			ppb: noConversion,
 			ppm: ppmToPpb,
@@ -167,6 +183,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "pm1",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 1000],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -176,6 +193,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "pm4",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 1000],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -185,6 +203,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "pm1",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 1500],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -194,6 +213,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "pm25",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 1000],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -203,6 +223,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "um003",
 		numeric: true,
 		units: "particles/cm3",
+		range: [0, 1500000],
 		converters: {
 			"particles/cm3": noConversion,
 		},
@@ -211,6 +232,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "ufp",
 		numeric: true,
 		units: "particles/cm3",
+		range: [0, 1000000],
 		converters: {
 			"particles/cm3": noConversion,
 		},
@@ -219,6 +241,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "um010",
 		numeric: true,
 		units: "particles/cm3",
+		range: [0, 500000],
 		converters: {
 			"particles/cm3": noConversion,
 		},
@@ -227,6 +250,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "um025",
 		numeric: true,
 		units: "particles/cm3",
+		range: [0, 100000],
 		converters: {
 			"particles/cm3": noConversion,
 		},
@@ -235,6 +259,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "um100",
 		numeric: true,
 		units: "particles/cm3",
+		range: [0, 10000],
 		converters: {
 			"particles/cm3": noConversion,
 		},
@@ -243,6 +268,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "so2",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 2000],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -252,6 +278,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "so2",
 		numeric: true,
 		units: "ppb",
+		range: [0, 2000],
 		converters: {
 			ppb: noConversion,
 			ppm: ppmToPpb,
@@ -261,6 +288,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "o3",
 		numeric: true,
 		units: "ppb",
+		range: [0, 500],
 		converters: {
 			ppb: noConversion,
 			ppm: ppmToPpb,
@@ -270,6 +298,7 @@ export const PARAMETERS: ParameterMap = {
 		name: "o3",
 		numeric: true,
 		units: "ug/m3",
+		range: [0, 500],
 		converters: {
 			"ug/m3": noConversion,
 			"mg/m3": mgm3ToUgm3,
@@ -280,7 +309,7 @@ export const PARAMETERS: ParameterMap = {
 		numeric: true,
 		units: "m/s",
 		precision: 1,
-		range: [0, 100],
+		range: [0, 115],
 		converters: {
 			"m/s": noConversion,
 		},

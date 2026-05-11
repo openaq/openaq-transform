@@ -220,7 +220,6 @@ export class Datetime {
 		return this.toLocal(formatString);
 	}
 
-
 	/**
 	 * Creates a new Datetime instance representing the internal date/time,
 	 * plus the required offset value.

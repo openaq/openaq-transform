@@ -419,7 +419,11 @@ export abstract class Client<
 	 * @param {*} row - data with fields to create timestamp
 	 * @returns {string} - formated timestamp string
 	 */
-	getDatetime(row: SourceRecord, timeEnding: boolean, averagingIntervalSeconds: number | undefined): Datetime {
+	getDatetime(
+		row: SourceRecord,
+		timeEnding: boolean,
+		averagingIntervalSeconds: number | undefined,
+	): Datetime {
 		const dtString = getValueFromKey(row, this.datetimeKey);
 		log(`getDatetime`, dtString);
 		if (typeof dtString !== "string" || !dtString) {
@@ -433,7 +437,9 @@ export abstract class Client<
 		});
 		if (!timeEnding) {
 			if (!averagingIntervalSeconds) {
-				throw new Error("averagingIntervalSeconds required when timeEnding is false");
+				throw new Error(
+					"averagingIntervalSeconds required when timeEnding is false",
+				);
 			}
 			dt = dt.add(averagingIntervalSeconds);
 		}
@@ -851,7 +857,11 @@ export abstract class Client<
 							return;
 						}
 						const averagingIntervalSeconds = sensor.averagingIntervalSeconds;
-						const datetime = this.getDatetime(measurementRow, this.timeEnding, averagingIntervalSeconds);
+						const datetime = this.getDatetime(
+							measurementRow,
+							this.timeEnding,
+							averagingIntervalSeconds,
+						);
 						if (
 							datetime.isGreaterThan(this.#datetimeTo) ||
 							(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))

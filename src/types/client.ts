@@ -131,6 +131,7 @@ export interface ClientConfiguration {
 	longFormat?: boolean;
 	sourceProjection?: string;
 	datetimeFormat?: string;
+	timeEnding: boolean;
 	secrets?: object;
 
 	locationIdKey?: string | ParseFunction;

@@ -220,6 +220,39 @@ export class Datetime {
 		return this.toLocal(formatString);
 	}
 
+
+	/**
+	 * Creates a new Datetime instance representing the internal date/time,
+	 * plus the required offset value.
+	 *
+	 * @param {number | Duration | TimeOffset} [timeOffset=0] - The amount to add to the current time.
+	 *
+	 * @returns {Datetime} A new Datetime instance adjusted by the specified offset
+	 */
+	add(timeOffset: number | Duration | TimeOffset): Datetime {
+		let dt: DateTime;
+
+		if (typeof timeOffset === "number") {
+			if (timeOffset < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
+			dt = this.date.plus(timeOffset * 1000);
+		} else {
+			const dur =
+				timeOffset instanceof Duration
+					? timeOffset
+					: Duration.fromObject(timeOffset);
+			if (dur.as("seconds") < 0) {
+				throw new RangeError("timeOffset must be a positive number");
+			}
+			dt = this.date.plus(dur);
+		}
+
+		return new Datetime(dt, {
+			locationTimezone: this.locationTimezone,
+		});
+	}
+
 	/**
 	 * Creates a new Datetime instance representing the internal date/time,
 	 * minus the required offset value.

@@ -70,6 +70,7 @@ export abstract class Client<
 	longFormat: boolean = false;
 	geometryProjectionKey: string | PathExpression | ParseFunction = "projection";
 	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
+	timeEnding: boolean = true;
 
 	// mapped data variables
 	locationIdKey: string | PathExpression | ParseFunction = "location";
@@ -200,6 +201,9 @@ export abstract class Client<
 		}
 		if (this.#params?.datetimeKey) {
 			this.datetimeKey = this.#params.datetimeKey;
+		}
+		if (this.#params?.timeEnding !== undefined) {
+			this.timeEnding = this.#params.timeEnding;
 		}
 		if (this.#params?.licenseKey) {
 			this.licenseKey = this.#params.licenseKey;
@@ -415,7 +419,7 @@ export abstract class Client<
 	 * @param {*} row - data with fields to create timestamp
 	 * @returns {string} - formated timestamp string
 	 */
-	getDatetime(row: SourceRecord): Datetime {
+	getDatetime(row: SourceRecord, timeEnding: boolean, averagingIntervalSeconds: number | undefined): Datetime {
 		const dtString = getValueFromKey(row, this.datetimeKey);
 		log(`getDatetime`, dtString);
 		if (typeof dtString !== "string" || !dtString) {
@@ -423,11 +427,16 @@ export abstract class Client<
 				`Missing date/time field. Looking in ${formatValueForLog(this.datetimeKey)}`,
 			);
 		}
-
-		const dt = new Datetime(dtString, {
+		let dt = new Datetime(dtString, {
 			format: this.datetimeFormat,
 			timezone: this.timezone,
 		});
+		if (!timeEnding) {
+			if (!averagingIntervalSeconds) {
+				throw new Error("averagingIntervalSeconds required when timeEnding is false");
+			}
+			dt = dt.add(averagingIntervalSeconds);
+		}
 		return dt;
 	}
 
@@ -596,8 +605,6 @@ export abstract class Client<
 
 	/**
 	 * Entry point for processing data
-	 *
-	 * @param {(string|file|object)} file - file path, object or file
 	 */
 	async load() {
 		log(`Starting the load process`);
@@ -796,15 +803,6 @@ export abstract class Client<
 
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
-				const datetime = this.getDatetime(measurementRow);
-
-				if (
-					datetime.isGreaterThan(this.#datetimeTo) ||
-					(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
-				) {
-					return;
-				}
-
 				params.forEach((p) => {
 					// for long format data we will need to extract the parameter name from the field
 					// for wide format they are both the same value
@@ -850,6 +848,14 @@ export abstract class Client<
 									metric,
 								}),
 							);
+							return;
+						}
+						const averagingIntervalSeconds = sensor.averagingIntervalSeconds;
+						const datetime = this.getDatetime(measurementRow, this.timeEnding, averagingIntervalSeconds);
+						if (
+							datetime.isGreaterThan(this.#datetimeTo) ||
+							(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
+						) {
 							return;
 						}
 						this.measurements.add(

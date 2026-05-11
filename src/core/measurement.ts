@@ -65,7 +65,6 @@ export class Measurements {
 		if (measurement.coordinates) {
 			this.bounds = updateBounds(measurement.coordinates, this.bounds);
 		}
-
 		if (this.to) {
 			this.to = measurement.timestamp.greaterOf(this.to);
 		} else {

@@ -20,13 +20,14 @@ const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb / 1000;
 const ppmToPpb = (ppm: number | string) => +ppm * 1000;
 const mgm3ToUgm3 = (mgm3: number | string) => +mgm3 * 1000;
-const ugm3ToMgm3 = (mgm3: number | string) => +ugm3 / 1000;
+const ugm3ToMgm3 = (ugm3: number | string) => +ugm3 / 1000;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
 // somewhere else we will need to define what unit to use for each parameter (not as a constant)
 export const PARAMETERS: ParameterMap = {
-	"bc": { // typically in the 0-3,000 ng/m3 range
+	bc: {
+		// typically in the 0-3,000 ng/m3 range
 		name: "bc",
 		numeric: true,
 		units: "ng/m3",
@@ -95,11 +96,12 @@ export const PARAMETERS: ParameterMap = {
 		units: "ppb",
 		range: [0, 10000],
 		converters: {
-			"ppb": noConversion,
-      "ppm": ppmToPpb,
+			ppb: noConversion,
+			ppm: ppmToPpb,
 		},
 	},
-	"co:mass": { // units reported by WHO
+	"co:mass": {
+		// units reported by WHO
 		name: "co",
 		numeric: true,
 		units: "mg/m3",
@@ -129,7 +131,8 @@ export const PARAMETERS: ParameterMap = {
 			"mg/m3": mgm3ToUgm3,
 		},
 	},
-	"no2:mass": { // units reported by WHO
+	"no2:mass": {
+		// units reported by WHO
 		name: "no2",
 		numeric: true,
 		units: "ug/m3",
@@ -189,7 +192,8 @@ export const PARAMETERS: ParameterMap = {
 			"mg/m3": mgm3ToUgm3,
 		},
 	},
-	"pm4:mass": { // only sentate
+	"pm4:mass": {
+		// only sentate
 		name: "pm4",
 		numeric: true,
 		units: "ug/m3",
@@ -219,7 +223,8 @@ export const PARAMETERS: ParameterMap = {
 			"mg/m3": mgm3ToUgm3,
 		},
 	},
-	"um003:conc": { // only airgradient
+	"um003:conc": {
+		// only airgradient
 		name: "um003",
 		numeric: true,
 		units: "particles/cm3",
@@ -228,7 +233,8 @@ export const PARAMETERS: ParameterMap = {
 			"particles/cm3": noConversion,
 		},
 	},
-	"ufp:conc": { // only bay_area_mobile_analysis
+	"ufp:conc": {
+		// only bay_area_mobile_analysis
 		name: "ufp",
 		numeric: true,
 		units: "particles/cm3",
@@ -237,7 +243,8 @@ export const PARAMETERS: ParameterMap = {
 			"particles/cm3": noConversion,
 		},
 	},
-	"um010:conc": { // only nyc_mobile_mit_city_scanner
+	"um010:conc": {
+		// only nyc_mobile_mit_city_scanner
 		name: "um010",
 		numeric: true,
 		units: "particles/cm3",
@@ -246,7 +253,8 @@ export const PARAMETERS: ParameterMap = {
 			"particles/cm3": noConversion,
 		},
 	},
-	"um025:conc": { // only houston_mobile
+	"um025:conc": {
+		// only houston_mobile
 		name: "um025",
 		numeric: true,
 		units: "particles/cm3",
@@ -255,7 +263,8 @@ export const PARAMETERS: ParameterMap = {
 			"particles/cm3": noConversion,
 		},
 	},
-	"um100:conc": { // only nyc_mobile_mit_city_scanner
+	"um100:conc": {
+		// only nyc_mobile_mit_city_scanner
 		name: "um100",
 		numeric: true,
 		units: "particles/cm3",
@@ -264,7 +273,8 @@ export const PARAMETERS: ParameterMap = {
 			"particles/cm3": noConversion,
 		},
 	},
-	"so2:mass": { // units reported by WHO
+	"so2:mass": {
+		// units reported by WHO
 		name: "so2",
 		numeric: true,
 		units: "ug/m3",
@@ -294,7 +304,8 @@ export const PARAMETERS: ParameterMap = {
 			ppm: ppmToPpb,
 		},
 	},
-	"o3:mass": { // units reported by WHO
+	"o3:mass": {
+		// units reported by WHO
 		name: "o3",
 		numeric: true,
 		units: "ug/m3",
@@ -321,7 +332,7 @@ export const PARAMETERS: ParameterMap = {
 		precision: 1,
 		range: [0, 360],
 		converters: {
-			"deg": noConversion,
+			deg: noConversion,
 		},
 	},
 	temperature: {

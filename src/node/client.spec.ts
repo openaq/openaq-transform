@@ -872,8 +872,37 @@ describe("Client with string responsePath on single resource", () => {
 });
 
 
+describe.only("Client with timeEnding=false throws error when mising averaging interval", () => {
+
+  class JsonClient extends Client {
+		resource = new Resource({ url: "https://blah.org/long" });
+		provider = "testing";
+		longFormat = true;
+		timeEnding = false;
+		xGeometryKey = "longitude";
+		yGeometryKey = "latitude";
+		// averagingIntervalKey = () => 3600
+		sensorStatusKey = () => "asdf";
+		locationIdKey = "station";
+		locationLabelKey = "site_name";
+		geometryProjectionKey = () => "WGS84";
+		ownerKey = () => "test_owner";
+		isMobileKey = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
+
+	test.only("Initiating throws missing property error", async () => {
+	  expect(() => new JsonClient()).toThrowError();
+	});
+
+});
+
 describe("Client with timeEnding=false normalizes timestamps to time-ending", () => {
-	class JsonClient extends Client {
+
+  class JsonClient extends Client {
 		resource = new Resource({ url: "https://blah.org/long" });
 		provider = "testing";
 		longFormat = true;

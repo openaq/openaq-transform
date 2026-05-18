@@ -421,7 +421,6 @@ export abstract class Client<
 	 */
 	getDatetime(
 		row: SourceRecord,
-		timeEnding: boolean,
 		averagingIntervalSeconds: number | undefined,
 	): Datetime {
 		const dtString = getValueFromKey(row, this.datetimeKey);
@@ -435,7 +434,7 @@ export abstract class Client<
 			format: this.datetimeFormat,
 			timezone: this.timezone,
 		});
-		if (!timeEnding) {
+		if (!this.timeEnding) {
 			if (!averagingIntervalSeconds) {
 				throw new Error(
 					"averagingIntervalSeconds required when timeEnding is false",
@@ -859,7 +858,6 @@ export abstract class Client<
 						const averagingIntervalSeconds = sensor.averagingIntervalSeconds;
 						const datetime = this.getDatetime(
 							measurementRow,
-							this.timeEnding,
 							averagingIntervalSeconds,
 						);
 						if (

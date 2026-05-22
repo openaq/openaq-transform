@@ -246,7 +246,7 @@ test("minus with string throws luxon error", () => {
 	expect(() => datetime.minus('60')).toThrow();
 });
 
-test("object with misnamed key throws luxon error", () => {
+test("minus with object with misnamed key throws luxon error", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
 	expect(() => datetime.minus({ h: 2 })).toThrow();
 });
@@ -256,12 +256,12 @@ test("minus with negative number throws RangeError", () => {
 	expect(() => datetime.minus(-60)).toThrow(RangeError);
 });
 
-test("object with negative number throws RangeError", () => {
+test("minus with object with negative number throws RangeError", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
 	expect(() => datetime.minus({ hours: -1 })).toThrow(RangeError);
 });
 
-test("Duration with negative number throws RangeError", () => {
+test("minus with Duration with negative number throws RangeError", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
 	expect(() => datetime.minus(Duration.fromObject({ hours: -1 }))).toThrow(RangeError);
 });
@@ -281,6 +281,65 @@ test("minus with all three input types produces the same result", () => {
 	const fromNumber = datetime.minus(3600);
 	const fromDuration = datetime.minus(Duration.fromObject({ hours: 1 }));
 	const fromOffset = datetime.minus({ hours: 1 });
+	expect(fromNumber.toUTC()).toBe(fromDuration.toUTC());
+	expect(fromDuration.toUTC()).toBe(fromOffset.toUTC());
+});
+
+
+
+test("add returns a new Datetime instance", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	const result = datetime.add(60);
+	expect(result).toBeInstanceOf(Datetime);
+	expect(result).not.toBe(datetime);
+});
+
+test("add does not mutate original instance", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	datetime.add(3600);
+	expect(datetime.toUTC()).toBe("2025-01-01T12:00:00Z");
+});
+
+test("add with string throws luxon error", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.add('60')).toThrow();
+});
+
+test("add with object with misnamed key throws luxon error with add", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.add({ h: 2 })).toThrow();
+});
+
+test("add with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.add(-60)).toThrow(RangeError);
+});
+
+test("add with object with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.add({ hours: -1 })).toThrow(RangeError);
+});
+
+test("add with Duration with negative number throws RangeError", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	expect(() => datetime.add(Duration.fromObject({ hours: -1 }))).toThrow(RangeError);
+});
+
+test("add preserves locationTimezone", () => {
+	const datetime = new Datetime("2025-01-01 12:00", {
+		format: "yyyy-MM-dd HH:mm",
+		timezone: "America/Denver",
+		locationTimezone: "America/Denver",
+	});
+	const result = datetime.add(3600);
+	expect(result.toLocal()).toBe("2025-01-01T13:00:00-07:00");
+});
+
+test("add with all three input types produces the same result", () => {
+	const datetime = new Datetime("2025-01-01T12:00:00Z");
+	const fromNumber = datetime.add(3600);
+	const fromDuration = datetime.add(Duration.fromObject({ hours: 1 }));
+	const fromOffset = datetime.add({ hours: 1 });
 	expect(fromNumber.toUTC()).toBe(fromDuration.toUTC());
 	expect(fromDuration.toUTC()).toBe(fromOffset.toUTC());
 });

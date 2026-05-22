@@ -870,3 +870,38 @@ describe("Client with string responsePath on single resource", () => {
         expect(data).toStrictEqual(expectedOutput);
     });
 });
+
+describe("Client with timeEnding=false normalizes timestamps to time-ending", () => {
+
+  class JsonClient extends Client {
+		resource = new Resource({ url: "https://blah.org/long" });
+		provider = "testing";
+		longFormat = true;
+		timeEnding = false;
+		xGeometryKey = "longitude";
+		yGeometryKey = "latitude";
+		averagingIntervalKey = () => 3600
+		sensorStatusKey = () => "asdf";
+		locationIdKey = "station";
+		locationLabelKey = "site_name";
+		geometryProjectionKey = () => "WGS84";
+		ownerKey = () => "test_owner";
+		isMobileKey = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
+
+	test("timestamps are shifted forward by averaging interval", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+
+		const timestamps = data.measurements.map((m) => m.timestamp);
+		expect(timestamps).toStrictEqual([
+			"2024-01-01T01:00:00-08:00", // was 00:00
+			"2024-01-01T01:00:00-08:00", // was 00:00
+			"2024-01-01T02:00:00-08:00", // was 01:00
+		]);
+	});
+});

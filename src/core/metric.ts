@@ -193,7 +193,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"pm4:mass": {
-		// only sentate
 		name: "pm4",
 		numeric: true,
 		units: "ug/m3",
@@ -204,7 +203,7 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"pm10:mass": {
-		name: "pm1",
+		name: "pm10",
 		numeric: true,
 		units: "ug/m3",
 		range: [0, 1500],
@@ -234,7 +233,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"ufp:conc": {
-		// only bay_area_mobile_analysis
 		name: "ufp",
 		numeric: true,
 		units: "particles/cm3",
@@ -244,7 +242,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"um010:conc": {
-		// only nyc_mobile_mit_city_scanner
 		name: "um010",
 		numeric: true,
 		units: "particles/cm3",
@@ -254,7 +251,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"um025:conc": {
-		// only houston_mobile
 		name: "um025",
 		numeric: true,
 		units: "particles/cm3",
@@ -264,7 +260,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"um100:conc": {
-		// only nyc_mobile_mit_city_scanner
 		name: "um100",
 		numeric: true,
 		units: "particles/cm3",
@@ -274,7 +269,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"so2:mass": {
-		// units reported by WHO
 		name: "so2",
 		numeric: true,
 		units: "ug/m3",
@@ -305,7 +299,6 @@ export const PARAMETERS: ParameterMap = {
 		},
 	},
 	"o3:mass": {
-		// units reported by WHO
 		name: "o3",
 		numeric: true,
 		units: "ug/m3",

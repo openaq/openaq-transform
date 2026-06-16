@@ -76,6 +76,14 @@ test("empty string throws missing value error", () => {
 	expect(() => m.process(v)).toThrowError(MissingValueError);
 });
 
+test("wind speed accepts km/h and converts to m/s", () => {
+	const m = new Metric("ws", "km/h");
+	// 36 km/h = 10 m/s
+	expect(m.process(36)).toBe(10);
+	// 100 km/h ≈ 27.7778 m/s, rounded to 1 decimal -> 27.8
+	expect(m.process(100)).toBe(27.8);
+});
+
 // essentially all numeric values as errors need to be passed in
 // so -99 and 42.0 tests the same thing
 test("Error flags as values throw ProviderValueError (f)", () => {

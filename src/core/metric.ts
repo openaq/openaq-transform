@@ -21,6 +21,7 @@ const ppbToPpm = (ppb: number | string) => +ppb / 1000;
 const ppmToPpb = (ppm: number | string) => +ppm * 1000;
 const mgm3ToUgm3 = (mgm3: number | string) => +mgm3 * 1000;
 const ugm3ToMgm3 = (ugm3: number | string) => +ugm3 / 1000;
+const kmhToMs = (kmh: number | string) => (+kmh * 1000) / 3600;
 
 // this should be tranform methods that all orgs will use
 // regardless of what unit they use to store their data
@@ -316,6 +317,7 @@ export const PARAMETERS: ParameterMap = {
 		range: [0, 115],
 		converters: {
 			"m/s": noConversion,
+			"km/h": kmhToMs,
 		},
 	},
 	wd: {

@@ -101,11 +101,21 @@ export interface LogEntry {
 	err?: Error;
 }
 
+/**
+ * An shared interface for keyed values.
+ */
 export interface StructuredKey {
 	type: string;
 	value: unknown;
 }
 
+/**
+ * Type guard to check if a value is a {@link StructuredKey}.
+ *
+ * @param value - The value to check
+ * @returns `true` if the value is a valid StructuredKey, otherwise `false`
+ *
+ */
 export function isStructuredKey(value: unknown): value is StructuredKey {
 	return (
 		typeof value === "object" &&
@@ -115,11 +125,29 @@ export function isStructuredKey(value: unknown): value is StructuredKey {
 	);
 }
 
+/**
+ * An interface for defining constant values.
+ *
+ * @example
+ * ```ts
+ * const value: ConstantValue = {
+ *   type: 'constant',
+ *   value: 3600
+ * }
+ * ```
+ */
 export interface ConstantValue extends StructuredKey {
 	type: "constant";
 	value: string | number;
 }
 
+/**
+ * Type guard to check if a value is a {@link ConstantValue}.
+ *
+ * @param value - The value to check
+ * @returns `true` if the value is a valid ConstantValue, otherwise `false`
+ *
+ */
 export function isConstantValue(value: unknown): value is ConstantValue {
 	return (
 		typeof value === "object" &&

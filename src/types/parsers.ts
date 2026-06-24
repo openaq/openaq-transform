@@ -1,8 +1,7 @@
-import type { Options as CsvParseOptions } from 'csv-parse';
-import type { SourceRecord } from './data';
-import type { ResourceKeys } from './resource';
-import { X2jOptions } from 'fast-xml-parser';
-
+import type { Options as CsvParseOptions } from "csv-parse";
+import type { X2jOptions } from "fast-xml-parser";
+import type { SourceRecord } from "./data";
+import type { ResourceKeys } from "./resource";
 
 /**
  * Base interface for all parser option objects.
@@ -14,7 +13,7 @@ import { X2jOptions } from 'fast-xml-parser';
  * }
  */
 export interface ParserOptions {
-  format: string;
+	format: string;
 }
 
 /**
@@ -43,7 +42,7 @@ export interface ParserOptions {
  * };
  */
 export interface XmlParserOptions extends ParserOptions, X2jOptions {
-    format: "xml";
+	format: "xml";
 }
 
 /**
@@ -74,23 +73,23 @@ export interface XmlParserOptions extends ParserOptions, X2jOptions {
  * };
  */
 export interface DelimitedParserOptions extends ParserOptions, CsvParseOptions {
-    format: "csv" | "tsv" | "psv" | "ssv" | (string & {});
-    delimiter?: string;
-    columns?: boolean;
-    skip_empty_lines?: boolean;
+	format: "csv" | "tsv" | "psv" | "ssv" | (string & {});
+	delimiter?: string;
+	columns?: boolean;
+	skip_empty_lines?: boolean;
 }
 
 export type KnownParserOptions = XmlParserOptions | DelimitedParserOptions;
 
 export type CsvParseFunction = (
-  input: string | Buffer,
-  options?: CsvParseOptions,
+	input: string | Buffer,
+	options?: CsvParseOptions,
 ) => Promise<SourceRecord[]>;
 
 // biome-ignore lint/suspicious/noExplicitAny: Content type must be any to allow storage of parsers with different content types in registries
 export type Parser<T = unknown, TContent = any> = (
-  content: TContent,
-  options?: ParserOptions | KnownParserOptions,
+	content: TContent,
+	options?: ParserOptions | KnownParserOptions,
 ) => Promise<T> | T;
 
 export type StringParser<T = unknown> = Parser<T, string>;
@@ -98,12 +97,12 @@ export type JsonParser<T = unknown> = Parser<T, unknown>;
 export type BlobParser<T = unknown> = Parser<T, Blob>;
 
 export function isParser(value: unknown): value is Parser {
-  return typeof value === 'function';
+	return typeof value === "function";
 }
 
 export type IndexedParser<T> = Partial<Record<ResourceKeys, keyof T | Parser>>;
 
 export type ParserMethods = {
-  // biome-ignore lint/suspicious/noExplicitAny: Parser registry must accommodate parsers with different content and return types
-  [key: string]: Parser<any>;
+	// biome-ignore lint/suspicious/noExplicitAny: Parser registry must accommodate parsers with different content and return types
+	[key: string]: Parser<any>;
 };

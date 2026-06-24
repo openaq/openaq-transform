@@ -1,6 +1,7 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
+import type { KnownParserOptions, ParserOptions } from "../types/parsers";
 import type {
 	DataContext,
 	ReadAs,
@@ -13,7 +14,6 @@ import {
 	type Body,
 	isAuthValueFunction,
 } from "../types/resource";
-import { KnownParserOptions, ParserOptions } from "../types/parsers";
 
 type Parameters = Record<string, string | number | boolean>;
 
@@ -288,7 +288,6 @@ export class Resource {
 			headers: this.headers,
 		};
 	}
-
 
 	get parserOptions(): KnownParserOptions | ParserOptions | undefined {
 		return this.#parserOptions;

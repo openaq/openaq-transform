@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { createDelimitedParsers, json, parseDelimited } from './parsers';
+import { createDelimitedParsers, json, parseDelimited, xml } from './parsers';
 
 describe('json parser', () => {
   test('parses valid JSON string', async () => {
@@ -339,5 +339,38 @@ describe('createDelimitedParsers', () => {
 
         await expect(tsv("name\tage\nJohn McCormack\t30")).resolves.not.toThrow();
     });
+  });
+});
+
+
+describe("xml parser", () => {
+  test("parses an XML string into an object", async () => {
+    const result = await xml("<root><name>John McCormack</name></root>", undefined);
+    expect(result).toEqual({ root: { name: "John McCormack" } });
+  });
+
+  test("strips format from options before passing to XMLParser", async () => {
+    const result = await xml("<root/>", { format: "xml" } as any);
+    expect(result).toEqual({ root: "" });
+  });
+
+  test("forwards xmlParserOptions to XMLParser", async () => {
+    const result = await xml(`<root id="1"/>`, {
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_",
+    } as any);
+    expect(result).toEqual({ root: { "@_id": "1" } });
+  });
+
+  test("Single items turns into array when isArray returns true", async () => {
+    const result = await xml(`<root><item>John McCormack</item></root>`, {
+      isArray: (name: string) => name === "item",
+    } as any) as any;
+    expect(result.root.item).toEqual(["John McCormack"]);
+  });
+
+  test("handles undefined options", async () => {
+    const result = await xml("<root/>", undefined);
+    expect(result).toEqual({ root: "" });
   });
 });

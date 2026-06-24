@@ -1,5 +1,5 @@
+import type { Options as CsvParseOptions } from "csv-parse";
 import debug from "debug";
-import type { Options as CsvParseOptions } from 'csv-parse';
 import { XMLParser } from "fast-xml-parser";
 import type { SourceRecord } from "../types/data";
 import type {
@@ -13,7 +13,6 @@ import type {
 const log = debug("openaq-transform:parsers");
 const warn = debug("openaq-transform:parsers:warn");
 
-
 export const parseDelimited = async (
 	content: string,
 	parse: CsvParseFunction,
@@ -23,13 +22,18 @@ export const parseDelimited = async (
 };
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
-	const csv: StringParser<SourceRecord[]>  = async (content: string, options) => {
+	const csv: StringParser<SourceRecord[]> = async (
+		content: string,
+		options,
+	) => {
 		log(`Parsing ${typeof content} data using the csv method`);
 		const { format, ...csvOptions } = (options as DelimitedParserOptions) ?? {};
 
 		if (csvOptions.delimiter && csvOptions.delimiter !== ",") {
-        	warn(`${format} parser received delimiter "${csvOptions.delimiter}", delimiter is fixed to "," and will not be overwritten`);
-    	}
+			warn(
+				`${format} parser received delimiter "${csvOptions.delimiter}", delimiter is fixed to "," and will not be overwritten`,
+			);
+		}
 
 		return parseDelimited(content, parse, {
 			columns: true,
@@ -38,14 +42,19 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 		});
 	};
 
-	const tsv: StringParser<SourceRecord[]>  = async (content: string, options) => {
+	const tsv: StringParser<SourceRecord[]> = async (
+		content: string,
+		options,
+	) => {
 		log(`Parsing ${typeof content} data using the tsv method`);
 		const { format, ...tsvOptions } = (options as DelimitedParserOptions) ?? {};
 
 		if (tsvOptions.delimiter && tsvOptions.delimiter !== "\t") {
-        	warn(`${format} parser received delimiter "${tsvOptions.delimiter}", delimiter is fixed to "\\t" and will not be overwritten`);
-    	}
-    
+			warn(
+				`${format} parser received delimiter "${tsvOptions.delimiter}", delimiter is fixed to "\\t" and will not be overwritten`,
+			);
+		}
+
 		return parseDelimited(content, parse, {
 			columns: true,
 			skip_empty_lines: true,

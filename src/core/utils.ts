@@ -1,10 +1,17 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import debug from "debug";
-import type { ParseFunction } from "../types/client";
+import {
+	type ConstantValue,
+	isConstantValue,
+	isStructuredKey,
+	type ParseFunction,
+	type StructuredKey,
+} from "../types/client";
 import type { SourceRecord } from "../types/data";
 import {
 	type DecimalDigitGroup,
 	isPathExpression,
+	PATH_EXPRESSION_TYPES,
 	type PathExpression,
 } from "../types/metric";
 
@@ -23,23 +30,32 @@ export const stripNulls = <T extends object>(
 
 export const getValueFromKey = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
+	key: ParseFunction | string | ConstantValue | PathExpression,
 ) => {
-	let value = null;
-	if (isPathExpression(key)) {
-		if (key.type === "jmespath") {
-			log(`getting value from key using ${key.expression}`);
-			value = search(data as unknown as JSONValue, key.expression);
-		} else {
-			throw TypeError(
-				`TypeError: unsupported path expression type, supported syntaxes include: jmespath`,
-			);
+	if (isStructuredKey(key)) {
+		if (isPathExpression(key)) {
+			if (key.type === "jmespath") {
+				log(`getting value from key using ${key.value}`);
+				const value = search(data as unknown as JSONValue, key.value);
+				return value;
+			} else {
+				throw TypeError(
+					`TypeError: unsupported path expression type, supported syntaxes include: jmespath`,
+				);
+			}
 		}
+		if (isConstantValue(key)) {
+			return key.value;
+		}
+		throw new TypeError(
+			`Unsupported key type '${(key as StructuredKey).type}', supported types are: ${PATH_EXPRESSION_TYPES.join(", ")}, constant`,
+		);
 	}
 	if (typeof key === "function") {
 		log(`getting value from key using 'function'`);
 		try {
-			value = key(data);
+			const value = key(data);
+			return value;
 		} catch (error: unknown) {
 			if (error instanceof TypeError) {
 				throw new Error(
@@ -49,9 +65,10 @@ export const getValueFromKey = (
 		}
 	} else if (typeof key === "string") {
 		log(`getting value from key using '${key}'`);
-		value = data ? data[key] : key;
+		const value = data ? data[key] : key;
+		return value;
 	}
-	return value;
+	return null;
 };
 
 export const cleanKey = (value: unknown): string | undefined => {
@@ -101,7 +118,7 @@ export function formatValueForLog(value: unknown): string {
 
 export const getString = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
+	key: ParseFunction | string | ConstantValue | PathExpression,
 ): string | undefined => {
 	const value = getValueFromKey(data, key);
 	if (value == null) return undefined;
@@ -110,7 +127,7 @@ export const getString = (
 
 export const getNumber = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
+	key: ParseFunction | string | ConstantValue | PathExpression,
 	numberFormat: DecimalDigitGroup,
 ): number | undefined => {
 	let value = getValueFromKey(data, key) as number | null | string;
@@ -123,7 +140,7 @@ export const getNumber = (
 
 export const getBoolean = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
+	key: ParseFunction | string | ConstantValue | PathExpression,
 ): boolean => {
 	const value = getValueFromKey(data, key);
 	if (typeof value === "string") {
@@ -136,7 +153,7 @@ export const getBoolean = (
 
 export const getArray = (
 	data: SourceRecord,
-	key: ParseFunction | string | PathExpression,
+	key: ParseFunction | string | ConstantValue | PathExpression,
 ): (string | number)[] | undefined => {
 	const value = getValueFromKey(data, key) as
 		| number

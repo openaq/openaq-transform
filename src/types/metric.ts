@@ -1,4 +1,7 @@
 // based on common groups in Examples of Use table https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
+
+import type { StructuredKey } from "./client";
+
 /**
  * Describes the decimal and digit-group separator conventions for a numeric
  * locale format.
@@ -211,17 +214,21 @@ export type SupportedExpressionLanguages = "jmespath";
  * // Extract a nested property using JMESPath
  * const expr: PathExpression = {
  *   type: 'jmespath',
- *   expression: 'measurements.o3.value'
+ *   value: 'measurements.o3.value'
  * }
  * ```
  */
-export interface PathExpression {
+export interface PathExpression extends StructuredKey {
 	/** The query language used to interpret the expression */
 	type: SupportedExpressionLanguages;
 
 	/** The query expression in the specified language syntax */
-	expression: string;
+	value: string;
 }
+
+export const PATH_EXPRESSION_TYPES: SupportedExpressionLanguages[] = [
+	"jmespath",
+];
 
 /**
  * Type guard to check if a value is a {@link PathExpression}.
@@ -235,9 +242,9 @@ export function isPathExpression(value: unknown): value is PathExpression {
 		typeof value === "object" &&
 		value !== null &&
 		"type" in value &&
-		"expression" in value &&
-		typeof (value as PathExpression).type === "string" &&
-		typeof (value as PathExpression).expression === "string"
+		"value" in value &&
+		PATH_EXPRESSION_TYPES.includes((value as PathExpression).type) &&
+		typeof (value as PathExpression).value === "string"
 	);
 }
 
@@ -262,7 +269,7 @@ export function isPathExpression(value: unknown): value is PathExpression {
  *   unit: 'ppm',
  *   key: {
  *     type: 'jmespath',
- *     expression: 'measurements.o3.value'
+ *     value: 'measurements.o3.value'
  *   }
  * }
  *

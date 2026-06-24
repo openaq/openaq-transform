@@ -73,7 +73,7 @@ test("resource with jmespath and data works", () => {
 	];
 	const resource = new Resource({
 		url: "https://example.com/locations/:locationsId",
-		parameters: { type: "jmespath", expression: "[0].locations" },
+		parameters: { type: "jmespath", value: "[0].locations" },
 	});
 	resource.data = data;
 	const urls = resource.urls;

@@ -12,7 +12,8 @@ import {
   getArray,
   getValueFromKey,
 } from './utils.ts';
-import { DecimalDigitGroup } from '../types/client.ts';
+import { DecimalDigitGroup } from '../types/metric.ts';
+import { ConstantValue } from '../types/client.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -53,18 +54,28 @@ test('getValueFromKey throws for unsafe optional property access', () => {
 test('getValueFromKey returns value when using jmespath expression', () => {
   const pathExpression = {
     type: 'jmespath',
-    expression: '$.measurements[0].pm25',
+    value: '$.measurements[0].pm25',
   } satisfies PathExpression;
   expect(
     getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
   ).toBe(42);
 });
 
+test('getValueFromKey returns value when using constant value', () => {
+  const constantValue = {
+    type: 'constant',
+    value: 3600,
+  } satisfies ConstantValue;
+  expect(
+    getValueFromKey({ measurements: [{ pm25: 42 }] }, constantValue),
+  ).toBe(3600);
+});
+
 test('getValueFromKey throws when unsupported expression type is passed', () => {
   // @ts-expect-error Testing unsupported type value
   const pathExpression = {
     type: 'xpath',
-    expression: '/measurements[0]/pm25',
+    value: '/measurements[0]/pm25',
   } satisfies PathExpression;
   // @ts-expect-error Testing unsupported type value
   expect(() =>
@@ -151,6 +162,18 @@ describe('getString', () => {
   test('returns empty string for empty string', () => {
     expect(getString(record(''), key)).toBe('');
   });
+
+  test('returns a string for jmespath expression', () => {
+    expect(getString(record(42), {type: "jmespath", value: "value"})).toBe('42');
+  });
+
+  test('returns a string for constant value of type string', () => {
+    expect(getString(record(42), {type: "constant", value: "2"})).toBe('2');
+  });
+
+  test('returns a string for constant value of type number', () => {
+    expect(getString(record(42), {type: "constant", value: 2})).toBe('2');
+  });
 });
 
 describe('getNumber', () => {
@@ -182,6 +205,18 @@ describe('getNumber', () => {
 
   test("returns 0 for '0'", () => {
     expect(getNumber(record('0'), key, numberFormat)).toBe(0);
+  });
+
+  test("returns number 0 for jmespath expression", () => {
+    expect(getNumber(record('0'), { type: 'jmespath', value: 'value' }, numberFormat)).toBe(0);
+  });
+
+  test("returns constant number for constant value string", () => {
+    expect(getNumber(record('0'), { type: 'constant', value: '42' }, numberFormat)).toBe(42);
+  });
+
+    test("returns constant number for constant value number", () => {
+    expect(getNumber(record('0'), { type: 'constant', value: 42 }, numberFormat)).toBe(42);
   });
 
   test('parses a comma-decimal string with matching numberFormat', () => {
@@ -259,6 +294,13 @@ describe('getArray tests', () => {
     expect(getArray(record([]), key)).toStrictEqual([]);
   });
 
+  test('returns array for path expression', () => {
+    expect(getArray(record('some-value'), {type: 'jmespath', value: 'value'} satisfies PathExpression)).toStrictEqual(['some-value']);
+  });
+
+  test('returns array for constant value', () => {
+    expect(getArray(record('some-value'), {type: 'constant', value: 42} satisfies ConstantValue)).toStrictEqual([42]);
+  });
 });
 
 // Test cases based on "common" cases as described in the table here:

@@ -8,6 +8,7 @@ import type { MeasurementJSON } from "./measurement";
 import type {
 	ClientParameters,
 	DecimalDigitGroup,
+	SupportedExpressionLanguages,
 	ValueFlagMap,
 } from "./metric";
 import type { IndexedParser, Parser } from "./parsers";
@@ -66,8 +67,8 @@ export interface TransformData {
 }
 
 export interface ClientInfoKey {
-	type: "function" | "field" | "jmespath";
-	value: string | undefined;
+	type: "function" | "field" | "constant" | SupportedExpressionLanguages;
+	value: string | number | undefined;
 }
 
 export interface ClientInfoParameter {
@@ -98,6 +99,35 @@ export interface ClientInfo {
 export interface LogEntry {
 	message: string;
 	err?: Error;
+}
+
+export interface StructuredKey {
+	type: string;
+	value: unknown;
+}
+
+export function isStructuredKey(value: unknown): value is StructuredKey {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"type" in value &&
+		"value" in value
+	);
+}
+
+export interface ConstantValue extends StructuredKey {
+	type: "constant";
+	value: string | number;
+}
+
+export function isConstantValue(value: unknown): value is ConstantValue {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"type" in value &&
+		"value" in value &&
+		(value as ConstantValue).type === "constant"
+	);
 }
 
 export type ParseFunction = (

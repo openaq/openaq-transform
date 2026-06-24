@@ -779,12 +779,12 @@ describe("Client with jmespath responsePath nested data key", () => {
         resource = { measurements: new Resource({
                 url: "https://blah.org/test-provider/wrapped",
                 output: "object",
-                responsePath: { type: "jmespath", expression: "data.measurements" }
+                responsePath: { type: "jmespath", value: "data.measurements" }
             }),
 			locations:  new Resource({
                 url: "https://blah.org/test-provider/wrapped",
                 output: "object",
-                responsePath: { type: "jmespath", expression: "data.locations" }
+                responsePath: { type: "jmespath", value: "data.locations" }
             })
 		}
         provider = "testing";
@@ -815,7 +815,7 @@ describe("Client with jmespath responsePath on single resource", () => {
         resource = new Resource({
             url: "https://blah.org/test-provider/wrapped-wide",
 			output: "object",
-            responsePath: { type: "jmespath", expression: "data" },
+            responsePath: { type: "jmespath", value: "data" },
         });
         provider = "testing";
         xGeometryKey = "longitude";

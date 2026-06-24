@@ -5,6 +5,7 @@ import {
 	type ClientInfoKey,
 	type ClientParser,
 	type ClientReader,
+	type ConstantValue,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -68,32 +69,49 @@ export abstract class Client<
 	// source: Source;
 	timezone?: string;
 	longFormat: boolean = false;
-	geometryProjectionKey: string | PathExpression | ParseFunction = "projection";
+	geometryProjectionKey:
+		| string
+		| PathExpression
+		| ConstantValue
+		| ParseFunction = "projection";
 	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 	timeEnding: boolean = true;
 
 	// mapped data variables
-	locationIdKey: string | PathExpression | ParseFunction = "location";
-	locationLabelKey: string | PathExpression | ParseFunction = "label";
+	locationIdKey: string | PathExpression | ConstantValue | ParseFunction =
+		"location";
+	locationLabelKey: string | PathExpression | ConstantValue | ParseFunction =
+		"label";
 	// if longFormat = false this value is ignored
-	parameterNameKey: string | PathExpression | ParseFunction = "parameter";
-	parameterValueKey: string | PathExpression | ParseFunction = "value";
-	flagsKey: string | PathExpression | ParseFunction = "flags";
+	parameterNameKey: string | PathExpression | ConstantValue | ParseFunction =
+		"parameter";
+	parameterValueKey: string | PathExpression | ConstantValue | ParseFunction =
+		"value";
+	flagsKey: string | PathExpression | ConstantValue | ParseFunction = "flags";
 	numberFormat: DecimalDigitGroup = { decimal: "point" };
-	yGeometryKey: string | PathExpression | ParseFunction = "y";
-	xGeometryKey: string | PathExpression | ParseFunction = "x";
-	manufacturerKey: string | PathExpression | ParseFunction =
+	yGeometryKey: string | PathExpression | ConstantValue | ParseFunction = "y";
+	xGeometryKey: string | PathExpression | ConstantValue | ParseFunction = "x";
+	manufacturerKey: string | PathExpression | ConstantValue | ParseFunction =
 		"manufacturer_name";
-	modelKey: string | PathExpression | ParseFunction = "model_name";
-	ownerKey: string | PathExpression | ParseFunction = "owner_name";
-	datetimeKey: string | PathExpression | ParseFunction = "datetime";
-	licenseKey: string | PathExpression | ParseFunction = "license";
-	isMobileKey: string | PathExpression | ParseFunction = "is_mobile";
-	loggingIntervalKey: string | PathExpression | ParseFunction =
+	modelKey: string | PathExpression | ConstantValue | ParseFunction =
+		"model_name";
+	ownerKey: string | PathExpression | ConstantValue | ParseFunction =
+		"owner_name";
+	datetimeKey: string | PathExpression | ConstantValue | ParseFunction =
+		"datetime";
+	licenseKey: string | PathExpression | ConstantValue | ParseFunction =
+		"license";
+	isMobileKey: string | PathExpression | ConstantValue | ParseFunction =
+		"is_mobile";
+	loggingIntervalKey: string | PathExpression | ConstantValue | ParseFunction =
 		"logging_interval_seconds";
-	averagingIntervalKey: string | PathExpression | ParseFunction =
-		"averaging_interval_seconds";
-	sensorStatusKey: string | PathExpression | ParseFunction = "status";
+	averagingIntervalKey:
+		| string
+		| PathExpression
+		| ConstantValue
+		| ParseFunction = "averaging_interval_seconds";
+	sensorStatusKey: string | PathExpression | ConstantValue | ParseFunction =
+		"status";
 	providerFlags?: ValueFlagMap = FLAG_DEFAULTS;
 	ingestMatchingMethod: IngestMatchingMethod = "ingest-id";
 
@@ -106,7 +124,7 @@ export abstract class Client<
 
 	protected getNumber = (
 		data: SourceRecord,
-		key: string | PathExpression | ParseFunction,
+		key: string | PathExpression | ConstantValue | ParseFunction,
 	) => getNumber(data, key, this.numberFormat);
 
 	#startedOn?: Datetime;
@@ -800,8 +818,9 @@ export abstract class Client<
 		// if we provided a parameter column key we use that
 		// otherwise we use the list of parameters
 		// the end goal is just an array of parameter names to loop through
-		const params: Array<string | PathExpression | ParseFunction> = this
-			.longFormat
+		const params: Array<
+			string | PathExpression | ConstantValue | ParseFunction
+		> = this.longFormat
 			? // for long format we will just pass the parameter name key and use that each time
 				[this.parameterNameKey]
 			: this.measurements.parameterKeys();
@@ -1072,19 +1091,19 @@ export abstract class Client<
 	 */
 	info(): ClientInfo {
 		const translateKey = (
-			key: string | PathExpression | ParseFunction,
+			key: string | PathExpression | ConstantValue | ParseFunction,
 		): ClientInfoKey => {
 			let type: ClientInfoKey["type"];
-			let value: string | undefined;
+			let value: string | number | undefined;
 			if (typeof key === "function") {
 				type = "function";
 				value = String(getValueFromKey({}, key));
 			} else if (typeof key === "string") {
 				type = "field";
 				value = key;
-			} else if (typeof key === "object" && "expression" in key) {
-				type = "jmespath";
-				value = key.expression;
+			} else if (typeof key === "object" && "value" in key) {
+				type = key.type;
+				value = key.value;
 			} else {
 				type = "field";
 				value = undefined;

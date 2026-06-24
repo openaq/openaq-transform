@@ -83,6 +83,12 @@ test('getValueFromKey throws when unsupported expression type is passed', () => 
   ).toThrow(TypeError);
 });
 
+test('getValueFromKey returns null when key function throws a non-TypeError', () => {
+  expect(
+    getValueFromKey({ pm25: 42 }, () => { throw new Error('unexpected'); })
+  ).toBe(null);
+});
+
 test('countDecimals returns the right value', () => {
   expect(countDecimals(7.24)).toBe(2);
 });

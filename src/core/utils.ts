@@ -38,10 +38,6 @@ export const getValueFromKey = (
 				log(`getting value from key using ${key.value}`);
 				const value = search(data as unknown as JSONValue, key.value);
 				return value;
-			} else {
-				throw TypeError(
-					`TypeError: unsupported path expression type, supported syntaxes include: jmespath`,
-				);
 			}
 		}
 		if (isConstantValue(key)) {

@@ -281,10 +281,10 @@ test("resource with Bearer auth returns no header when token is absent", () => {
   expect(resource.headers).toStrictEqual(new Headers({}));
 });
 
-test("Bearer auth header overwrite over Authorization header from options", () => {
+test("Bearer auth header overwrite over Authorization header from readerOptions", () => {
   const resource = new Resource({
     url: "https://example.com",
-    options: { headers: { Authorization: "Bearer oldtoken" } },
+    readerOptions: { headers: { Authorization: "Bearer oldtoken" } },
     auth: { type: "Bearer", token: "newtoken" }
   });
   expect(resource.headers).toStrictEqual(new Headers({ Authorization: "Bearer newtoken" }));

@@ -440,7 +440,7 @@ export class Resource {
 			if (this.#parameters.type === "jmespath") {
 				const value = search(
 					this.#data as unknown as JSONValue,
-					this.#parameters.expression,
+					this.#parameters.value,
 				);
 				return value as Parameters[];
 			} else {

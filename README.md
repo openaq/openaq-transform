@@ -104,7 +104,7 @@ Parameters can also be a JMESPath expression evaluated against the same
 ```ts
 new Resource({
   url: 'https://api.example.com/locations/:id/measurements',
-  parameters: { type: 'jmespath', expression: 'locations[*].{id: id}' }
+  parameters: { type: 'jmespath', value: 'locations[*].{id: id}' }
 })
 ```
 

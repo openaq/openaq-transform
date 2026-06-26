@@ -238,7 +238,7 @@ export const getArray = (
  * CHAR_MAP["interpunct"] // "·"
  * CHAR_MAP["space"]      // " "
  */
-export const CHAR_MAP: Record<string, string> = {
+const CHAR_MAP: Record<string, string> = {
 	point: ".",
 	comma: ",",
 	arabic: "\u066B", // arabic comma ٫

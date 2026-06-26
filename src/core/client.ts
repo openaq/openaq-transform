@@ -21,6 +21,7 @@ import type { FlagInput } from "../types/flag";
 import type {
 	ClientParameters,
 	DecimalDigitGroup,
+	ParameterMap,
 	PathExpression,
 	ValueFlagMap,
 } from "../types/metric";
@@ -38,7 +39,7 @@ import {
 } from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
-import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS } from "./metric";
+import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS, PARAMETERS } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
 
@@ -118,6 +119,8 @@ export abstract class Client<
 
 	datasources: object = {};
 	missingDatasources: string[] = [];
+
+	supportedParameters: ParameterMap = PARAMETERS;
 
 	// this should be the list of parameters in the data and how to extract them
 	// transforming could be later
@@ -425,6 +428,7 @@ export abstract class Client<
 		if (!this.#measurements) {
 			this.#measurements = new Measurements(
 				this.parameters,
+				this.supportedParameters,
 				this.providerFlags,
 				this.numberFormat,
 			);
@@ -791,6 +795,7 @@ export abstract class Client<
 				versionDate,
 				instance,
 				status,
+				supportedParameters: this.supportedParameters, 
 			});
 			location.add(sensor);
 			this.#sensors.add(sensor);

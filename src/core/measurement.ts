@@ -8,6 +8,7 @@ import type {
 	ClientParameters,
 	DecimalDigitGroup,
 	ParameterKeyFunction,
+	ParameterMap,
 	PathExpression,
 	ValueFlagMap,
 } from "../types/metric";
@@ -27,6 +28,7 @@ export class Measurements {
 
 	constructor(
 		parameters: ClientParameters = PARAMETER_DEFAULTS,
+		supportedParameters: ParameterMap,
 		providerValues?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
 	) {
@@ -48,7 +50,7 @@ export class Measurements {
 			const { parameter, unit, key } = p;
 			this.parameters.set(
 				key,
-				new Metric(parameter, unit, providerValues, numberFormat),
+				new Metric(parameter, unit, providerValues, numberFormat, supportedParameters),
 			);
 		}
 	}

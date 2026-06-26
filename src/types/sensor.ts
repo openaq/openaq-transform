@@ -1,6 +1,6 @@
 import type { Metric } from "../core/metric";
 import type { FlagJSON } from "./flag";
-import type { ParameterUnit } from "./metric";
+import type { ParameterMap, ParameterUnit } from "./metric";
 
 /**
  * Represents options for instantiating the Sensor class.
@@ -44,6 +44,8 @@ export interface SensorData {
 
 	/** Optional instance identifier for distinguishing multiple sensors of the same type */
 	instance?: string;
+
+	supportedParameters?: ParameterMap;
 }
 
 /**

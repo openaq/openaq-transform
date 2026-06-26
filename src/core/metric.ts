@@ -393,10 +393,11 @@ export class Metric {
 		unit: string,
 		providerFlags?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
+		parameters: ParameterMap = PARAMETERS
 	) {
 		// check for parameter(s)
 		// should either be one or two (parts & mass
-		const parameterEntries = Object.entries(PARAMETERS).filter(
+		const parameterEntries = Object.entries(parameters).filter(
 			([, p]) => p.name === parameter,
 		);
 

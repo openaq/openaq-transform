@@ -8,6 +8,7 @@ import type { MeasurementJSON } from "./measurement";
 import type {
 	ClientParameters,
 	DecimalDigitGroup,
+	ParameterMap,
 	SupportedExpressionLanguages,
 	ValueFlagMap,
 } from "./metric";
@@ -215,6 +216,7 @@ export interface ClientConfiguration {
 
 	datasources?: object;
 	missingDatasources?: string[];
+	supportedParameters?: ParameterMap;
 	parameters?: ClientParameters;
 	ingestMatchingMethod?: IngestMatchingMethod;
 

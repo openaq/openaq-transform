@@ -20,12 +20,13 @@ const log = debug("openaq-transform utils: DEBUG");
 export const stripNulls = <T extends object>(
 	obj: T,
 ): { [K in keyof T]: T[K] } => {
-	return Object.assign(
-		{},
-		...Object.entries(obj)
-			.filter(([_, v]) => ![null, NaN, "", undefined, "undefined"].includes(v))
-			.map(([k, v]) => ({ [k]: v })),
-	);
+	return {
+		...Object.fromEntries(
+			Object.entries(obj).filter(
+				([_, v]) => ![null, NaN, "", undefined, "undefined"].includes(v),
+			),
+		),
+	} as { [K in keyof T]: T[K] };
 };
 
 /**

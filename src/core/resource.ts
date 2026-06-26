@@ -1,6 +1,7 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import type { PathExpression } from "../types";
 import { isPathExpression } from "../types/metric";
+import type { KnownParserOptions, ParserOptions } from "../types/parsers";
 import type {
 	DataContext,
 	ReadAs,
@@ -60,7 +61,8 @@ type ResourceConfig =
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
-			options?: ReaderOptions;
+			readerOptions?: ReaderOptions;
+			parserOptions?: KnownParserOptions | ParserOptions;
 			strict?: boolean;
 	  }
 	| {
@@ -72,7 +74,8 @@ type ResourceConfig =
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
-			options?: ReaderOptions;
+			readerOptions?: ReaderOptions;
+			parserOptions?: KnownParserOptions | ParserOptions;
 			strict?: boolean;
 	  };
 
@@ -110,7 +113,8 @@ export class Resource {
 	#readAs?: ReadAs;
 	#strict: boolean;
 	#auth?: Auth;
-	#options?: UrlReaderOptions;
+	#readerOptions?: UrlReaderOptions;
+	#parserOptions?: KnownParserOptions | ParserOptions;
 
 	constructor(config: ResourceConfig) {
 		this.validateConfig(config);
@@ -124,7 +128,8 @@ export class Resource {
 		this.#readAs = config.readAs;
 		this.#strict = config.strict ?? false;
 		this.#auth = config.auth;
-		this.#options = config.options;
+		this.#readerOptions = config.readerOptions;
+		this.#parserOptions = config.parserOptions;
 	}
 
 	private validateConfig(config: unknown): asserts config is ResourceConfig {
@@ -264,8 +269,8 @@ export class Resource {
 	get headers(): Headers {
 		const merged = new Headers();
 
-		if (this.#options?.headers) {
-			for (const [key, value] of Object.entries(this.#options.headers)) {
+		if (this.#readerOptions?.headers) {
+			for (const [key, value] of Object.entries(this.#readerOptions.headers)) {
 				merged.set(key, typeof value === "function" ? value() : value);
 			}
 		}
@@ -277,11 +282,15 @@ export class Resource {
 		return merged;
 	}
 
-	get options(): ReaderOptions {
+	get readerOptions(): ReaderOptions {
 		return {
-			...this.#options,
+			...this.#readerOptions,
 			headers: this.headers,
 		};
+	}
+
+	get parserOptions(): KnownParserOptions | ParserOptions | undefined {
+		return this.#parserOptions;
 	}
 
 	set auth(auth: Auth) {
@@ -431,7 +440,7 @@ export class Resource {
 			if (this.#parameters.type === "jmespath") {
 				const value = search(
 					this.#data as unknown as JSONValue,
-					this.#parameters.expression,
+					this.#parameters.value,
 				);
 				return value as Parameters[];
 			} else {

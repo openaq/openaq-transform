@@ -12,6 +12,8 @@ export const fileSystemReader = async (
 		throw new TypeError("fileSystemReader requires a URL-based resource");
 	}
 
+	const parserOptions = resource.parserOptions;
+
 	const results = await Promise.all(
 		resource.urls.map(({ url }) => {
 			const path = url.startsWith("file://") ? new URL(url) : url;
@@ -21,7 +23,7 @@ export const fileSystemReader = async (
 	);
 
 	const content = results.join("\n");
-	const result: unknown = await parser(content);
+	const result: unknown = await parser(content, parserOptions);
 
 	if (!result || typeof result !== "object") {
 		throw new Error("Parser returned a non-object value");

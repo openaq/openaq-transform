@@ -1,6 +1,6 @@
-import debug from "debug";
+import { createDebug } from "obug";
 
-const log = debug("openaq-transform locations: DEBUG");
+const log = createDebug("openaq-transform:core:locations");
 
 import type { BBox } from "geojson";
 import type {

@@ -22,15 +22,15 @@ test("test environment", () => {
 // this is what is needed to parse the provided data correctly
 class CustomClient extends Client {
 	provider = "testing";
-	xGeometryKey = "longitude";
-	averagingIntervalKey = "averaging";
-	sensorStatusKey = () => "asdf";
-	yGeometryKey = "latitude";
-	locationIdKey = "station";
-	locationLabelKey = "site_name";
-	projectionKey = () => "WSG84";
-	ownerKey = () => "test_owner";
-	isMobileKey = () => false;
+	xGeometry = "longitude";
+	averagingInterval = "averaging";
+	sensorStatus = () => "asdf";
+	yGeometry = "latitude";
+	locationId = "station";
+	locationLabel = "site_name";
+	projection = () => "WSG84";
+	owner = () => "test_owner";
+	isMobile = () => false;
 	parameters = [
 		{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 		{ parameter: "temperature", unit: "f", key: "tempf" },

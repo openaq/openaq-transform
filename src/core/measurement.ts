@@ -1,6 +1,6 @@
-import debug from "debug";
+import { createDebug } from "obug";
 
-const log = debug("openaq-transform measurements: DEBUG");
+const log = createDebug("openaq-transform:core:measurements");
 
 import type { BBox } from "geojson";
 import type { MeasurementData, MeasurementJSON } from "../types/measurement";
@@ -8,6 +8,7 @@ import type {
 	ClientParameters,
 	DecimalDigitGroup,
 	ParameterKeyFunction,
+	ParameterMap,
 	PathExpression,
 	ValueFlagMap,
 } from "../types/metric";
@@ -27,6 +28,7 @@ export class Measurements {
 
 	constructor(
 		parameters: ClientParameters = PARAMETER_DEFAULTS,
+		supportedParameters: ParameterMap,
 		providerValues?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
 	) {
@@ -48,7 +50,13 @@ export class Measurements {
 			const { parameter, unit, key } = p;
 			this.parameters.set(
 				key,
-				new Metric(parameter, unit, providerValues, numberFormat),
+				new Metric(
+					parameter,
+					unit,
+					providerValues,
+					numberFormat,
+					supportedParameters,
+				),
 			);
 		}
 	}

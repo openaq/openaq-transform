@@ -1,14 +1,16 @@
 import type { Options as CsvParseOptions } from "csv-parse";
-import debug from "debug";
-import { type X2jOptions, XMLParser } from "fast-xml-parser";
+import { XMLParser } from "fast-xml-parser";
+import { createDebug } from "obug";
 import type { SourceRecord } from "../types/data";
 import type {
 	CsvParseFunction,
+	DelimitedParserOptions,
 	JsonParser,
 	StringParser,
+	XmlParserOptions,
 } from "../types/parsers";
 
-const log = debug("openaq-transform parsers: DEBUG");
+const log = createDebug("openaq-transform:core:parsers");
 
 export const parseDelimited = async (
 	content: string,
@@ -19,20 +21,44 @@ export const parseDelimited = async (
 };
 
 export const createDelimitedParsers = (parse: CsvParseFunction) => {
-	const csv = async (content: string) => {
+	const csv: StringParser<SourceRecord[]> = async (
+		content: string,
+		options,
+	) => {
 		log(`Parsing ${typeof content} data using the csv method`);
+		const { format, ...csvOptions } = (options as DelimitedParserOptions) ?? {};
+
+		if (csvOptions.delimiter && csvOptions.delimiter !== ",") {
+			log(
+				`${format} parser received delimiter "${csvOptions.delimiter}", delimiter is fixed to "," and will not be overwritten`,
+			);
+		}
+
 		return parseDelimited(content, parse, {
 			columns: true,
 			skip_empty_lines: true,
+			...csvOptions,
 		});
 	};
 
-	const tsv = async (content: string) => {
+	const tsv: StringParser<SourceRecord[]> = async (
+		content: string,
+		options,
+	) => {
 		log(`Parsing ${typeof content} data using the tsv method`);
+		const { format, ...tsvOptions } = (options as DelimitedParserOptions) ?? {};
+
+		if (tsvOptions.delimiter && tsvOptions.delimiter !== "\t") {
+			log(
+				`${format} parser received delimiter "${tsvOptions.delimiter}", delimiter is fixed to "\\t" and will not be overwritten`,
+			);
+		}
+
 		return parseDelimited(content, parse, {
-			delimiter: "\t",
 			columns: true,
 			skip_empty_lines: true,
+			...tsvOptions,
+			delimiter: "\t",
 		});
 	};
 
@@ -52,9 +78,10 @@ export const json: JsonParser<SourceRecord | SourceRecord[]> = async (
 
 export const xml: StringParser<SourceRecord | SourceRecord[]> = async (
 	content,
-	options: X2jOptions = {},
+	options,
 ) => {
 	log(`Parsing ${typeof content} data using the xml method`);
-	const parser = new XMLParser(options);
+	const { format, ...xmlParserOptions } = (options as XmlParserOptions) ?? {};
+	const parser = new XMLParser(xmlParserOptions);
 	return parser.parse(content) as SourceRecord | SourceRecord[];
 };

@@ -1,6 +1,6 @@
-import debug from "debug";
+import { createDebug } from "obug";
 
-const log = debug("openaq-transform sensor: DEBUG");
+const log = createDebug("openaq-transform:core:sensor");
 
 import type { FlagData, FlagInput } from "../types/flag";
 import type { SensorData, SensorJSON, SensorKeyData } from "../types/sensor";
@@ -62,6 +62,7 @@ export class Sensor {
 				data.metric?.unit,
 				data.metric?.providerFlags,
 				data.metric?.numberFormat,
+				data.supportedParameters,
 			);
 		}
 

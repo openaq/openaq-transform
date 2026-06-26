@@ -11,8 +11,11 @@ import {
   getString,
   getArray,
   getValueFromKey,
+  constant,
+  jmespath,
 } from './utils.ts';
-import { DecimalDigitGroup } from '../types/client.ts';
+import { DecimalDigitGroup } from '../types/metric.ts';
+import { ConstantValue } from '../types/client.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -53,23 +56,57 @@ test('getValueFromKey throws for unsafe optional property access', () => {
 test('getValueFromKey returns value when using jmespath expression', () => {
   const pathExpression = {
     type: 'jmespath',
-    expression: '$.measurements[0].pm25',
+    value: '$.measurements[0].pm25',
   } satisfies PathExpression;
   expect(
     getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
   ).toBe(42);
 });
 
+test('getValueFromKey returns value when using constant value', () => {
+  const constantValue = {
+    type: 'constant',
+    value: 3600,
+  } satisfies ConstantValue;
+  expect(getValueFromKey({ measurements: [{ pm25: 42 }] }, constantValue)).toBe(
+    3600,
+  );
+});
+
 test('getValueFromKey throws when unsupported expression type is passed', () => {
   // @ts-expect-error Testing unsupported type value
   const pathExpression = {
     type: 'xpath',
-    expression: '/measurements[0]/pm25',
+    value: '/measurements[0]/pm25',
   } satisfies PathExpression;
   // @ts-expect-error Testing unsupported type value
   expect(() =>
     getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
   ).toThrow(TypeError);
+});
+
+test('getValueFromKey returns null when key function throws a non-TypeError', () => {
+  expect(
+    getValueFromKey({ pm25: 42 }, () => {
+      throw new Error('unexpected');
+    }),
+  ).toBe(null);
+});
+
+test('getValueFromKey returns boolean true primitive directly', () => {
+  expect(getValueFromKey({ is_mobile: false }, true)).toBe(true);
+});
+
+test('getValueFromKey returns boolean false primitive directly', () => {
+  expect(getValueFromKey({ is_mobile: true }, false)).toBe(false);
+});
+
+test('getValueFromKey returns number primitive directly', () => {
+  expect(getValueFromKey({ interval: 42 }, 3600)).toBe(3600);
+});
+
+test('getValueFromKey returns zero number primitive directly', () => {
+  expect(getValueFromKey({ interval: 42 }, 0)).toBe(0);
 });
 
 test('countDecimals returns the right value', () => {
@@ -125,7 +162,7 @@ test('countDecimals returns the right value', () => {
 // });
 
 const record = (value: unknown) => ({ value }) as unknown as SourceRecord;
-const key = "value";
+const key = 'value';
 
 describe('getString', () => {
   test('returns the string value as-is', () => {
@@ -150,6 +187,20 @@ describe('getString', () => {
 
   test('returns empty string for empty string', () => {
     expect(getString(record(''), key)).toBe('');
+  });
+
+  test('returns a string for jmespath expression', () => {
+    expect(getString(record(42), { type: 'jmespath', value: 'value' })).toBe(
+      '42',
+    );
+  });
+
+  test('returns a string for constant value of type string', () => {
+    expect(getString(record(42), { type: 'constant', value: '2' })).toBe('2');
+  });
+
+  test('returns a string for constant value of type number', () => {
+    expect(getString(record(42), { type: 'constant', value: 2 })).toBe('2');
   });
 });
 
@@ -182,6 +233,36 @@ describe('getNumber', () => {
 
   test("returns 0 for '0'", () => {
     expect(getNumber(record('0'), key, numberFormat)).toBe(0);
+  });
+
+  test('returns number 0 for jmespath expression', () => {
+    expect(
+      getNumber(
+        record('0'),
+        { type: 'jmespath', value: 'value' },
+        numberFormat,
+      ),
+    ).toBe(0);
+  });
+
+  test('returns constant number for constant value string', () => {
+    expect(
+      getNumber(record('0'), { type: 'constant', value: '42' }, numberFormat),
+    ).toBe(42);
+  });
+
+  test('returns constant number for constant value number', () => {
+    expect(
+      getNumber(record('0'), { type: 'constant', value: 42 }, numberFormat),
+    ).toBe(42);
+  });
+
+  test('returns number primitive directly', () => {
+    expect(getNumber(record(42), 3600, numberFormat)).toBe(3600);
+  });
+
+  test('returns zero number primitive directly', () => {
+    expect(getNumber(record(42), 0, numberFormat)).toBe(0);
   });
 
   test('parses a comma-decimal string with matching numberFormat', () => {
@@ -234,6 +315,14 @@ describe('getBoolean', () => {
   test('returns true for a non-empty arbitrary string', () => {
     expect(getBoolean(record('some-value'), key)).toBe(true);
   });
+
+  test('returns true when key is literal true', () => {
+    expect(getBoolean(record(false), true)).toBe(true);
+  });
+
+  test('returns false when key is literal false', () => {
+    expect(getBoolean(record(true), false)).toBe(false);
+  });
 });
 
 describe('getArray tests', () => {
@@ -259,157 +348,229 @@ describe('getArray tests', () => {
     expect(getArray(record([]), key)).toStrictEqual([]);
   });
 
+  test('returns array for path expression', () => {
+    expect(
+      getArray(record('some-value'), {
+        type: 'jmespath',
+        value: 'value',
+      } satisfies PathExpression),
+    ).toStrictEqual(['some-value']);
+  });
+
+  test('returns array for constant value', () => {
+    expect(
+      getArray(record('some-value'), {
+        type: 'constant',
+        value: 42,
+      } satisfies ConstantValue),
+    ).toStrictEqual([42]);
+  });
 });
 
 // Test cases based on "common" cases as described in the table here:
 // https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
 
-describe("normalizeNumericString", () => {
+describe('normalizeNumericString', () => {
+  describe('comma grouped, point decimal', () => {
+    const format: DecimalDigitGroup = { decimal: 'point', digitGroup: 'comma' };
 
-	describe("comma grouped, point decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
- 
-		test("parses a fully-formatted number", () => {
-			expect(normalizeNumericString("1,234,567.89", format)).toBe("1234567.89");
-		});
- 
-		test("parses an integer with group separators", () => {
-			expect(normalizeNumericString("1,234,567", format)).toBe("1234567");
-		});
- 
-		test("parses a number without group separator", () => {
-			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
-		});
- 
-		test("parses zero", () => {
-			expect(normalizeNumericString("0.00", format)).toBe("0.00");
-		});
- 
-		test("parses a negative number", () => {
-			expect(normalizeNumericString("-1,234.56", format)).toBe("-1234.56");
-		});
- 
-		test("returns empty string for empty input", () => {
-			expect(normalizeNumericString("  ", format)).toBe("");
-		});
-	});
- 
+    test('parses a fully-formatted number', () => {
+      expect(normalizeNumericString('1,234,567.89', format)).toBe('1234567.89');
+    });
 
-	describe("no group, point decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "point" };
- 
-		test("parses a plain integer", () => {
-			expect(normalizeNumericString("1234567", format)).toBe("1234567");
-		});
- 
-		test("parses a number with decimal part", () => {
-			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
-		});
- 
-		test("returns empty string for empty input", () => {
-			expect(normalizeNumericString("", format)).toBe("");
-		});
-	});
- 
+    test('parses an integer with group separators', () => {
+      expect(normalizeNumericString('1,234,567', format)).toBe('1234567');
+    });
 
-	describe("no group, comma decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "comma" };
- 
-		test("parses a plain number and converts comma to period", () => {
-			expect(normalizeNumericString("1234567,89", format)).toBe("1234567.89");
-		});
- 
-		test("parses an integer", () => {
-			expect(normalizeNumericString("1234567", format)).toBe("1234567");
-		});
-	});
+    test('parses a number without group separator', () => {
+      expect(normalizeNumericString('1234567.89', format)).toBe('1234567.89');
+    });
 
-	describe("dot grouped, comma decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "dot" };
- 
-		test("parses a comma decimal got grouped number", () => {
-			expect(normalizeNumericString("1.234.567,89", format)).toBe("1234567.89");
-		});
- 
-		test("parses an integer with dot separators", () => {
-			expect(normalizeNumericString("1.234.567", format)).toBe("1234567");
-		});
- 
-		test("parses a small number", () => {
-			expect(normalizeNumericString("1.000,00", format)).toBe("1000.00");
-		});
+    test('parses zero', () => {
+      expect(normalizeNumericString('0.00', format)).toBe('0.00');
+    });
 
-	});
- 
-	describe("comma grouped, interpunct decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "interpunct", digitGroup: "comma" };
- 
-		test("parses a interpunct comma grouped number", () => {
-			expect(normalizeNumericString("1,234,567\u00B789", format)).toBe("1234567.89");
-		});
- 
-		test("parses without group separator", () => {
-			expect(normalizeNumericString("1234567\u00B789", format)).toBe("1234567.89");
-		});
-	});
- 
-	describe("Indian number grouping", () => {
-		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
- 
-		test("parses Indian-style grouping", () => {
-			expect(normalizeNumericString("12,34,567.89", format)).toBe("1234567.89");
-		});
-	});
- 
-	describe("apostrophe grouped, point decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "apostrophe" };
- 
-		test("parses an apostrophe grouped point decimal number", () => {
-			expect(normalizeNumericString("1'234'567.89", format)).toBe("1234567.89");
-		});
- 
-		test("parses an integer with apostrophe groups", () => {
-			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
-		});
-	});
- 
-	describe("apostrophe grouped, comma decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "apostrophe" };
- 
-		test("parses an apostophe grouped comma decimal number", () => {
-			expect(normalizeNumericString("1'234'567,89", format)).toBe("1234567.89");
-		});
+    test('parses a negative number', () => {
+      expect(normalizeNumericString('-1,234.56', format)).toBe('-1234.56');
+    });
 
-    test("parses an integer with apostrophe groups", () => {
-			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
-		});
-	});
- 
-	describe("space grouped, comma decimal", () => {
-		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "space" };
- 
-		test("parses space as group separator", () => {
-			expect(normalizeNumericString("1 234 567,89", format)).toBe("1234567.89");
-		});
- 
-		test("parses non-breaking space (U+00A0) as group separator", () => {
-			expect(normalizeNumericString("1\u00A0234\u00A0567,89", format)).toBe("1234567.89");
-		});
- 
-		test("parses narrow no-break space (U+202F) as group separator", () => {
-			expect(normalizeNumericString("1\u202F234\u202F567,89", format)).toBe("1234567.89");
-		});
- 
-		test("parses an integer with space separators", () => {
-			expect(normalizeNumericString("1 234 567", format)).toBe("1234567");
-		});
-	});
- 
-	describe("arabic decimal separator (U+066B)", () => {
-		const format: DecimalDigitGroup = { decimal: "arabic" };
- 
-		test("parses a number with arabic decimal comma", () => {
-			expect(normalizeNumericString("1234567\u066B89", format)).toBe("1234567.89");
-		});
-	});
+    test('returns empty string for empty input', () => {
+      expect(normalizeNumericString('  ', format)).toBe('');
+    });
+  });
+
+  describe('no group, point decimal', () => {
+    const format: DecimalDigitGroup = { decimal: 'point' };
+
+    test('parses a plain integer', () => {
+      expect(normalizeNumericString('1234567', format)).toBe('1234567');
+    });
+
+    test('parses a number with decimal part', () => {
+      expect(normalizeNumericString('1234567.89', format)).toBe('1234567.89');
+    });
+
+    test('returns empty string for empty input', () => {
+      expect(normalizeNumericString('', format)).toBe('');
+    });
+  });
+
+  describe('no group, comma decimal', () => {
+    const format: DecimalDigitGroup = { decimal: 'comma' };
+
+    test('parses a plain number and converts comma to period', () => {
+      expect(normalizeNumericString('1234567,89', format)).toBe('1234567.89');
+    });
+
+    test('parses an integer', () => {
+      expect(normalizeNumericString('1234567', format)).toBe('1234567');
+    });
+  });
+
+  describe('dot grouped, comma decimal', () => {
+    const format: DecimalDigitGroup = { decimal: 'comma', digitGroup: 'dot' };
+
+    test('parses a comma decimal got grouped number', () => {
+      expect(normalizeNumericString('1.234.567,89', format)).toBe('1234567.89');
+    });
+
+    test('parses an integer with dot separators', () => {
+      expect(normalizeNumericString('1.234.567', format)).toBe('1234567');
+    });
+
+    test('parses a small number', () => {
+      expect(normalizeNumericString('1.000,00', format)).toBe('1000.00');
+    });
+  });
+
+  describe('comma grouped, interpunct decimal', () => {
+    const format: DecimalDigitGroup = {
+      decimal: 'interpunct',
+      digitGroup: 'comma',
+    };
+
+    test('parses a interpunct comma grouped number', () => {
+      expect(normalizeNumericString('1,234,567\u00B789', format)).toBe(
+        '1234567.89',
+      );
+    });
+
+    test('parses without group separator', () => {
+      expect(normalizeNumericString('1234567\u00B789', format)).toBe(
+        '1234567.89',
+      );
+    });
+  });
+
+  describe('Indian number grouping', () => {
+    const format: DecimalDigitGroup = { decimal: 'point', digitGroup: 'comma' };
+
+    test('parses Indian-style grouping', () => {
+      expect(normalizeNumericString('12,34,567.89', format)).toBe('1234567.89');
+    });
+  });
+
+  describe('apostrophe grouped, point decimal', () => {
+    const format: DecimalDigitGroup = {
+      decimal: 'point',
+      digitGroup: 'apostrophe',
+    };
+
+    test('parses an apostrophe grouped point decimal number', () => {
+      expect(normalizeNumericString("1'234'567.89", format)).toBe('1234567.89');
+    });
+
+    test('parses an integer with apostrophe groups', () => {
+      expect(normalizeNumericString("1'234'567", format)).toBe('1234567');
+    });
+  });
+
+  describe('apostrophe grouped, comma decimal', () => {
+    const format: DecimalDigitGroup = {
+      decimal: 'comma',
+      digitGroup: 'apostrophe',
+    };
+
+    test('parses an apostophe grouped comma decimal number', () => {
+      expect(normalizeNumericString("1'234'567,89", format)).toBe('1234567.89');
+    });
+
+    test('parses an integer with apostrophe groups', () => {
+      expect(normalizeNumericString("1'234'567", format)).toBe('1234567');
+    });
+  });
+
+  describe('space grouped, comma decimal', () => {
+    const format: DecimalDigitGroup = { decimal: 'comma', digitGroup: 'space' };
+
+    test('parses space as group separator', () => {
+      expect(normalizeNumericString('1 234 567,89', format)).toBe('1234567.89');
+    });
+
+    test('parses non-breaking space (U+00A0) as group separator', () => {
+      expect(normalizeNumericString('1\u00A0234\u00A0567,89', format)).toBe(
+        '1234567.89',
+      );
+    });
+
+    test('parses narrow no-break space (U+202F) as group separator', () => {
+      expect(normalizeNumericString('1\u202F234\u202F567,89', format)).toBe(
+        '1234567.89',
+      );
+    });
+
+    test('parses an integer with space separators', () => {
+      expect(normalizeNumericString('1 234 567', format)).toBe('1234567');
+    });
+  });
+
+  describe('arabic decimal separator (U+066B)', () => {
+    const format: DecimalDigitGroup = { decimal: 'arabic' };
+
+    test('parses a number with arabic decimal comma', () => {
+      expect(normalizeNumericString('1234567\u066B89', format)).toBe(
+        '1234567.89',
+      );
+    });
+  });
+});
+
+describe('jmespath()', () => {
+  test('Creates a PathExpression', () => {
+    const result = jmespath('device.logging.interval');
+
+    expect(result).toEqual({
+      type: 'jmespath',
+      value: 'device.logging.interval',
+    });
+  });
+});
+
+describe('constant()', () => {
+  test('Create a ConstantValue with a number', () => {
+    const result = constant(3600);
+
+    expect(result).toEqual({
+      type: 'constant',
+      value: 3600,
+    });
+  });
+
+  test('Create a ConstantValue with a string', () => {
+    const result = constant('foo');
+
+    expect(result).toEqual({
+      type: 'constant',
+      value: 'foo',
+    });
+  });
+
+  test('Create a ConstantValue with a boolean', () => {
+    const result = constant(true);
+
+    expect(result).toEqual({
+      type: 'constant',
+      value: true,
+    });
+  });
 });

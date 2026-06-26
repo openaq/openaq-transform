@@ -1,4 +1,4 @@
-import debug from "debug";
+import { createDebug } from "obug";
 import type { SourceRecord } from "../types/data";
 import type {
 	BlobParser,
@@ -18,7 +18,7 @@ import {
 } from "../types/readers";
 import { FetchError, ParseError } from "./errors";
 
-const log = debug("openaq-transform readers: DEBUG");
+const log = createDebug("openaq-transform:core:readers");
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
 	options: ReaderOptions | IndexedReaderOptions,
@@ -167,12 +167,13 @@ export async function apiReader(
 ): Promise<unknown | unknown[] | Record<string, unknown>> {
 	resource.data = data;
 
-	const options = resource.options as UrlReaderOptions;
+	const readerOptions = resource.readerOptions as UrlReaderOptions;
+	const parserOptions = resource.parserOptions;
 
 	// overrides default if needed
 	const fetchOptions: UrlReaderOptions = {
 		method: "GET",
-		...options,
+		...readerOptions,
 	};
 
 	const urls = resource.urls;
@@ -250,11 +251,11 @@ export async function apiReader(
 				try {
 					let result: unknown;
 					if (raw.readAs === "text") {
-						result = await (parser as StringParser)(raw.content);
+						result = await (parser as StringParser)(raw.content, parserOptions);
 					} else if (raw.readAs === "blob") {
-						result = await (parser as BlobParser)(raw.content);
+						result = await (parser as BlobParser)(raw.content, parserOptions);
 					} else {
-						result = await (parser as JsonParser)(raw.content);
+						result = await (parser as JsonParser)(raw.content, parserOptions);
 					}
 
 					if (!result || typeof result !== "object") {

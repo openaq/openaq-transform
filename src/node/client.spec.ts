@@ -12,7 +12,7 @@ import { NodeClient as Client } from "./client.ts";
 const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
 
-import debug from "debug";
+import { createDebug } from "obug";
 import { Resource } from "../core/resource.ts";
 import { constant } from "../core/utils.ts";
 

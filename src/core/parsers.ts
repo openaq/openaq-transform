@@ -1,6 +1,6 @@
 import type { Options as CsvParseOptions } from "csv-parse";
-import debug from "debug";
 import { XMLParser } from "fast-xml-parser";
+import { createDebug } from "obug";
 import type { SourceRecord } from "../types/data";
 import type {
 	CsvParseFunction,
@@ -10,8 +10,7 @@ import type {
 	XmlParserOptions,
 } from "../types/parsers";
 
-const log = debug("openaq-transform:parsers");
-const warn = debug("openaq-transform:parsers:warn");
+const log = createDebug("openaq-transform:core:parsers");
 
 export const parseDelimited = async (
 	content: string,
@@ -30,7 +29,7 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 		const { format, ...csvOptions } = (options as DelimitedParserOptions) ?? {};
 
 		if (csvOptions.delimiter && csvOptions.delimiter !== ",") {
-			warn(
+			log(
 				`${format} parser received delimiter "${csvOptions.delimiter}", delimiter is fixed to "," and will not be overwritten`,
 			);
 		}
@@ -50,7 +49,7 @@ export const createDelimitedParsers = (parse: CsvParseFunction) => {
 		const { format, ...tsvOptions } = (options as DelimitedParserOptions) ?? {};
 
 		if (tsvOptions.delimiter && tsvOptions.delimiter !== "\t") {
-			warn(
+			log(
 				`${format} parser received delimiter "${tsvOptions.delimiter}", delimiter is fixed to "\\t" and will not be overwritten`,
 			);
 		}

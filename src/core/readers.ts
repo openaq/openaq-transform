@@ -1,4 +1,4 @@
-import debug from "debug";
+import { createDebug } from "obug";
 import type { SourceRecord } from "../types/data";
 import type {
 	BlobParser,
@@ -18,7 +18,7 @@ import {
 } from "../types/readers";
 import { FetchError, ParseError } from "./errors";
 
-const log = debug("openaq-transform readers: DEBUG");
+const log = createDebug("openaq-transform:core:readers");
 
 export function getReaderOptions<K extends keyof IndexedReaderOptions>(
 	options: ReaderOptions | IndexedReaderOptions,

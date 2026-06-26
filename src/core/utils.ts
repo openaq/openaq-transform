@@ -1,5 +1,5 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
-import debug from "debug";
+import { createDebug } from "obug";
 import {
 	type ConstantValue,
 	isConstantValue,
@@ -15,7 +15,7 @@ import {
 	type PathExpression,
 } from "../types/metric";
 
-const log = debug("openaq-transform utils: DEBUG");
+const log = createDebug("openaq-transform:core:utils");
 
 export const stripNulls = <T extends object>(
 	obj: T,

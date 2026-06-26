@@ -1,4 +1,4 @@
-import debug from "debug";
+import { createDebug } from "obug";
 import type { ErrorJSON, ErrorSummary } from "../types/errors";
 import { PARAMETERS } from "./metric";
 
@@ -8,7 +8,7 @@ const LOCATION_ERROR = "LocationError";
 const FETCH_ERROR = "FetchError";
 const PARSE_ERROR = "ParseError";
 
-const log = debug("openaq-transform errors: DEBUG");
+const log = createDebug("openaq-transform:core:errors");
 
 export class Errors {
 	#errors: Map<string, TransformError[]>;

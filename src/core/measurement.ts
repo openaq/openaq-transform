@@ -1,6 +1,6 @@
-import debug from "debug";
+import { createDebug } from "obug";
 
-const log = debug("openaq-transform measurements: DEBUG");
+const log = createDebug("openaq-transform:core:measurements");
 
 import type { BBox } from "geojson";
 import type { MeasurementData, MeasurementJSON } from "../types/measurement";

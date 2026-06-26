@@ -1,6 +1,6 @@
-import debug from "debug";
+import { createDebug } from "obug";
 
-const log = debug("openaq-transform systems: DEBUG");
+const log = createDebug("openaq-transform:core:systems");
 
 import type { SystemData, SystemJSON } from "../types/system";
 import type { Sensor } from "./sensor";

@@ -1,4 +1,4 @@
-import debug from "debug";
+import { createDebug } from "obug";
 import {
 	type ClientConfiguration,
 	type ClientInfo,
@@ -52,7 +52,7 @@ import {
 	getValueFromKey,
 } from "./utils";
 
-const log = debug("openaq-transform client (core): DEBUG");
+const log = createDebug("openaq-transform:core:client");
 
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,

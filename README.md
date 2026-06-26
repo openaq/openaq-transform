@@ -104,6 +104,18 @@ Parameters can also be a JMESPath expression evaluated against the same
 ```ts
 new Resource({
   url: 'https://api.example.com/locations/:id/measurements',
+  parameters: jmespath('locations[*].{id: id}')
+})
+```
+
+> [!NOTE]
+> The `jmespath()` helper function is the preferred method to define a jmespath
+> query. A literal `ParseExpression` object can also be provided. The example 
+> below is functionally identical to that above.
+
+```ts
+new Resource({
+  url: 'https://api.example.com/locations/:id/measurements',
   parameters: { type: 'jmespath', value: 'locations[*].{id: id}' }
 })
 ```
@@ -247,6 +259,10 @@ defined in three different ways:
 - A function for dynamically joining, reshaping or otherwise manipulating the
 field values e.g. ```(d) => `${d.dateString}T${d.time}Z```
 
+For certain fields that accept `boolean` or `number`, a literal value matching
+the appropriate type can be passed as constant in the case that a dynamic lookup
+or mapping is not applicable.
+
 #### Parameter and unit mappings
 
 OpenAQ transform provide built-in definitions for common air quality and
@@ -293,8 +309,8 @@ export class Client extends NodeClient {
   };
   parser = 'json';
   reader = 'api;
-  averagingIntervalKey = () => 3600;
-  isMobileKey = () => false;
+  averagingIntervalKey = 3600;
+  isMobileKey = false;
   longFormat = true
   locationIdKey = 'locationId'
   datetimeKey = 'datetime'

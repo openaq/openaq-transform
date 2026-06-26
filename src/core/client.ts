@@ -39,7 +39,12 @@ import {
 } from "./errors";
 import { Location, Locations } from "./location";
 import { Measurement, Measurements } from "./measurement";
-import { FLAG_DEFAULTS, type Metric, PARAMETER_DEFAULTS, PARAMETERS } from "./metric";
+import {
+	FLAG_DEFAULTS,
+	type Metric,
+	PARAMETER_DEFAULTS,
+	PARAMETERS,
+} from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
 
@@ -795,7 +800,7 @@ export abstract class Client<
 				versionDate,
 				instance,
 				status,
-				supportedParameters: this.supportedParameters, 
+				supportedParameters: this.supportedParameters,
 			});
 			location.add(sensor);
 			this.#sensors.add(sensor);

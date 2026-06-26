@@ -10,7 +10,7 @@ export { Datetime } from "./datetime";
 
 export { FetchError, ParseError, TransformError } from "./errors";
 
-export { PARAMETERS } from './metric';
+export { PARAMETERS } from "./metric";
 
 export { Resource } from "./resource";
 

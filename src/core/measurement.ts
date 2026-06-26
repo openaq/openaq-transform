@@ -50,7 +50,13 @@ export class Measurements {
 			const { parameter, unit, key } = p;
 			this.parameters.set(
 				key,
-				new Metric(parameter, unit, providerValues, numberFormat, supportedParameters),
+				new Metric(
+					parameter,
+					unit,
+					providerValues,
+					numberFormat,
+					supportedParameters,
+				),
 			);
 		}
 	}

@@ -62,7 +62,7 @@ export class Sensor {
 				data.metric?.unit,
 				data.metric?.providerFlags,
 				data.metric?.numberFormat,
-				data.supportedParameters, 
+				data.supportedParameters,
 			);
 		}
 

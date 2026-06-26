@@ -393,7 +393,7 @@ export class Metric {
 		unit: string,
 		providerFlags?: ValueFlagMap,
 		numberFormat: DecimalDigitGroup = { decimal: "point" },
-		parameters: ParameterMap = PARAMETERS
+		parameters: ParameterMap = PARAMETERS,
 	) {
 		// check for parameter(s)
 		// should either be one or two (parts & mass

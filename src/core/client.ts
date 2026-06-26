@@ -69,48 +69,49 @@ export abstract class Client<
 	// source: Source;
 	timezone?: string;
 	longFormat: boolean = false;
-	geometryProjectionKey:
-		| string
-		| PathExpression
-		| ConstantValue
-		| ParseFunction = "projection";
+	geometryProjection: string | PathExpression | ConstantValue | ParseFunction =
+		"projection";
 	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 	timeEnding: boolean = true;
 
 	// mapped data variables
-	locationIdKey: string | PathExpression | ConstantValue | ParseFunction =
+	locationId: string | PathExpression | ConstantValue | ParseFunction =
 		"location";
-	locationLabelKey: string | PathExpression | ConstantValue | ParseFunction =
+	locationLabel: string | PathExpression | ConstantValue | ParseFunction =
 		"label";
 	// if longFormat = false this value is ignored
-	parameterNameKey: string | PathExpression | ConstantValue | ParseFunction =
+	parameterName: string | PathExpression | ConstantValue | ParseFunction =
 		"parameter";
-	parameterValueKey: string | PathExpression | ConstantValue | ParseFunction =
+	parameterValue: string | PathExpression | ConstantValue | ParseFunction =
 		"value";
-	flagsKey: string | PathExpression | ConstantValue | ParseFunction = "flags";
+	flags: string | PathExpression | ConstantValue | ParseFunction = "flags";
 	numberFormat: DecimalDigitGroup = { decimal: "point" };
-	yGeometryKey: string | PathExpression | ConstantValue | ParseFunction = "y";
-	xGeometryKey: string | PathExpression | ConstantValue | ParseFunction = "x";
-	manufacturerKey: string | PathExpression | ConstantValue | ParseFunction =
+	yGeometry: string | PathExpression | ConstantValue | ParseFunction | number =
+		"y";
+	xGeometry: string | PathExpression | ConstantValue | ParseFunction | number =
+		"x";
+	manufacturer: string | PathExpression | ConstantValue | ParseFunction =
 		"manufacturer_name";
-	modelKey: string | PathExpression | ConstantValue | ParseFunction =
-		"model_name";
-	ownerKey: string | PathExpression | ConstantValue | ParseFunction =
-		"owner_name";
-	datetimeKey: string | PathExpression | ConstantValue | ParseFunction =
+	model: string | PathExpression | ConstantValue | ParseFunction = "model_name";
+	owner: string | PathExpression | ConstantValue | ParseFunction = "owner_name";
+	datetime: string | PathExpression | ConstantValue | ParseFunction =
 		"datetime";
-	licenseKey: string | PathExpression | ConstantValue | ParseFunction =
-		"license";
-	isMobileKey: string | PathExpression | ConstantValue | ParseFunction =
+	license: string | PathExpression | ConstantValue | ParseFunction = "license";
+	isMobile: string | PathExpression | ConstantValue | ParseFunction | boolean =
 		"is_mobile";
-	loggingIntervalKey: string | PathExpression | ConstantValue | ParseFunction =
-		"logging_interval_seconds";
-	averagingIntervalKey:
+	loggingInterval:
 		| string
 		| PathExpression
 		| ConstantValue
-		| ParseFunction = "averaging_interval_seconds";
-	sensorStatusKey: string | PathExpression | ConstantValue | ParseFunction =
+		| ParseFunction
+		| number = "logging_interval_seconds";
+	averagingInterval:
+		| string
+		| PathExpression
+		| ConstantValue
+		| ParseFunction
+		| number = "averaging_interval_seconds";
+	sensorStatus: string | PathExpression | ConstantValue | ParseFunction =
 		"status";
 	providerFlags?: ValueFlagMap = FLAG_DEFAULTS;
 	ingestMatchingMethod: IngestMatchingMethod = "ingest-id";
@@ -124,7 +125,7 @@ export abstract class Client<
 
 	protected getNumber = (
 		data: SourceRecord,
-		key: string | PathExpression | ConstantValue | ParseFunction,
+		key: string | number | PathExpression | ConstantValue | ParseFunction,
 	) => getNumber(data, key, this.numberFormat);
 
 	#startedOn?: Datetime;
@@ -180,63 +181,63 @@ export abstract class Client<
 			this.parser = this.#params.parser;
 		}
 		// mapped data variables
-		if (this.#params?.locationIdKey) {
-			this.locationIdKey = this.#params.locationIdKey;
+		if (this.#params?.locationId) {
+			this.locationId = this.#params.locationId;
 		}
-		if (this.#params?.locationLabelKey) {
-			this.locationLabelKey = this.#params.locationLabelKey;
+		if (this.#params?.locationLabel) {
+			this.locationLabel = this.#params.locationLabel;
 		}
 		// these are used for long format
-		if (this.#params?.parameterNameKey) {
-			this.parameterNameKey = this.#params.parameterNameKey;
+		if (this.#params?.parameterName) {
+			this.parameterName = this.#params.parameterName;
 		}
-		if (this.#params?.parameterValueKey) {
-			this.parameterValueKey = this.#params.parameterValueKey;
+		if (this.#params?.parameterValue) {
+			this.parameterValue = this.#params.parameterValue;
 		}
-		if (this.#params?.flagsKey) {
-			this.flagsKey = this.#params.flagsKey;
+		if (this.#params?.flags) {
+			this.flags = this.#params.flags;
 		}
 		if (this.#params?.numberFormat) {
 			this.numberFormat = this.#params.numberFormat;
 		}
-		if (this.#params?.yGeometryKey) {
-			this.yGeometryKey = this.#params.yGeometryKey;
+		if (this.#params?.yGeometry) {
+			this.yGeometry = this.#params.yGeometry;
 		}
-		if (this.#params?.xGeometryKey) {
-			this.xGeometryKey = this.#params.xGeometryKey;
+		if (this.#params?.xGeometry) {
+			this.xGeometry = this.#params.xGeometry;
 		}
-		if (this.#params?.geometryProjectionKey) {
-			this.geometryProjectionKey = this.#params.geometryProjectionKey;
+		if (this.#params?.geometryProjection) {
+			this.geometryProjection = this.#params.geometryProjection;
 		}
-		if (this.#params?.manufacturerKey) {
-			this.manufacturerKey = this.#params.manufacturerKey;
+		if (this.#params?.manufacturer) {
+			this.manufacturer = this.#params.manufacturer;
 		}
-		if (this.#params?.modelKey) {
-			this.modelKey = this.#params.modelKey;
+		if (this.#params?.model) {
+			this.model = this.#params.model;
 		}
-		if (this.#params?.ownerKey) {
-			this.ownerKey = this.#params.ownerKey;
+		if (this.#params?.owner) {
+			this.owner = this.#params.owner;
 		}
-		if (this.#params?.datetimeKey) {
-			this.datetimeKey = this.#params.datetimeKey;
+		if (this.#params?.datetime) {
+			this.datetime = this.#params.datetime;
 		}
 		if (this.#params?.timeEnding !== undefined) {
 			this.timeEnding = this.#params.timeEnding;
 		}
-		if (this.#params?.licenseKey) {
-			this.licenseKey = this.#params.licenseKey;
+		if (this.#params?.license) {
+			this.license = this.#params.license;
 		}
-		if (this.#params?.isMobileKey) {
-			this.isMobileKey = this.#params.isMobileKey;
+		if (this.#params?.isMobile) {
+			this.isMobile = this.#params.isMobile;
 		}
-		if (this.#params?.loggingIntervalKey) {
-			this.loggingIntervalKey = this.#params.loggingIntervalKey;
+		if (this.#params?.loggingInterval) {
+			this.loggingInterval = this.#params.loggingInterval;
 		}
-		if (this.#params?.averagingIntervalKey) {
-			this.averagingIntervalKey = this.#params.averagingIntervalKey;
+		if (this.#params?.averagingInterval) {
+			this.averagingInterval = this.#params.averagingInterval;
 		}
-		if (this.#params?.sensorStatusKey) {
-			this.sensorStatusKey = this.#params.sensorStatusKey;
+		if (this.#params?.sensorStatus) {
+			this.sensorStatus = this.#params.sensorStatus;
 		}
 		if (this.#params?.ingestMatchingMethod) {
 			this.ingestMatchingMethod = this.#params.ingestMatchingMethod;
@@ -441,11 +442,11 @@ export abstract class Client<
 		row: SourceRecord,
 		averagingIntervalSeconds: number | undefined,
 	): Datetime {
-		const dtString = getValueFromKey(row, this.datetimeKey);
+		const dtString = getValueFromKey(row, this.datetime);
 		log(`getDatetime`, dtString);
 		if (typeof dtString !== "string" || !dtString) {
 			throw new Error(
-				`Missing date/time field. Looking in ${formatValueForLog(this.datetimeKey)}`,
+				`Missing date/time field. Looking in ${formatValueForLog(this.datetime)}`,
 			);
 		}
 		let dt = new Datetime(dtString, {
@@ -681,7 +682,7 @@ export abstract class Client<
 	 * Add a location to our list
 	 */
 	getLocation(data: SourceRecord) {
-		const siteId = getString(data, this.locationIdKey) ?? "";
+		const siteId = getString(data, this.locationId) ?? "";
 		// BUILDING KEY
 		const key = Location.createKey({ provider: this.provider, siteId });
 
@@ -693,19 +694,16 @@ export abstract class Client<
 				...data,
 				siteId,
 				provider: this.provider,
-				siteName: getString(data, this.locationLabelKey) ?? "",
-				ismobile: getBoolean(data, this.isMobileKey),
-				x: this.getNumber(data, this.xGeometryKey),
-				y: this.getNumber(data, this.yGeometryKey),
-				projection: getString(data, this.geometryProjectionKey),
-				averagingIntervalSeconds: this.getNumber(
-					data,
-					this.averagingIntervalKey,
-				),
-				loggingIntervalSeconds: this.getNumber(data, this.loggingIntervalKey),
-				status: getString(data, this.sensorStatusKey) ?? "",
-				owner: getString(data, this.ownerKey) ?? "",
-				label: getString(data, this.locationLabelKey) ?? "",
+				siteName: getString(data, this.locationLabel) ?? "",
+				ismobile: getBoolean(data, this.isMobile),
+				x: this.getNumber(data, this.xGeometry),
+				y: this.getNumber(data, this.yGeometry),
+				projection: getString(data, this.geometryProjection),
+				averagingIntervalSeconds: this.getNumber(data, this.averagingInterval),
+				loggingIntervalSeconds: this.getNumber(data, this.loggingInterval),
+				status: getString(data, this.sensorStatus) ?? "",
+				owner: getString(data, this.owner) ?? "",
+				label: getString(data, this.locationLabel) ?? "",
 			});
 			this.#locations.add(location);
 		}
@@ -741,7 +739,7 @@ export abstract class Client<
 	}
 
 	private getSensor(data: SourceRecord): Sensor {
-		const metricName = getValueFromKey(data, this.parameterNameKey) as string;
+		const metricName = getValueFromKey(data, this.parameterName) as string;
 		const metric =
 			(data.metric as Metric | undefined) ??
 			this.measurements.metricFromProviderKey(metricName);
@@ -753,15 +751,12 @@ export abstract class Client<
 		// get or add then get the location
 		const location = this.getLocation(data);
 
-		const status =
-			getString(data, this.sensorStatusKey) ?? location.sensorStatus;
+		const status = getString(data, this.sensorStatus) ?? location.sensorStatus;
 
 		// maintain a way to get the sensor back without traversing everything
 
-		const manufacturerName = cleanKey(
-			getValueFromKey(data, this.manufacturerKey),
-		);
-		const modelName = cleanKey(getValueFromKey(data, this.modelKey));
+		const manufacturerName = cleanKey(getValueFromKey(data, this.manufacturer));
+		const modelName = cleanKey(getValueFromKey(data, this.model));
 		const versionDate = cleanKey(data.version_date);
 		const instance = cleanKey(data.instance);
 
@@ -788,10 +783,10 @@ export abstract class Client<
 				systemKey: system.key,
 				metric,
 				averagingIntervalSeconds:
-					this.getNumber(data, this.averagingIntervalKey) ??
+					this.getNumber(data, this.averagingInterval) ??
 					location.averagingIntervalSeconds,
 				loggingIntervalSeconds:
-					this.getNumber(data, this.loggingIntervalKey) ??
+					this.getNumber(data, this.loggingInterval) ??
 					location.loggingIntervalSeconds,
 				versionDate,
 				instance,
@@ -822,7 +817,7 @@ export abstract class Client<
 			string | PathExpression | ConstantValue | ParseFunction
 		> = this.longFormat
 			? // for long format we will just pass the parameter name key and use that each time
-				[this.parameterNameKey]
+				[this.parameterName]
 			: this.measurements.parameterKeys();
 
 		measurements.forEach((measurementRow: SourceRecord) => {
@@ -834,11 +829,11 @@ export abstract class Client<
 						? getValueFromKey(measurementRow, p)
 						: p;
 
-					const valueName = this.longFormat ? this.parameterValueKey : p;
+					const valueName = this.longFormat ? this.parameterValue : p;
 
 					const value = getValueFromKey(measurementRow, valueName);
 					// flags must be an array so we need to check that somewhere
-					const flags = getArray(measurementRow, this.flagsKey)?.map((f) => {
+					const flags = getArray(measurementRow, this.flags)?.map((f) => {
 						if (this.providerFlags?.has(f)) {
 							return this.providerFlags.get(f);
 						} else {
@@ -913,7 +908,7 @@ export abstract class Client<
 		log(`Processing ${flags.length} flags`);
 		flags.forEach((d: SourceRecord) => {
 			try {
-				const metric = getValueFromKey(d, this.parameterNameKey);
+				const metric = getValueFromKey(d, this.parameterName);
 				const sensor = this.getSensor({
 					metric,
 					...d,
@@ -1091,10 +1086,16 @@ export abstract class Client<
 	 */
 	info(): ClientInfo {
 		const translateKey = (
-			key: string | PathExpression | ConstantValue | ParseFunction,
+			key:
+				| string
+				| number
+				| boolean
+				| PathExpression
+				| ConstantValue
+				| ParseFunction,
 		): ClientInfoKey => {
 			let type: ClientInfoKey["type"];
-			let value: string | number | undefined;
+			let value: string | number | boolean | undefined;
 			if (typeof key === "function") {
 				type = "function";
 				value = String(getValueFromKey({}, key));
@@ -1113,20 +1114,20 @@ export abstract class Client<
 
 		return {
 			provider: this.provider,
-			datetimeKey: translateKey(this.datetimeKey),
+			datetime: translateKey(this.datetime),
 			timezone: this.timezone,
 			datetimeFormat: this.datetimeFormat,
-			geometryProjectionKey: translateKey(this.geometryProjectionKey),
-			yGeometryKey: translateKey(this.yGeometryKey),
-			xGeometryKey: translateKey(this.xGeometryKey),
-			manufacturerKey: translateKey(this.manufacturerKey),
-			modelKey: translateKey(this.modelKey),
-			ownerKey: translateKey(this.ownerKey),
-			licenseKey: translateKey(this.licenseKey),
+			geometryProjection: translateKey(this.geometryProjection),
+			yGeometry: translateKey(this.yGeometry),
+			xGeometry: translateKey(this.xGeometry),
+			manufacturer: translateKey(this.manufacturer),
+			model: translateKey(this.model),
+			owner: translateKey(this.owner),
+			license: translateKey(this.license),
 			isLongFormat: this.longFormat,
-			isMobile: translateKey(this.isMobileKey),
-			loggingInterval: translateKey(this.loggingIntervalKey),
-			averagingInterval: translateKey(this.averagingIntervalKey),
+			isMobile: translateKey(this.isMobile),
+			loggingInterval: translateKey(this.loggingInterval),
+			averagingInterval: translateKey(this.averagingInterval),
 			ingestMatchingMethod: this.ingestMatchingMethod,
 			parameters: this.parameters.map((p) => ({
 				parameter: p.parameter,

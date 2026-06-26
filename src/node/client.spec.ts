@@ -14,6 +14,7 @@ Settings.now = () => expectedNow.toMillis();
 
 import debug from "debug";
 import { Resource } from "../core/resource.ts";
+import { constant } from "../core/utils.ts";
 
 debug.enable("openaq*");
 
@@ -255,15 +256,15 @@ describe("Client with data in wide format", () => {
 		resource = new Resource({ url: "https://blah.org/wide" });
 		provider = "testing";
 		// mapping data
-		xGeometryKey = "longitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		yGeometryKey = "latitude";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			// provider_parameter_name: { parameter: 'openaq_name', unit: 'provider_units', key: "provider field" }
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
@@ -307,15 +308,15 @@ describe("Client with data split between two different resources", () => {
 		};
 		provider = "testing";
 		// mapping data
-		xGeometryKey = "longitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		yGeometryKey = "latitude";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -343,15 +344,15 @@ describe("Client with an indexed resource that returns a ResourceData object", (
 
 		provider = "testing";
 		// mapping data
-		xGeometryKey = "longitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		yGeometryKey = "latitude";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -372,15 +373,15 @@ describe("Client with data in long format", () => {
 		provider = "testing";
 		// mapping data
 		longFormat = true;
-		xGeometryKey = "longitude";
-		yGeometryKey = "latitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		yGeometry = "latitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -400,15 +401,15 @@ describe("Provider that passes sensor data", () => {
 		provider = "testing";
 		// mapping data
 		longFormat = true;
-		xGeometryKey = "longitude";
-		yGeometryKey = "latitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		yGeometry = "latitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -435,15 +436,16 @@ describe("Dynamic adapter that gets mapping from initial config", () => {
 
 	test("outputs correct format", async () => {
 		const cln = new JsonClient({
-			xGeometryKey: "longitude",
-			yGeometryKey: "latitude",
-			averagingIntervalKey: "averaging",
-			sensorStatusKey: () => "asdf",
-			locationIdKey: "station",
-			locationLabelKey: "site_name",
-			geometryProjectionKey: () => "WGS84",
-			ownerKey: () => "test_owner",
-			isMobileKey: () => false,
+			xGeometry: "longitude",
+			yGeometry: "latitude",
+			timeEnding: true,
+			averagingInterval: "averaging",
+			sensorStatus: () => "asdf",
+			locationId: "station",
+			locationLabel: "site_name",
+			geometryProjection: () => "WGS84",
+			owner: () => "test_owner",
+			isMobile: () => false,
 		});
 		const data = await cln.load();
 		expect(data).toStrictEqual(expectedOutput);
@@ -466,15 +468,16 @@ describe("Dynamic adapter that gets mapping from delayed configure", () => {
 				{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 				{ parameter: "temperature", unit: "f", key: "tempf" },
 			],
-			xGeometryKey: "longitude",
-			yGeometryKey: "latitude",
-			averagingIntervalKey: "averaging",
-			sensorStatusKey: () => "asdf",
-			locationIdKey: "station",
-			locationLabelKey: "site_name",
-			geometryProjectionKey: () => "WGS84",
-			ownerKey: () => "test_owner",
-			isMobileKey: () => false,
+			timeEnding: true,
+			xGeometry: "longitude",
+			yGeometry: "latitude",
+			averagingInterval: "averaging",
+			sensorStatus: () => "asdf",
+			locationId: "station",
+			locationLabel: "site_name",
+			geometryProjection: () => "WGS84",
+			owner: () => "test_owner",
+			isMobile: () => false,
 		});
 
 		const data = await cln.load();
@@ -600,15 +603,15 @@ describe("Client with measurement errors", () => {
 		provider = "testing";
 		strict = false;
 		longFormat = true;
-		xGeometryKey = "longitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		yGeometryKey = "latitude";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -738,15 +741,15 @@ describe("Client with digit group and decimal delimiter setting", () => {
 		provider = "testing";
 		strict = false;
 		longFormat = true;
-		xGeometryKey = "longitude";
-		averagingIntervalKey = "averaging";
-		sensorStatusKey = () => "asdf";
-		yGeometryKey = "latitude";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		numberFormat = {decimal: "comma", digitGroup: "dot"} as const;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
@@ -788,15 +791,15 @@ describe("Client with jmespath responsePath nested data key", () => {
             })
 		}
         provider = "testing";
-        xGeometryKey = "longitude";
-        averagingIntervalKey = "averaging";
-        sensorStatusKey = () => "asdf";
-        yGeometryKey = "latitude";
-        locationIdKey = "station";
-        locationLabelKey = "site_name";
-        geometryProjectionKey = () => "WGS84";
-        ownerKey = () => "test_owner";
-        isMobileKey = () => false;
+        xGeometry = "longitude";
+        averagingInterval = "averaging";
+        sensorStatus = () => "asdf";
+        yGeometry = "latitude";
+        locationId = "station";
+        locationLabel = "site_name";
+        geometryProjection = () => "WGS84";
+        owner = () => "test_owner";
+        isMobile = () => false;
         parameters = [
             { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
             { parameter: "temperature", unit: "f", key: "tempf" },
@@ -818,15 +821,15 @@ describe("Client with jmespath responsePath on single resource", () => {
             responsePath: { type: "jmespath", value: "data" },
         });
         provider = "testing";
-        xGeometryKey = "longitude";
-        averagingIntervalKey = () => 3600;
-        sensorStatusKey = () => "asdf";
-        yGeometryKey = "latitude";
-        locationIdKey = "station";
-        locationLabelKey = "site_name";
-        geometryProjectionKey = () => "WGS84";
-        ownerKey = () => "test_owner";
-        isMobileKey = () => false;
+        xGeometry = "longitude";
+        averagingInterval = 3600;
+        sensorStatus = constant("asdf");
+        yGeometry = "latitude";
+        locationId = "station";
+        locationLabel = "site_name";
+        geometryProjection = constant("WGS84");
+        owner = constant("test_owner");
+        isMobile = false;
         parameters = [
             { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
             { parameter: "temperature", unit: "f", key: "tempf" },
@@ -849,15 +852,15 @@ describe("Client with string responsePath on single resource", () => {
             responsePath: "data",
         });
         provider = "testing";
-        xGeometryKey = "longitude";
-        averagingIntervalKey = () => 3600;
-        sensorStatusKey = () => "asdf";
-        yGeometryKey = "latitude";
-        locationIdKey = "station";
-        locationLabelKey = "site_name";
-        geometryProjectionKey = () => "WGS84";
-        ownerKey = () => "test_owner";
-        isMobileKey = () => false;
+        xGeometry = "longitude";
+        averagingInterval = () => 3600;
+        sensorStatus = () => "asdf";
+        yGeometry = "latitude";
+        locationId = "station";
+        locationLabel = "site_name";
+        geometryProjection = () => "WGS84";
+        owner = () => "test_owner";
+        isMobile = () => false;
         parameters = [
             { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
             { parameter: "temperature", unit: "f", key: "tempf" },
@@ -878,15 +881,15 @@ describe("Client with timeEnding=false normalizes timestamps to time-ending", ()
 		provider = "testing";
 		longFormat = true;
 		timeEnding = false;
-		xGeometryKey = "longitude";
-		yGeometryKey = "latitude";
-		averagingIntervalKey = () => 3600
-		sensorStatusKey = () => "asdf";
-		locationIdKey = "station";
-		locationLabelKey = "site_name";
-		geometryProjectionKey = () => "WGS84";
-		ownerKey = () => "test_owner";
-		isMobileKey = () => false;
+		xGeometry = "longitude";
+		yGeometry = "latitude";
+		averagingInterval = () => 3600
+		sensorStatus = () => "asdf";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },

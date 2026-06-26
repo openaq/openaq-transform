@@ -28,9 +28,30 @@ export const stripNulls = <T extends object>(
 	);
 };
 
+/**
+ * Extracts a value from a source record using a variety of key types.
+ *
+ * @param data - The source record to extract a value from.
+ * @param key - Describes how to extract the value. Accepts:
+ *   - `string` — used as a direct property key on `data`
+ *   - `number` — returned as-is (constant passthrough)
+ * 	 - `boolean` — returned as-is (constant passthrough)
+ *   - `ParseFunction` — called with `data`
+ *   - `ConstantValue` — the `value` attribute is returned as-is (constant passthrough)
+ *   - `PathExpression` — `jmespath` query evaluated against `data`
+ * @returns The extracted value, or `null` if no matching key type was found.
+ * @throws {Error} If a `ParseFunction` throws a `TypeError` during execution.
+ * @throws {TypeError} If a `PathExpression` has an unsupported `type`.
+ */
 export const getValueFromKey = (
 	data: SourceRecord,
-	key: ParseFunction | string | ConstantValue | PathExpression,
+	key:
+		| ParseFunction
+		| string
+		| number
+		| boolean
+		| ConstantValue
+		| PathExpression,
 ) => {
 	if (isStructuredKey(key)) {
 		if (isPathExpression(key)) {
@@ -63,6 +84,8 @@ export const getValueFromKey = (
 		log(`getting value from key using '${key}'`);
 		const value = data ? data[key] : key;
 		return value;
+	} else if (typeof key === "number" || typeof key === "boolean") {
+		return key;
 	}
 	return null;
 };
@@ -77,8 +100,15 @@ export const cleanKey = (value: unknown): string | undefined => {
 };
 
 /**
- * Count the number of decimal places in value
- * @returns number
+ * Counts the number of decimal places in a number.
+ *
+ * @param value - The number to count.
+ * @returns The number of digits after the decimal point, or `0` for integers.
+ *
+ * @example
+ * countDecimals(3.14)  // 2
+ * countDecimals(100)   // 0
+ * countDecimals(1.5)   // 1
  */
 export function countDecimals(value: number) {
 	if (Math.floor(value.valueOf()) === value.valueOf()) return 0;
@@ -112,6 +142,13 @@ export function formatValueForLog(value: unknown): string {
 	return `[${typeof value}]`;
 }
 
+/**
+ * Extracts a value from a source record and coerces it to a string.
+ *
+ * @param data - The source record to extract a value from.
+ * @param key - Key describing how to extract the value; see {@link getValueFromKey}.
+ * @returns The extracted value as a string, or `undefined` if the value is `null` or `undefined`.
+ */
 export const getString = (
 	data: SourceRecord,
 	key: ParseFunction | string | ConstantValue | PathExpression,
@@ -121,9 +158,22 @@ export const getString = (
 	return String(value);
 };
 
+/**
+ * Extracts a value from a source record and coerces it to a number.
+ *
+ * String values are normalized before parsing using {@link normalizeNumericString},
+ * which handles locale-specific decimal and digit-group separators.
+ * Primitive `number` keys are returned as-is.
+ *
+ * @param data - The source record to extract a value from.
+ * @param key - Key describing how to extract the value; see {@link getValueFromKey}.
+ * @param numberFormat - Describes the decimal and digit-group separators used in string values.
+ * @returns The extracted value as a number, or `undefined` if the value is `null`, `undefined`,
+ *   an empty string, or non-numeric.
+ */
 export const getNumber = (
 	data: SourceRecord,
-	key: ParseFunction | string | ConstantValue | PathExpression,
+	key: ParseFunction | string | number | ConstantValue | PathExpression,
 	numberFormat: DecimalDigitGroup,
 ): number | undefined => {
 	let value = getValueFromKey(data, key) as number | null | string;
@@ -134,9 +184,16 @@ export const getNumber = (
 	return Number.isNaN(value as number) ? undefined : (Number(value) as number);
 };
 
+/**
+ * Extracts a value from a source record and coerces it to a boolean.
+ *
+ * @param data - The source record to extract a value from.
+ * @param key - Key describing how to extract the value; see {@link getValueFromKey}.
+ * @returns The extracted value coerced to a boolean.
+ */
 export const getBoolean = (
 	data: SourceRecord,
-	key: ParseFunction | string | ConstantValue | PathExpression,
+	key: ParseFunction | string | boolean | ConstantValue | PathExpression,
 ): boolean => {
 	const value = getValueFromKey(data, key);
 	if (typeof value === "string") {
@@ -147,6 +204,14 @@ export const getBoolean = (
 	return Boolean(value);
 };
 
+/**
+ * Extracts a value from a source record and returns it as an array.
+ *
+ * @param data - The source record to extract a value from.
+ * @param key - Key describing how to extract the value; see {@link getValueFromKey}.
+ * @returns The extracted value as an array of strings or numbers, or `undefined`
+ *   if the value is `null`, `undefined`, or an empty string.
+ */
 export const getArray = (
 	data: SourceRecord,
 	key: ParseFunction | string | ConstantValue | PathExpression,
@@ -161,6 +226,7 @@ export const getArray = (
 	if (!Array.isArray(value)) return [value];
 	return value;
 };
+
 /**
  * Maps human-readable separator names to their corresponding Unicode
  * characters. Used to resolve decimal and digit-group separator keys in
@@ -240,4 +306,42 @@ export function normalizeNumericString(
 	}
 
 	return v;
+}
+
+/**
+ * Creates a JMESPath {@link PathExpression} for extracting values from source records.
+ *
+ * @param value - A valid JMESPath query string.
+ * @returns A `PathExpression`.
+ *
+ * @see {@link https://jmespath.site} for JMESPath syntax reference.
+ *
+ * @example
+ * jmespath('device.location.latitude')
+ */
+export function jmespath(value: string): PathExpression {
+	return {
+		type: "jmespath",
+		value,
+	};
+}
+
+/**
+ * Helper function to create a {@link ConstantValue}.
+ *
+ * @param value - The constant string, number, or boolean to return.
+ * @returns A `ConstantValue` wrapper for use anywhere a key expression is accepted.
+ *
+ * @example
+ * constant(3600)
+ * constant(true)
+ * constant('metric')
+ */
+export function constant<T extends string | boolean | number>(
+	value: T,
+): ConstantValue<T> {
+	return {
+		type: "constant",
+		value,
+	};
 }

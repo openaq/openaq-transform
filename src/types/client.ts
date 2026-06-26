@@ -16,18 +16,18 @@ import type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
 import type { ResourceKeys } from "./resource";
 
 interface Meta {
-	locationIdKey: string;
-	locationLabelKey: string;
-	parameterKey: string;
-	valueKey: string;
+	locationId: string;
+	locationLabel: string;
+	parameter: string;
+	value: string;
 	projection: string;
-	latitudeKey: string;
-	longitudeKey: string;
-	manufacturerKey: string;
-	modelKey: string;
-	ownerKey: string;
-	licenseKey: string;
-	timestampKey: string;
+	latitude: string;
+	longitude: string;
+	manufacturer: string;
+	model: string;
+	owner: string;
+	license: string;
+	timestamp: string;
 	datetimeFormat: string;
 	timezone: string;
 }
@@ -68,7 +68,7 @@ export interface TransformData {
 
 export interface ClientInfoKey {
 	type: "function" | "field" | "constant" | SupportedExpressionLanguages;
-	value: string | number | undefined;
+	value: string | number | boolean | undefined;
 }
 
 export interface ClientInfoParameter {
@@ -80,15 +80,15 @@ export interface ClientInfo {
 	timezone: string | undefined;
 	provider: string;
 	isLongFormat: boolean;
-	datetimeKey: ClientInfoKey;
+	datetime: ClientInfoKey;
 	datetimeFormat: string;
-	geometryProjectionKey: ClientInfoKey;
-	xGeometryKey: ClientInfoKey;
-	yGeometryKey: ClientInfoKey;
-	manufacturerKey: ClientInfoKey;
-	modelKey: ClientInfoKey;
-	ownerKey: ClientInfoKey;
-	licenseKey: ClientInfoKey;
+	geometryProjection: ClientInfoKey;
+	xGeometry: ClientInfoKey;
+	yGeometry: ClientInfoKey;
+	manufacturer: ClientInfoKey;
+	model: ClientInfoKey;
+	owner: ClientInfoKey;
+	license: ClientInfoKey;
 	ingestMatchingMethod: string;
 	isMobile: ClientInfoKey;
 	loggingInterval: ClientInfoKey;
@@ -136,9 +136,10 @@ export function isStructuredKey(value: unknown): value is StructuredKey {
  * }
  * ```
  */
-export interface ConstantValue extends StructuredKey {
+export interface ConstantValue<T = string | boolean | number>
+	extends StructuredKey {
 	type: "constant";
-	value: string | number;
+	value: T;
 }
 
 /**
@@ -192,24 +193,24 @@ export interface ClientConfiguration {
 	timeEnding: boolean;
 	secrets?: object;
 
-	locationIdKey?: string | ParseFunction;
-	locationLabelKey?: string | ParseFunction;
-	parameterNameKey?: string | ParseFunction;
-	parameterValueKey?: string | ParseFunction;
-	flagsKey?: string | ParseFunction;
+	locationId?: string | ParseFunction;
+	locationLabel?: string | ParseFunction;
+	parameterName?: string | ParseFunction;
+	parameterValue?: string | ParseFunction;
+	flags?: string | ParseFunction;
 	numberFormat?: DecimalDigitGroup;
-	xGeometryKey?: string | ParseFunction;
-	yGeometryKey?: string | ParseFunction;
-	geometryProjectionKey?: string | ParseFunction;
-	manufacturerKey?: string | ParseFunction;
-	modelKey?: string | ParseFunction;
-	ownerKey?: string | ParseFunction;
-	datetimeKey?: string | ParseFunction;
-	licenseKey?: string | ParseFunction;
-	isMobileKey?: string | ParseFunction;
-	loggingIntervalKey?: string | ParseFunction;
-	averagingIntervalKey?: string | ParseFunction;
-	sensorStatusKey?: string | ParseFunction;
+	xGeometry?: string | ParseFunction;
+	yGeometry?: string | ParseFunction;
+	geometryProjection?: string | ParseFunction;
+	manufacturer?: string | ParseFunction;
+	model?: string | ParseFunction;
+	owner?: string | ParseFunction;
+	datetime?: string | ParseFunction;
+	license?: string | ParseFunction;
+	isMobile?: string | ParseFunction;
+	loggingInterval?: string | ParseFunction;
+	averagingInterval?: string | ParseFunction;
+	sensorStatus?: string | ParseFunction;
 	providerFlags?: ValueFlagMap;
 
 	datasources?: object;

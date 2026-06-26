@@ -12,11 +12,11 @@ import { NodeClient as Client } from "./client.ts";
 const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
 
-import { createDebug } from "obug";
+import { enable } from "obug";
 import { Resource } from "../core/resource.ts";
 import { constant } from "../core/utils.ts";
 
-debug.enable("openaq*");
+enable("openaq*");
 
 // mock server
 const handlers = [

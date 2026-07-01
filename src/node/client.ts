@@ -18,8 +18,11 @@ const parsers: ParserMethods = {
 	xml,
 };
 
-export class NodeClient<S = object>
-extends Client<ReaderMethods, ParserMethods, S> {
+export class NodeClient<S = object> extends Client<
+	ReaderMethods,
+	ParserMethods,
+	S
+> {
 	readers = readers;
 	parsers = parsers;
 }

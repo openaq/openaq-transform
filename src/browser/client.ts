@@ -18,7 +18,11 @@ const parsers: ParserMethods = {
 	xml,
 };
 
-export class BrowserClient<S = object> extends Client<ReaderMethods, ParserMethods, S> {
+export class BrowserClient<S = object> extends Client<
+	ReaderMethods,
+	ParserMethods,
+	S
+> {
 	readers = readers;
 	parsers = parsers;
 }

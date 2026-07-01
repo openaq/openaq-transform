@@ -185,7 +185,7 @@ export async function apiReader(
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url }) => {
+			batch.map(async ({ url, context }) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
 
@@ -283,6 +283,12 @@ export async function apiReader(
 						console.error(`Reader parse error at ${url}:`, parseError.message);
 					}
 					return;
+				}
+
+				if (context) {
+					parsed = Array.isArray(parsed)
+						? parsed.map((row) => ({ ...context, ...row }))
+						: { ...context, ...parsed };
 				}
 
 				if (resource.output && Array.isArray(parsed)) {

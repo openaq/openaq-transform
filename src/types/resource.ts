@@ -1,3 +1,5 @@
+import type { DataContext } from "./readers";
+
 export const RESOURCE_KEYS = [
 	"measurements",
 	"locations",
@@ -190,4 +192,21 @@ export type BearerAuth = {
 	};
 };
 
+export type Parameters = Record<string, string | number | boolean>;
+
+export type ParametersFunction = (data?: DataContext) => Parameters[];
+
+export interface ResourceUrl {
+	url: string;
+	body?: Body;
+	context?: Context;
+}
+
 export type Auth = BasicAuth | ApiKeyAuth | BearerAuth;
+
+export type Context = Record<string, string | number | boolean>;
+
+export type ContextFunction = (
+	parameters: Parameters,
+	data?: DataContext,
+) => Context;

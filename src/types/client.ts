@@ -179,7 +179,7 @@ export function isIndexed(resource: unknown): resource is IndexedResource {
 
 export type IngestMatchingMethod = "ingest-id" | "source-spatial";
 
-export interface ClientConfiguration {
+export interface ClientConfiguration<S = object> {
 	resource?: Resource | IndexedResource;
 	readerOptions?: ReaderOptions | IndexedReaderOptions;
 	reader?: string;
@@ -192,7 +192,7 @@ export interface ClientConfiguration {
 	sourceProjection?: string;
 	datetimeFormat?: string;
 	timeEnding: boolean;
-	secrets?: object;
+	secrets?: S;
 
 	locationId?: string | ParseFunction;
 	locationLabel?: string | ParseFunction;

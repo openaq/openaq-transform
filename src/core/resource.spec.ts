@@ -289,3 +289,53 @@ test("Bearer auth header overwrite over Authorization header from readerOptions"
   });
   expect(resource.headers).toStrictEqual(new Headers({ Authorization: "Bearer newtoken" }));
 });
+
+test("resource with static context applies it to every url", () => {
+	const resource = new Resource({
+		url: "https://example.com/locations/:locationsId",
+		parameters: [{ locationsId: 42 }, { locationsId: 43 }],
+		context: { provider: "foo" },
+	});
+
+	expect(resource.urls).toStrictEqual([
+		{
+			url: "https://example.com/locations/42",
+			context: { provider: "foo" },
+		},
+		{
+			url: "https://example.com/locations/43",
+			context: { provider: "foo" },
+		},
+	]);
+});
+
+
+test("resource with context function derives context from each parameter set", () => {
+	const resource = new Resource({
+		url: "https://example.com/locations/:locationsId/measures",
+		parameters: [{ locationsId: 42 }, { locationsId: 43 }],
+		context: (params) => ({ locationId: params.locationsId }),
+	});
+
+	expect(resource.urls).toStrictEqual([
+		{
+			url: "https://example.com/locations/42/measures",
+			context: { locationId: 42 },
+		},
+		{
+			url: "https://example.com/locations/43/measures",
+			context: { locationId: 43 },
+		},
+	]);
+});
+
+test("resource without context does not add a context key", () => {
+	const resource = new Resource({
+		url: "https://example.com/locations/:locationsId",
+		parameters: [{ locationsId: 42 }],
+	});
+
+	expect(resource.urls).toStrictEqual([
+		{ url: "https://example.com/locations/42" },
+	]);
+});

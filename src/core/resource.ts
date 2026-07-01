@@ -12,17 +12,13 @@ import {
 	type Auth,
 	type AuthValueFunction,
 	type Body,
+	type Context,
+	type ContextFunction,
 	isAuthValueFunction,
+	type Parameters,
+	type ParametersFunction,
+	type ResourceUrl,
 } from "../types/resource";
-
-type Parameters = Record<string, string | number | boolean>;
-
-type ParametersFunction = (data?: DataContext) => Parameters[];
-
-interface ResourceUrl {
-	url: string;
-	body?: Body;
-}
 
 /**
  * Defines how the reader should combine responses from multiple URLs.
@@ -58,6 +54,7 @@ type ResourceConfig =
 			parameters?: Parameters[] | ParametersFunction | PathExpression;
 			body?: Body;
 			responsePath?: PathExpression | string;
+			context?: Context | ContextFunction;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
@@ -71,6 +68,7 @@ type ResourceConfig =
 			parameters?: never;
 			body?: never;
 			responsePath?: PathExpression | string;
+			context?: Context | ContextFunction;
 			output?: ResourceOutput;
 			readAs?: ReadAs;
 			auth?: Auth;
@@ -108,6 +106,7 @@ export class Resource {
 	#parameters?: Parameters[] | ParametersFunction | PathExpression;
 	#body?: Body;
 	#data: DataContext;
+	#context?: Context | ContextFunction;
 	#responsePath?: PathExpression | string;
 	#output?: ResourceOutput;
 	#readAs?: ReadAs;
@@ -123,6 +122,7 @@ export class Resource {
 		this.#url = config.url;
 		this.#parameters = config.parameters;
 		this.#body = config.body;
+		this.#context = config.context;
 		this.#responsePath = config.responsePath;
 		this.#output = config.output;
 		this.#readAs = config.readAs;
@@ -401,15 +401,19 @@ export class Resource {
 					this.#body !== undefined
 						? Resource.buildBody(this.#body, params)
 						: undefined;
+				const context = this.resolveContext(params);
+
 				urls.push({
 					url,
 					...(body && { body: body }),
+					...(context && { context }),
 				});
 			}
 		} else {
 			urls.push({
 				url: this.#url,
 				...(this.#body && { body: this.#body }),
+				...(typeof this.#context === "object" && { context: this.#context }),
 			});
 		}
 		const { auth } = this;
@@ -425,6 +429,13 @@ export class Resource {
 		}
 
 		return urls;
+	}
+
+	private resolveContext(params: Parameters): Context | undefined {
+		if (!this.#context) return undefined;
+		return typeof this.#context === "function"
+			? this.#context(params)
+			: this.#context;
 	}
 
 	private resolveParameters(): Parameters[] {

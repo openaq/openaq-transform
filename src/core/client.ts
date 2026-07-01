@@ -63,10 +63,11 @@ const log = createDebug("openaq-transform:core:client");
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,
 	P extends ParserMethods = ParserMethods,
+	S = object,
 > {
 	provider!: string;
 	resource?: Resource | IndexedResource;
-	secrets?: object;
+	secrets?: S;
 	reader: ClientReader<R> = "api";
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;
@@ -142,7 +143,7 @@ export abstract class Client<
 	#locations: Locations;
 	#sensors: Sensors;
 	#errors: Errors;
-	#params: ClientConfiguration;
+	#params: ClientConfiguration<S>;
 	// offset, to, from support
 	// limit the returned values to the following periods
 	#datetimeTo: Datetime;
@@ -153,13 +154,13 @@ export abstract class Client<
 	log: Map<string, Array<LogEntry>>;
 	strict: boolean = false;
 
-	constructor(params?: ClientConfiguration) {
+	constructor(params?: ClientConfiguration<S>) {
 		// update with config if the config was passed in
 		// this will still behave oddly in our abstract/extend framework
-		this.configure(params as ClientConfiguration);
+		this.configure(params as ClientConfiguration<S>);
 	}
 
-	configure(params: ClientConfiguration) {
+	configure(params: ClientConfiguration<S>) {
 		if (params && typeof params === "object") {
 			this.#params = { ...this.#params, ...params };
 			this.setup();

@@ -1,6 +1,6 @@
-import { defineConfig, type Options } from "tsdown";
+import { defineConfig, type UserConfig } from "tsdown";
 
-const configs: Options[] = [
+const configs: UserConfig[] = [
 	{
 		entry: ["src/browser/index.ts"],
 		outDir: "dist/transform-browser",
@@ -9,6 +9,7 @@ const configs: Options[] = [
 		sourcemap: true,
 		clean: true,
 		dts: true,
+		deps: { onlyBundle: false }
 	},
 	{
 		entry: ["src/node/index.ts"],
@@ -18,7 +19,7 @@ const configs: Options[] = [
 		sourcemap: true,
 		clean: false,
 		dts: true,
-		external: ["fs/promises"],
+		deps: { neverBundle: ["fs/promises"], onlyBundle: false  },
 	},
 	{
 		entry: ["src/core/index.ts"],
@@ -28,6 +29,7 @@ const configs: Options[] = [
 		sourcemap: true,
 		clean: false,
 		dts: true,
+		deps: { onlyBundle: false },
 	},
 ];
 

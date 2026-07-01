@@ -26,13 +26,13 @@
 		"./node": {
 			"browser": null,
 			"node": {
-				"types": "./dist/transform-node/index.d.ts",
-				"node": "./dist/transform-node/index.js",
-				"default": "./dist/transform-node/index.js"
+				"types": "./dist/transform-node/index.d.mts",
+				"node": "./dist/transform-node/index.mjs",
+				"default": "./dist/transform-node/index.mjs"
 			},
 			"default": {
-				"types": "./dist/transform-node/index.d.ts",
-				"default": "./dist/transform-node/index.js"
+				"types": "./dist/transform-node/index.d.mts",
+				"default": "./dist/transform-node/index.mjs"
 			}
 		},
 		"./core": {
@@ -67,7 +67,7 @@
 		"happy-dom": "^17.4.6",
 		"knip": "^5.85.0",
 		"msw": "^2.7.5",
-		"tsdown": "^0.15.4",
+		"tsdown": "^0.22.3",
 		"typescript": "~5.8.3",
 		"vitest": "^3.2.4"
 	},

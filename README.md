@@ -228,7 +228,7 @@ format from the `Content-Type` response header.
 
 #### Custom reader
 
-A custom reader is an function assigned to the `reader` property of a `Client`
+A custom reader is a function assigned to the `reader` property of a `Client`
 subclass. It must be an arrow function to correctly the Client `this` context
 such as `this.readers`.
 
@@ -238,8 +238,7 @@ async ({ resource, options }, parser, data) => {
 }
 ```
 
-Custom readers can call built-in readers via `this.readers`, which is useful for 
-nwrapping API responses before they reach the field mapping stage:
+Custom readers can call built-in readers via `this.readers`, which is useful for unwrapping API responses before they reach the field mapping stage:
 
 ```ts
 export class Client extends NodeClient {
@@ -289,7 +288,7 @@ original form to create the standardized output. Data field lookups can be
 defined in three different ways:
 
 - Key lookups from a string e.g. 'locationId', 'datetime'
-- A path expression using a DSL such a JMESpath to look up values e.g.
+- A path expression using a DSL such a [JMESpath](https://jmespath.org/) to look up values e.g.
 `.coordinates.latitude`
 - A function for dynamically joining, reshaping or otherwise manipulating the
 field values e.g. ```(d) => `${d.dateString}T${d.time}Z```
@@ -301,7 +300,7 @@ or mapping is not applicable.
 #### Parameter and unit mappings
 
 OpenAQ transform provide built-in definitions for common air quality and
-meteorological parameters, including PM, ozone, NOx, SO₂, CO, temperature,
+meteorological parameters, including PM, ozone, NO<sub>x</sub>, SO<sub>2</sub>, CO, temperature,
 relative humidity, and pressure. Each definition specifies a canonical parameter
 name, a standard output unit, and a set of converters that normalize provider
 data into that unit automatically.
@@ -343,7 +342,7 @@ export class Client extends NodeClient {
       measurements: new Resource({ url: 'https://api.example.com/measurements' })
   };
   parser = 'json';
-  reader = 'api;
+  reader = 'api';
   averagingIntervalKey = 3600;
   isMobileKey = false;
   longFormat = true
@@ -361,15 +360,6 @@ export class Client extends NodeClient {
 }
 
 ```
-
-
-### Wide format data
-
-```ts
-
-```
-
-
 ## TransformData Output
 
 `TransformData` is the main output of the transform client, returned by `client.load()`. It contains everything the ingestor needs to process a batch of air quality data.
@@ -431,7 +421,7 @@ An array of `LocationJSON` objects. Each represents a monitoring site and its fu
 
 ### Key relationships
 
-```
+```sh
 Location (site)
   └── System (manufacturer + model)
         └── Sensor (metric + version + instance)

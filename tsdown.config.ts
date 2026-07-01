@@ -9,7 +9,7 @@ const configs: UserConfig[] = [
 		sourcemap: true,
 		clean: true,
 		dts: true,
-		deps: { onlyBundle: false }
+		deps: { onlyBundle: false },
 	},
 	{
 		entry: ["src/node/index.ts"],
@@ -19,7 +19,7 @@ const configs: UserConfig[] = [
 		sourcemap: true,
 		clean: false,
 		dts: true,
-		deps: { neverBundle: ["fs/promises"], onlyBundle: false  },
+		deps: { neverBundle: ["fs/promises"], onlyBundle: false },
 	},
 	{
 		entry: ["src/core/index.ts"],

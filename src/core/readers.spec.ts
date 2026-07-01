@@ -571,3 +571,82 @@ test("mergeObjects works", async () => {
 
 	expect(mergeObjects(input)).toEqual(expected);
 });
+
+test("context is merged onto each row of an array response", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations",
+		context: { source: "test-provider" },
+	});
+
+	const result = await apiReader(
+		{ resource },
+		async (content: any) => content,
+		{},
+	);
+
+	expect(result).toEqual(
+		sampleData.map((row) => ({ source: "test-provider", ...row })),
+	);
+});
+
+test("context is merged onto an object response", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations/:station",
+		parameters: [{ station: "A" }],
+		context: (params) => ({ station: params.station }),
+	});
+
+	const result = await apiReader(
+		{ resource },
+		async (content: any) => content,
+		{},
+	);
+
+	expect(result).toEqual({ station: "A", ...objectData.stations[0] });
+});
+
+test("context is merged per-url when derived from parameters", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations/:station",
+		parameters: [{ station: "A" }, { station: "B" }],
+		context: (params) => ({ station: params.station }),
+	});
+
+	const result = await apiReader(
+		{ resource },
+		async (content: any) => content,
+		{},
+	);
+
+	expect(result).toEqual([
+		{ station: "A", ...objectData.stations[0] },
+		{ station: "B", ...objectData.stations[1] },
+	]);
+});
+
+test("real fields in the response take precedence over context", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations",
+		context: { id: "should-not-win" },
+	});
+
+	const result = await apiReader(
+		{ resource },
+		async (content: any) => content,
+		{},
+	);
+
+	expect(result).toEqual(sampleData);
+});
+
+test("no context means rows are unchanged", async () => {
+	const resource = new Resource({ url: "https://api.test.com/stations" });
+
+	const result = await apiReader(
+		{ resource },
+		async (content: any) => content,
+		{},
+	);
+
+	expect(result).toEqual(sampleData);
+});

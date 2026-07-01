@@ -6,19 +6,19 @@ import type { ReaderMethods } from "../types/readers";
 import { csv, tsv } from "./parsers";
 import { fileReader } from "./readers";
 
-const readers = {
+const readers: ReaderMethods = {
 	api: apiReader,
 	file: fileReader,
-} satisfies ReaderMethods;
+};
 
-const parsers = {
+const parsers: ParserMethods = {
 	json,
 	csv,
 	tsv,
 	xml,
-} satisfies ParserMethods;
+};
 
-export class BrowserClient extends Client<typeof readers, typeof parsers> {
+export class BrowserClient<S = object> extends Client<ReaderMethods, ParserMethods, S> {
 	readers = readers;
 	parsers = parsers;
 }

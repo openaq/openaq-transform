@@ -53,6 +53,41 @@ transformed. The values default to `"api"` and `"json"` respectively, which
 covers most REST APIs returning JSON. Custom readers and parsers can be provided
 as functions, or as indexed objects to use different strategies per resource.
 
+#### Secrets
+
+`Client` (and exported subclasses like `NodeClient`) accept and optional
+`secrets` object, for storing API keys, tokens or credentials. `Client` is
+generic over the shape of `secrets`, so each client can declare its own type.
+
+
+##### Basic Usage
+
+```ts
+export class ExampleClient extends NodeClient<{ apiKey: string }> {
+  provider = 'example';
+  resource = {
+    locations: new Resource({
+      url: 'https://api.example.com/locations',
+      auth: {
+        type: 'APIKey',
+        position: 'query',
+        key: 'token',
+        value: () => this.secrets.apiKey,
+      },
+    }),
+  };
+}
+```
+
+> [!NOTE]
+> `this.secrets` isn't populated until after class field initializers run, so any
+> resource config that reads from it must access it through a function like
+> `() => this.secrets.apiKey` rather than reading it directly. This defers the
+> lookup until the value is actually needed, by which point secrets is guaranteed
+> to be set (and reads the current value, if secrets are ever updated later).
+> Fields that support this pattern (like auth.value) accept either a plain value
+> or a function for exactly this reason.
+
 ### Resource
 
 The `Resource` class defines an external data source, either a remote URL or an

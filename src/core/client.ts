@@ -63,10 +63,11 @@ const log = createDebug("openaq-transform:core:client");
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,
 	P extends ParserMethods = ParserMethods,
+	S = object
 > {
 	provider!: string;
 	resource?: Resource | IndexedResource;
-	secrets?: object;
+	secrets?: S;
 	reader: ClientReader<R> = "api";
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;

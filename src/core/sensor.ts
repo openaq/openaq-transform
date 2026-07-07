@@ -86,8 +86,7 @@ export class Sensor {
 		}
 		if (instance) key.push(instance);
 		if (versionDate) key.push(versionDate);
-		//log('returning the sensor key', systemKey)
-		return `${systemKey}-${key.join(":")}`;
+		return `${systemKey}/${key.join(":")}`;
 	}
 
 	add(data: FlagInput) {
@@ -104,7 +103,7 @@ export class Sensor {
 		if (this.instance) key.push(this.instance);
 		if (this.versionDate) key.push(this.versionDate);
 		//log('returning the sensor key', this.systemKey)
-		return `${this.systemKey}-${key.join(":")}`;
+		return `${this.systemKey}/${key.join(":")}`;
 	}
 
 	json(): SensorJSON {

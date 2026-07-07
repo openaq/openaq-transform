@@ -20,7 +20,7 @@ export class Locations {
 
 	constructor() {
 		this.#locations = new Map<string, Location>();
-		this.bounds = null; // its easier to work with a null boundary than the 4 number infinity boundary
+		this.bounds = null;
 	}
 
 	add(location: Location) {
@@ -89,7 +89,6 @@ export class Location {
 			Number(data.y),
 			data.projection,
 		);
-		//this.key = data.key;
 		this.siteId = data.siteId;
 		this.siteName = data.siteName;
 		this.averagingIntervalSeconds = data.averagingIntervalSeconds;
@@ -112,7 +111,7 @@ export class Location {
 				`Both a provider and locationId value are required to build a location key: You provided ${provider} & ${siteId}`,
 			);
 		}
-		return `${provider}-${siteId}`;
+		return `${provider}/${siteId}`;
 	}
 
 	get key(): string {
@@ -140,23 +139,20 @@ export class Location {
 		if (data instanceof Sensor) {
 			key = data.systemKey;
 		} else {
-			const parts = [this.key];
-			if (data.manufacturerName) parts.push(data.manufacturerName);
-			if (data.modelName) parts.push(data.modelName);
-			key = parts.join("-");
+			key = System.createKey({
+				locationKey: this.key,
+				manufacturerName: data.manufacturerName,
+				modelName: data.modelName,
+			});
 		}
 
 		if (!this.#systems.has(key)) {
-			// We are not runing into this anywhere in our tests
-			// so we either need to think of a reason to keep it or
-			// we should probably remove it
-
 			this.addSystem(
 				new System({
 					locationKey: this.key,
-					modelName: "modelName" in data ? data.modelName : "default",
 					manufacturerName:
-						"manufacturerName" in data ? data.manufacturerName : "default",
+						"manufacturerName" in data ? data.manufacturerName : undefined,
+					modelName: "modelName" in data ? data.modelName : undefined,
 				}),
 			);
 		}
@@ -166,7 +162,6 @@ export class Location {
 
 		return sys;
 	}
-
 	/**
 	 *  Add a new sensor to a location
 	 * This will also add the system as well if doesnt exist

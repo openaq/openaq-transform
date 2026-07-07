@@ -13,6 +13,7 @@ import {
   getValueFromKey,
   constant,
   jmespath,
+  sanitizeKeyName,
 } from './utils.ts';
 import { DecimalDigitGroup } from '../types/metric.ts';
 import { ConstantValue } from '../types/client.ts';
@@ -573,4 +574,37 @@ describe('constant()', () => {
       value: true,
     });
   });
+});
+
+describe("sanitizeManufacturerModelKeySegment", () => {
+	test("returns undefined for empty or whitespace-only input", () => {
+		expect(sanitizeKeyName("")).toBeUndefined();
+		expect(sanitizeKeyName("   ")).toBeUndefined();
+		expect(sanitizeKeyName(undefined)).toBeUndefined();
+	});
+
+	test("trims surrounding whitespace", () => {
+		expect(sanitizeKeyName("  Met One  ")).toBe("Met One");
+	});
+
+	test("replaces slashes with a dash", () => {
+		expect(sanitizeKeyName("Met/One")).toBe("Met-One");
+	});
+
+	test("replaces double colons with a single dash", () => {
+		expect(sanitizeKeyName("Met::One")).toBe("Met-One");
+	});
+
+	test("collapses mixed runs of delimiters into one dash", () => {
+		expect(sanitizeKeyName("Met/::One")).toBe("Met-One");
+	});
+
+	test("strips leading/trailing delimiters entirely rather than leaving a dash", () => {
+		expect(sanitizeKeyName("/Met One/")).toBe("Met One");
+		expect(sanitizeKeyName("::Met One::")).toBe("Met One");
+	});
+
+	test("leaves ordinary names unaffected", () => {
+		expect(sanitizeKeyName("Met One")).toBe("Met One");
+	});
 });

@@ -14,7 +14,7 @@ function makeSensorData(overrides: Partial<any> = {}) {
 describe("Sensor", () => {
 	test("builds a key from systemKey and metric", () => {
 		const sensor = new Sensor(makeSensorData() as any);
-		expect(sensor.key).toBe(`${systemKey}/pm25:`);
+		expect(sensor.key).toBe(`${systemKey}/pm25:mass`);
 	});
 
 	test("defaults loggingIntervalSeconds to averagingIntervalSeconds", () => {

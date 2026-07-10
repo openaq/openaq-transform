@@ -434,7 +434,7 @@ export class Resource {
 	private resolveContext(params: Parameters): Context | undefined {
 		if (!this.#context) return undefined;
 		return typeof this.#context === "function"
-			? this.#context(params)
+			? this.#context(params, this.#data)
 			: this.#context;
 	}
 

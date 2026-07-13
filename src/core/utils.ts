@@ -346,3 +346,16 @@ export function constant<T extends string | boolean | number>(
 		value,
 	};
 }
+
+/**
+ * Sanitizes a name used as a key segment (e.g. manufacturerName, modelName)
+ */
+export function sanitizeKeyName(value?: string): string | undefined {
+	if (!value) return undefined;
+	const sanitized = value
+		.trim()
+		.replace(/[/:]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.trim();
+	return sanitized || undefined;
+}

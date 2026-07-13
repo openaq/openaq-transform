@@ -20,7 +20,7 @@ test("Measurement to initialize correctly", () => {
 		value: 4,
 	});
 	// just track that it worked
-	expect(m.key).toEqual("system-key-temperature-2025-01-01T00:00:00-05:00");
+	expect(m.key).toEqual("system-key/temperature-2025-01-01T00:00:00-05:00");
 });
 
 test("Measurement without sensorKey throws error", () => {

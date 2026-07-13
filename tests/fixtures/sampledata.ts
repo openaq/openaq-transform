@@ -84,7 +84,7 @@ export const expectedOutput = {
 	errors: {},
 	locations: [
 		{
-			key: "testing-ts1",
+			key: "testing/ts1",
 			site_id: "ts1",
 			site_name: "test site #1",
 			owner: "test_owner",
@@ -96,12 +96,10 @@ export const expectedOutput = {
 			ismobile: false,
 			systems: [
 				{
-					key: "testing-ts1",
-					manufacturer_name: "default",
-					model_name: "default",
+					key: "testing/ts1",
 					sensors: [
 						{
-							key: "testing-ts1-pm25:mass",
+							key: "testing/ts1/pm25:mass",
 							status: "asdf",
 							parameter: "pm25:mass",
 							units: "ug/m3",
@@ -110,7 +108,7 @@ export const expectedOutput = {
 							flags: [],
 						},
 						{
-							key: "testing-ts1-temperature",
+							key: "testing/ts1/temperature",
 							status: "asdf",
 							parameter: "temperature",
 							units: "c",
@@ -125,17 +123,17 @@ export const expectedOutput = {
 	],
 	measurements: [
 		{
-			key: "testing-ts1-pm25:mass",
+			key: "testing/ts1/pm25:mass",
 			timestamp: "2024-01-01T00:00:00-08:00",
 			value: 10,
 		},
 		{
-			key: "testing-ts1-temperature",
+			key: "testing/ts1/temperature",
 			timestamp: "2024-01-01T00:00:00-08:00",
 			value: tempf,
 		},
 		{
-			key: "testing-ts1-temperature",
+			key: "testing/ts1/temperature",
 			timestamp: "2024-01-01T01:00:00-08:00",
 			value: tempf,
 		},

@@ -574,24 +574,24 @@ describe("Client with measurement errors", () => {
 		measurements: [
 			...expectedOutput.measurements,
 			{
-				key: "testing-ts1-temperature",
+				key: "testing/ts1/temperature",
 				timestamp: "2024-01-02T01:00:00-08:00",
 				value: null, // missing value
 			},
 			{
-				key: "testing-ts1-temperature",
+				key: "testing/ts1/temperature",
 				timestamp: "2024-01-01T03:00:00-08:00",
 				value: null, // numeric error code
 				flags: ["ERROR"],
 			},
 			{
-				key: "testing-ts1-temperature",
+				key: "testing/ts1/temperature",
 				timestamp: "2024-01-01T04:00:00-08:00",
 				value: null, // string error code
 				flags: ["TOO_HIGH"],
 			},
 			{
-				key: "testing-ts1-pm25:mass",
+				key: "testing/ts1/pm25:mass",
 				timestamp: "2024-01-01T05:00:00-08:00",
 				value: 65,
 			},
@@ -713,22 +713,22 @@ describe("Client with digit group and decimal delimiter setting", () => {
 		locations: expectedOutput.locations,
 		measurements: [
 			{
-				key: "testing-ts1-pm25:mass",
+				key: "testing/ts1/pm25:mass",
 				timestamp: "2024-01-01T00:00:00-08:00",
 				value: 65.9,
 			},
 			{
-				"key": "testing-ts1-pm25:mass",
+				"key": "testing/ts1/pm25:mass",
 				"timestamp": "2024-01-02T01:00:00-08:00",
 				"value": 45,
      		},
 			{
-				key: "testing-ts1-temperature",
+				key: "testing/ts1/temperature",
 				timestamp: "2024-01-02T01:00:00-08:00",
 				value: 7.2,
 			},
 			{
-				key: "testing-ts1-temperature",
+				key: "testing/ts1/temperature",
 				timestamp: "2024-01-01T04:00:00-08:00",
 				value: -14.1,
 			},

@@ -14,9 +14,11 @@ import {
   constant,
   jmespath,
   sanitizeKeyName,
+  toUnixSeconds,
 } from './utils.ts';
 import { DecimalDigitGroup } from '../types/metric.ts';
 import { ConstantValue } from '../types/client.ts';
+import { DatetimeError } from './errors.ts';
 
 test('cleanKey replaces only if value is truthy', () => {
   expect(cleanKey('')).toBe('');
@@ -576,35 +578,92 @@ describe('constant()', () => {
   });
 });
 
-describe("sanitizeManufacturerModelKeySegment", () => {
-	test("returns undefined for empty or whitespace-only input", () => {
-		expect(sanitizeKeyName("")).toBeUndefined();
-		expect(sanitizeKeyName("   ")).toBeUndefined();
-		expect(sanitizeKeyName(undefined)).toBeUndefined();
-	});
+describe('sanitizeManufacturerModelKeySegment', () => {
+  test('returns undefined for empty or whitespace-only input', () => {
+    expect(sanitizeKeyName('')).toBeUndefined();
+    expect(sanitizeKeyName('   ')).toBeUndefined();
+    expect(sanitizeKeyName(undefined)).toBeUndefined();
+  });
 
-	test("trims surrounding whitespace", () => {
-		expect(sanitizeKeyName("  Met One  ")).toBe("Met One");
-	});
+  test('trims surrounding whitespace', () => {
+    expect(sanitizeKeyName('  Met One  ')).toBe('Met One');
+  });
 
-	test("replaces slashes with a dash", () => {
-		expect(sanitizeKeyName("Met/One")).toBe("Met-One");
-	});
+  test('replaces slashes with a dash', () => {
+    expect(sanitizeKeyName('Met/One')).toBe('Met-One');
+  });
 
-	test("replaces double colons with a single dash", () => {
-		expect(sanitizeKeyName("Met::One")).toBe("Met-One");
-	});
+  test('replaces double colons with a single dash', () => {
+    expect(sanitizeKeyName('Met::One')).toBe('Met-One');
+  });
 
-	test("collapses mixed runs of delimiters into one dash", () => {
-		expect(sanitizeKeyName("Met/::One")).toBe("Met-One");
-	});
+  test('collapses mixed runs of delimiters into one dash', () => {
+    expect(sanitizeKeyName('Met/::One')).toBe('Met-One');
+  });
 
-	test("strips leading/trailing delimiters entirely rather than leaving a dash", () => {
-		expect(sanitizeKeyName("/Met One/")).toBe("Met One");
-		expect(sanitizeKeyName("::Met One::")).toBe("Met One");
-	});
+  test('strips leading/trailing delimiters entirely rather than leaving a dash', () => {
+    expect(sanitizeKeyName('/Met One/')).toBe('Met One');
+    expect(sanitizeKeyName('::Met One::')).toBe('Met One');
+  });
 
-	test("leaves ordinary names unaffected", () => {
-		expect(sanitizeKeyName("Met One")).toBe("Met One");
-	});
+  test('leaves ordinary names unaffected', () => {
+    expect(sanitizeKeyName('Met One')).toBe('Met One');
+  });
+});
+
+describe('toUnixSeconds', () => {
+  test('converts a number in seconds unchanged', () => {
+    expect(toUnixSeconds(466738980, 'seconds')).toBe(466738980);
+  });
+
+  test('converts a numeric string in seconds', () => {
+    expect(toUnixSeconds('466738980', 'seconds')).toBe(466738980);
+  });
+
+  test('converts a number in milliseconds to seconds', () => {
+    expect(toUnixSeconds(466738980000, 'milliseconds')).toBe(466738980);
+  });
+
+  test('converts a numeric string in milliseconds to seconds', () => {
+    expect(toUnixSeconds('466738980000', 'milliseconds')).toBe(466738980);
+  });
+
+  test('preserves fractional seconds', () => {
+    expect(toUnixSeconds(466738980.5, 'seconds')).toBe(466738980.5);
+  });
+
+  test('preserves fractional result when converting milliseconds', () => {
+    expect(toUnixSeconds(466738980500, 'milliseconds')).toBeCloseTo(
+      466738980.5,
+    );
+  });
+
+  test('throws when value is a non-numeric string', () => {
+    expect(() => toUnixSeconds('not-a-number', 'seconds')).toThrow(
+      DatetimeError,
+    );
+  });
+
+  test('throws when value is undefined', () => {
+    expect(() => toUnixSeconds(undefined, 'seconds')).toThrow(DatetimeError);
+  });
+
+  test('throws when value is null', () => {
+    expect(() => toUnixSeconds(null, 'seconds')).toThrow(DatetimeError);
+  });
+
+  test('throws when value is an empty string', () => {
+    expect(() => toUnixSeconds('', 'seconds')).toThrow(DatetimeError);
+  });
+
+  test('throws when value is an object', () => {
+    expect(() => toUnixSeconds({}, 'seconds')).toThrow(DatetimeError);
+  });
+
+  test('handles zero', () => {
+    expect(toUnixSeconds(0, 'seconds')).toBe(0);
+    expect(toUnixSeconds('0', 'seconds')).toBe(0);
+    expect(toUnixSeconds(0, 'milliseconds')).toBe(0);
+    expect(toUnixSeconds('0', 'milliseconds')).toBe(0);
+  });
 });

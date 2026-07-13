@@ -7,6 +7,8 @@ const MEASUREMENT_ERROR = "MeasurementError";
 const LOCATION_ERROR = "LocationError";
 const FETCH_ERROR = "FetchError";
 const PARSE_ERROR = "ParseError";
+const CONFIG_ERROR = "ConfigError";
+const DATETIME_ERROR = "DatetimeError";
 
 const log = createDebug("openaq-transform:core:errors");
 
@@ -242,5 +244,23 @@ export class ParseError extends TransformError {
 		this.type = PARSE_ERROR;
 		this.url = url;
 		this.originalError = originalError;
+	}
+}
+
+export class ConfigError extends TransformError {
+	constructor(message: string, value?: unknown) {
+		super(message, value);
+		this.type = CONFIG_ERROR;
+	}
+
+	get strict(): boolean {
+		return true;
+	}
+}
+
+export class DatetimeError extends TransformError {
+	constructor(message: string, value?: unknown) {
+		super(message, value);
+		this.type = DATETIME_ERROR;
 	}
 }

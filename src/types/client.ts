@@ -190,6 +190,7 @@ export interface ClientConfiguration<S = object> {
 	timezone?: string;
 	longFormat?: boolean;
 	sourceProjection?: string;
+	datetimeType?: DatetimeType;
 	datetimeFormat?: string;
 	timeEnding: boolean;
 	secrets?: S;
@@ -255,8 +256,10 @@ export function isIndexedParser<T>(value: unknown): value is IndexedParser<T> {
 	return true;
 }
 
-// I think it would be clearer if IndexedReader was called IndexedReader
-// then we have 'A ClientReader can be a key, a Reader, or an IndexedReader'
 export type ClientReader<T> = keyof T | Reader | IndexedReader<T>;
 
 export type ClientParser<T> = keyof T | Parser | IndexedParser<T>;
+
+export type UnixDatetimeType = "seconds" | "milliseconds";
+
+export type DatetimeType = "string" | UnixDatetimeType;

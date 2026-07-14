@@ -6,6 +6,7 @@ import {
 	type ClientParser,
 	type ClientReader,
 	type ConstantValue,
+	type DatetimeType,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -32,6 +33,7 @@ import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
+	ConfigError,
 	Errors,
 	FetchError,
 	MissingAttributeError,
@@ -56,6 +58,7 @@ import {
 	getNumber,
 	getString,
 	getValueFromKey,
+	toUnixSeconds,
 } from "./utils";
 
 const log = createDebug("openaq-transform:core:client");
@@ -78,6 +81,7 @@ export abstract class Client<
 	longFormat: boolean = false;
 	geometryProjection: string | PathExpression | ConstantValue | ParseFunction =
 		"projection";
+	datetimeType: DatetimeType = "string";
 	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 	timeEnding: boolean = true;
 
@@ -174,8 +178,16 @@ export abstract class Client<
 		if (this.#params?.provider) {
 			this.provider = this.#params.provider;
 		}
+		if (this.#params?.datetimeType) {
+			this.datetimeType = this.#params.datetimeType;
+		}
 		if (this.#params?.datetimeFormat) {
 			this.datetimeFormat = this.#params.datetimeFormat;
+		}
+		if (this.datetimeType !== "string" && this.#params?.datetimeFormat) {
+			throw new ConfigError(
+				`datetimeFormat is not used when datetimeType is "${this.datetimeType}"`,
+			);
 		}
 		if (this.#params?.timezone) {
 			this.timezone = this.#params.timezone;
@@ -443,26 +455,57 @@ export abstract class Client<
 	}
 
 	/**
-	 * Create a proper timestamp
+	 * Extracts and parses the datetime value from a source record into a
+	 * `Datetime` instance.
 	 *
-	 * @param {*} row - data with fields to create timestamp
-	 * @returns {string} - formated timestamp string
+	 * The value is located using `this.datetime` (a field key or
+	 * `ParseFunction`) and parsed according to `this.datetimeType`:
+	 * - `"string"` — parsed as a formatted string using `this.datetimeFormat`
+	 * and `this.timezone`.
+	 * - `"seconds"` / `"milliseconds"` — parsed as a Unix epoch value via
+	 * {@link toUnixSeconds}, using `this.timezone` as the display/location
+	 * timezone.
+	 *
+	 * If `this.timeEnding` is `false`, the parsed datetime is treated as the
+	 * start of the averaging interval and is advanced by
+	 * `averagingIntervalSeconds` to represent the end of the interval instead.
+	 *
+	 * @param row - The source record to extract the datetime field from.
+	 * @param averagingIntervalSeconds - The averaging interval, in seconds,
+	 * used to shift the timestamp to interval-end when `this.timeEnding` is
+	 * `false`. Required in that case, ignored otherwise.
+	 * @returns A `Datetime` instance representing the parsed (and, if
+	 * applicable, interval-end-adjusted) timestamp.
+	 * @throws {Error} If the datetime field is missing, `null`, `undefined`,
+	 * or an empty string.
+	 * @throws {Error} If `this.timeEnding` is `false` and
+	 * `averagingIntervalSeconds` is not provided.
+	 * @throws {DatetimeError} If `this.datetimeType` is `"seconds"` or
+	 * `"milliseconds"` and the field value cannot be coerced to a number.
+	 * @throws {TypeError} If `this.datetimeType` is `"string"` and the value
+	 * cannot be parsed with `this.datetimeFormat`.
 	 */
 	getDatetime(
 		row: SourceRecord,
 		averagingIntervalSeconds: number | undefined,
 	): Datetime {
-		const dtString = getValueFromKey(row, this.datetime);
-		log(`getDatetime`, dtString);
-		if (typeof dtString !== "string" || !dtString) {
+		const dtValue = getValueFromKey(row, this.datetime);
+		if (!dtValue && dtValue !== 0) {
 			throw new Error(
 				`Missing date/time field. Looking in ${formatValueForLog(this.datetime)}`,
 			);
 		}
-		let dt = new Datetime(dtString, {
-			format: this.datetimeFormat,
-			timezone: this.timezone,
-		});
+
+		let dt =
+			this.datetimeType === "string"
+				? new Datetime(dtValue as string, {
+						format: this.datetimeFormat,
+						timezone: this.timezone,
+					})
+				: new Datetime(toUnixSeconds(dtValue, this.datetimeType), {
+						locationTimezone: this.timezone,
+					});
+
 		if (!this.timeEnding) {
 			if (!averagingIntervalSeconds) {
 				throw new Error(
@@ -509,10 +552,6 @@ export abstract class Client<
 	): Promise<ResourceData> {
 		let data: ResourceData = {};
 		log("Loading indexed resources");
-		// I think we should use the devs resource order here and just check to make sure the keys match
-		// this way the dev can control the order of the resource calls, for example, for clarity we
-		// need to hit the meta resource first
-		// I am indifferent to how we do it though, so feel free to change what I did
 		for (const key of Object.keys(indexedResource) as Array<
 			keyof typeof indexedResource
 		>) {

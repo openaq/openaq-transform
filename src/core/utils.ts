@@ -6,6 +6,7 @@ import {
 	isStructuredKey,
 	type ParseFunction,
 	type StructuredKey,
+	type UnixDatetimeType,
 } from "../types/client";
 import type { SourceRecord } from "../types/data";
 import {
@@ -14,6 +15,7 @@ import {
 	PATH_EXPRESSION_TYPES,
 	type PathExpression,
 } from "../types/metric";
+import { DatetimeError } from "./errors";
 
 const log = createDebug("openaq-transform:core:utils");
 
@@ -358,4 +360,37 @@ export function sanitizeKeyName(value?: string): string | undefined {
 		.replace(/^-+|-+$/g, "")
 		.trim();
 	return sanitized || undefined;
+}
+
+/**
+ * Converts a numeric or numeric-string timestamp into Unix seconds.
+ *
+ * @param value - The raw timestamp value. May be a `number` or a numeric
+ * `string` (e.g. `1746736701` or `"1746736701"`). Any value that cannot be
+ * coerced to a finite number will throw.
+ * @param type - Whether `value` represents `"seconds"` or `"milliseconds"`
+ * since the Unix epoch.
+ * @returns The timestamp normalized to Unix seconds.
+ * @throws {DatetimeError} If `value` cannot be coerced to a valid number.
+ *
+ * @example
+ * toUnixSeconds(466738980, "seconds"); // 466738980
+ * toUnixSeconds("466738980", "seconds"); // 466738980
+ * toUnixSeconds(466738980000, "milliseconds"); // 466738980
+ * toUnixSeconds("466738980000", "milliseconds"); // 466738980
+ */
+export function toUnixSeconds(value: unknown, type: UnixDatetimeType): number {
+	const isBlank =
+		value === null ||
+		value === undefined ||
+		(typeof value === "string" && value.trim() === "");
+	const num = isBlank ? NaN : Number(value);
+
+	if (Number.isNaN(num)) {
+		throw new DatetimeError(
+			`Expected a numeric timestamp for type "${type}"`,
+			value,
+		);
+	}
+	return type === "milliseconds" ? num / 1000 : num;
 }

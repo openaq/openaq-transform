@@ -84,6 +84,12 @@ test("wind speed accepts km/h and converts to m/s", () => {
 	expect(m.process(100)).toBe(27.8);
 });
 
+test("pressure accepts mmHg and converts to hPa", () => {
+	const m = new Metric("pressure", "mmhg");
+	// 760 mmHg ≈ 1013.25 hPa, rounded to 1 decimal -> 1013.2
+	expect(m.process(760)).toBe(1013.2);
+});
+
 // essentially all numeric values as errors need to be passed in
 // so -99 and 42.0 tests the same thing
 test("Error flags as values throw ProviderValueError (f)", () => {

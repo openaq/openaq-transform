@@ -86,7 +86,7 @@ test("wind speed accepts km/h and converts to m/s", () => {
 
 test("pressure accepts mmHg and converts to hPa", () => {
 	const m = new Metric("pressure", "mmhg");
-	// 760 mmHg ≈ 1013.25 hPa, rounded to 1 decimal -> 1013.2
+	// 760 mmHg ≈ 1013.247 hPa, rounded to 1 decimal -> 1013.2
 	expect(m.process(760)).toBe(1013.2);
 });
 

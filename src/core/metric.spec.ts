@@ -52,6 +52,21 @@ test("high values throw range error", () => {
 	expect(() => m.process(100)).toThrowError(HighValueError);
 });
 
+test("high altitude pressure is accepted ~ 4000 m", () => {
+	const m = new Metric("pressure", "hpa");
+	expect(m.process(615)).toBe(615);
+});
+
+test("pressure below 475 hPA throws range error", () => {
+	const m = new Metric("pressure", "hpa");
+	expect(() => m.process(450)).toThrowError(LowValueError);
+});
+
+test("pressure above 1100 hPA throws range error", () => {
+	const m = new Metric("pressure", "hpa");
+	expect(() => m.process(1200)).toThrowError(HighValueError);
+});
+
 test("Non-numeric string throws provider value error", () => {
 	const m = new Metric("temperature", "c");
 	const v = "TOO_HIGH";

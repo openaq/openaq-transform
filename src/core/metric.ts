@@ -356,7 +356,7 @@ export const PARAMETERS: ParameterMap = {
 		numeric: true,
 		units: "hpa",
 		precision: 1,
-		range: [800, 1100],
+		range: [475, 1100],
 		converters: {
 			hpa: noConversion,
 			mb: noConversion,

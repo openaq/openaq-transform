@@ -66,7 +66,7 @@ export const expectedOutput = {
 		sourceName: "testing",
 		ingestMatchingMethod: "ingest-id",
 		startedOn: "2025-06-01T01:00:00-04:00",
-	 	finishedOn: "2025-06-01T01:00:00-04:00",
+		finishedOn: "2025-06-01T01:00:00-04:00",
 		exportedOn: "2025-06-01T01:00:00-04:00",
 		fetchSummary: {
 			sourceName: "testing",

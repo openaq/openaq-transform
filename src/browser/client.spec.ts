@@ -33,6 +33,7 @@ class CustomClient extends Client {
 	isMobile = () => false;
 	parameters = [
 		{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+		{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
 		{ parameter: "temperature", unit: "f", key: "tempf" },
 	];
 }

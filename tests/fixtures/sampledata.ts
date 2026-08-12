@@ -1,5 +1,4 @@
 const tempf = 26.7;
-
 export const widedata = {
 	locations: [
 		{
@@ -15,6 +14,7 @@ export const widedata = {
 			station: "ts1",
 			datetime: "2024-01-01T00:00:00-08:00",
 			particulate_matter_25: 10,
+			particulate_matter_10: 0,
 			tempf: 80,
 		},
 		{
@@ -56,8 +56,8 @@ export const csvdata = {
 	locations:
 		'station,site_name,latitude,longitude,averaging\n"ts1","test site #1",45.56665, -123.12121, 3600',
 	measurements:
-		'station,datetime,particulate_matter_25,tempf\n"ts1","2024-01-01T00:00:00-08:00",10,80\n"ts1","2024-01-01T01:00:00-08:00",,80',
-	all: 'station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,tempf\n"ts1","test site #1",45.56665,-123.12121,3600,"2024-01-01T00:00:00-08:00",10,80\n"ts1","test site #1",45.56665,-123.12121,3600,"2024-01-01T01:00:00-08:00",,80',
+		'station,datetime,particulate_matter_25,particulate_matter_10,tempf\n"ts1","2024-01-01T00:00:00-08:00",10,0,80\n"ts1","2024-01-01T01:00:00-08:00",,,80',
+	all: 'station,site_name,latitude,longitude,averaging,datetime,particulate_matter_25,particulate_matter_10,tempf\n"ts1","test site #1",45.56665,-123.12121,3600,"2024-01-01T00:00:00-08:00",10,0,80\n"ts1","test site #1",45.56665,-123.12121,3600,"2024-01-01T01:00:00-08:00",,,80',
 };
 
 export const expectedOutput = {
@@ -66,16 +66,16 @@ export const expectedOutput = {
 		sourceName: "testing",
 		ingestMatchingMethod: "ingest-id",
 		startedOn: "2025-06-01T01:00:00-04:00",
-		finishedOn: "2025-06-01T01:00:00-04:00",
+	 	finishedOn: "2025-06-01T01:00:00-04:00",
 		exportedOn: "2025-06-01T01:00:00-04:00",
 		fetchSummary: {
 			sourceName: "testing",
 			locations: 1,
 			bounds: [-123.12121, 45.56665, -123.12121, 45.56665],
 			systems: 1,
-			sensors: 2,
+			sensors: 3,
 			flags: 0,
-			measurements: 3,
+			measurements: 4,
 			errors: {},
 			datetimeFrom: "2024-01-01T00:00:00-08:00",
 			datetimeTo: "2024-01-01T01:00:00-08:00",
@@ -108,6 +108,15 @@ export const expectedOutput = {
 							flags: [],
 						},
 						{
+							key: "testing/ts1/pm10:mass",
+							status: "asdf",
+							parameter: "pm10:mass",
+							units: "ug/m3",
+							averaging_interval_secs: 3600,
+							logging_interval_secs: 3600,
+							flags: [],
+						},
+						{
 							key: "testing/ts1/temperature",
 							status: "asdf",
 							parameter: "temperature",
@@ -126,6 +135,11 @@ export const expectedOutput = {
 			key: "testing/ts1/pm25:mass",
 			timestamp: "2024-01-01T00:00:00-08:00",
 			value: 10,
+		},
+		{
+			key: "testing/ts1/pm10:mass",
+			timestamp: "2024-01-01T00:00:00-08:00",
+			value: 0,
 		},
 		{
 			key: "testing/ts1/temperature",

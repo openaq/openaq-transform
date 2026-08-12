@@ -893,7 +893,10 @@ export abstract class Client<
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
-					if (value !== undefined && (value || this.longFormat)) {
+					if (
+						value !== undefined &&
+						(this.longFormat || (value !== null && value !== ""))
+					) {
 						const metric = this.measurements.metricFromProviderKey(
 							metricName as string,
 						);

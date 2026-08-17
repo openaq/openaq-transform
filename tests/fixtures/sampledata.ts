@@ -20,15 +20,15 @@ export const widedata = {
 		{
 			station: "ts1",
 			datetime: "2024-01-01T01:00:00-08:00",
-			particulate_matter_25: null,           // null value should be ignored
-			particulate_matter_10: '',             // zero length string should be ignored
+			particulate_matter_25: null, // null value should be ignored
+			particulate_matter_10: "", // zero length string should be ignored
 			tempf: 80,
 		},
 		{
 			station: "ts1",
 			datetime: "2024-01-01T02:00:00-08:00",
-			particulate_matter_25: undefined,     // undefinded should be ignored
-			particulate_matter_10: ' ',           // blanks should be ignored
+			particulate_matter_25: undefined, // undefinded should be ignored
+			particulate_matter_10: " ", // blanks should be ignored
 		},
 	],
 };
@@ -57,7 +57,7 @@ export const measurementErrors = {
 			datetime: "2024-01-01T05:00:00-08:00",
 			tempf: "22", // number as string
 		},
-  ],
+	],
 };
 
 export const csvdata = {

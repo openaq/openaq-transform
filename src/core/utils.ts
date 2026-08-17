@@ -235,7 +235,7 @@ export const getArray = (
 		return undefined;
 	}
 	if (!Array.isArray(value)) {
-		return [value];
+		return [value as string | number];
 	}
 	return value;
 };

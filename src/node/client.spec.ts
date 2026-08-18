@@ -46,82 +46,85 @@ const handlers = [
 				particulate_matter_10: 0,
 				tempf: 80,
 			},
-					{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+			{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
 		]);
 	}),
-  http.get("https://blah.org/test-provider/measurements-and-locations", async () => {
+	http.get(
+		"https://blah.org/test-provider/measurements-and-locations",
+		async () => {
+			return HttpResponse.json({
+				measurements: [
+					{
+						station: "ts1",
+						datetime: "2024-01-01T00:00:00-08:00",
+						particulate_matter_25: 10,
+						particulate_matter_10: 0,
+						tempf: 80,
+					},
+					{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+				],
+				locations: [
+					{
+						station: "ts1",
+						site_name: "test site #1",
+						latitude: 45.56665,
+						longitude: -123.12121,
+						averaging: 3600,
+					},
+				],
+			});
+		},
+	),
+	http.get("https://blah.org/test-provider/wrapped", async () => {
 		return HttpResponse.json({
-      measurements: [
-			  {
-				  station: "ts1",
-				  datetime: "2024-01-01T00:00:00-08:00",
-				  particulate_matter_25: 10,
-				  particulate_matter_10: 0,
-				  tempf: 80,
-			  },
-			  { station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
-      ],
-      locations: [
-			  {
-				  station: "ts1",
-				  site_name: "test site #1",
-				  latitude: 45.56665,
-				  longitude: -123.12121,
-				  averaging: 3600,
-			  },
-		  ]
+			data: {
+				measurements: [
+					{
+						station: "ts1",
+						datetime: "2024-01-01T00:00:00-08:00",
+						particulate_matter_25: 10,
+						particulate_matter_10: 0,
+						tempf: 80,
+					},
+					{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+				],
+				locations: [
+					{
+						station: "ts1",
+						site_name: "test site #1",
+						latitude: 45.56665,
+						longitude: -123.12121,
+						averaging: 3600,
+					},
+				],
+			},
 		});
 	}),
-	http.get("https://blah.org/test-provider/wrapped", async () => {
-    return HttpResponse.json({
-        data: {
-            measurements: [
-                {
-                    station: "ts1",
-                    datetime: "2024-01-01T00:00:00-08:00",
-                    particulate_matter_25: 10,
-                    particulate_matter_10: 0, 
-                    tempf: 80,
-                },
-                { station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
-            ],
-            locations: [
-                {
-                    station: "ts1",
-                    site_name: "test site #1",
-                    latitude: 45.56665,
-                    longitude: -123.12121,
-                    averaging: 3600,
-                },
-            ],
-        },
-    });
-}),
 
-http.get("https://blah.org/test-provider/wrapped-wide", async () => {
-    return HttpResponse.json({
-        data: [
-            {
-                station: "ts1",
-                site_name: "test site #1",
-                latitude: 45.56665,
-                longitude: -123.12121,
-                datetime: "2024-01-01T00:00:00-08:00",
-                particulate_matter_25: 10,
-                particulate_matter_10: 0,
-                tempf: 80,
-            },
-            {
-                station: "ts1",
-                site_name: "test site #1",
-                latitude: 45.56665,
-                longitude: -123.12121,
-                datetime: "2024-01-01T01:00:00-08:00",
-                tempf: 80,
-            },
-        ],
-    });
-}),
+	http.get("https://blah.org/test-provider/wrapped-wide", async () => {
+		return HttpResponse.json({
+			data: [
+				{
+					station: "ts1",
+					site_name: "test site #1",
+					latitude: 45.56665,
+					longitude: -123.12121,
+					datetime: "2024-01-01T00:00:00-08:00",
+					particulate_matter_25: 10,
+					particulate_matter_10: 0,
+					tempf: 80,
+				},
+				{
+					station: "ts1",
+					site_name: "test site #1",
+					latitude: 45.56665,
+					longitude: -123.12121,
+					datetime: "2024-01-01T01:00:00-08:00",
+					tempf: 80,
+				},
+			],
+		});
+	}),
 	http.get("https://blah.org/long", async () => {
 		return HttpResponse.json({
 			locations: [
@@ -140,18 +143,18 @@ http.get("https://blah.org/test-provider/wrapped-wide", async () => {
 					parameter: "particulate_matter_25",
 					value: 10,
 				},
-        {
-          station: "ts1",
-          datetime: "2024-01-01T00:00:00-08:00",
-          parameter: "particulate_matter_10",
-          value: 0,
-        },
-        {
-          station: "ts1",
-          datetime: "2024-01-01T00:00:00-08:00",
-        	parameter: "tempf",
-          value: 80,
-    		},
+				{
+					station: "ts1",
+					datetime: "2024-01-01T00:00:00-08:00",
+					parameter: "particulate_matter_10",
+					value: 0,
+				},
+				{
+					station: "ts1",
+					datetime: "2024-01-01T00:00:00-08:00",
+					parameter: "tempf",
+					value: 80,
+				},
 				{
 					station: "ts1",
 					datetime: "2024-01-01T01:00:00-08:00",
@@ -178,10 +181,30 @@ http.get("https://blah.org/test-provider/wrapped-wide", async () => {
 				{ station: "ts1", parameter: "tempf" },
 			],
 			measurements: [
-				{ station: "ts1", datetime: "2024-01-01T00:00:00-08:00", parameter: "particulate_matter_25", value: 10 },
-				{ station: "ts1", datetime: "2024-01-01T00:00:00-08:00", parameter: "particulate_matter_10", value: 0 },
-				{ station: "ts1", datetime: "2024-01-01T00:00:00-08:00", parameter: "tempf", value: 80 },
-				{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", parameter: "tempf", value: 80 },
+				{
+					station: "ts1",
+					datetime: "2024-01-01T00:00:00-08:00",
+					parameter: "particulate_matter_25",
+					value: 10,
+				},
+				{
+					station: "ts1",
+					datetime: "2024-01-01T00:00:00-08:00",
+					parameter: "particulate_matter_10",
+					value: 0,
+				},
+				{
+					station: "ts1",
+					datetime: "2024-01-01T00:00:00-08:00",
+					parameter: "tempf",
+					value: 80,
+				},
+				{
+					station: "ts1",
+					datetime: "2024-01-01T01:00:00-08:00",
+					parameter: "tempf",
+					value: 80,
+				},
 			],
 		});
 	}),
@@ -223,28 +246,32 @@ describe("Simple client example", () => {
 describe("Client with secrets example", () => {
 	class FakeClient extends Client {
 		resource = new Resource({
-      url: "https://blah.org/api-key-in-query?token=:token",
-      parameters: () => [{ token: this.secrets.token }]
-    });
+			url: "https://blah.org/api-key-in-query?token=:token",
+			parameters: () => [{ token: this.secrets.token }],
+		});
 	}
 	test("resource is updated", () => {
-		const cln = new FakeClient({ secrets: { token: 'letmein'} });
-    cln.setup() // call this because we are not calling load
-		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+		const cln = new FakeClient({ secrets: { token: "letmein" } });
+		cln.setup(); // call this because we are not calling load
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+		]);
 	});
 });
 
 describe("Client with secrets example with configure", () => {
 	class FakeClient extends Client {
 		resource = new Resource({
-      url: "https://blah.org/api-key-in-query?token=:token",
-      parameters: () => [{ token: this.secrets.token }]
-    });
+			url: "https://blah.org/api-key-in-query?token=:token",
+			parameters: () => [{ token: this.secrets.token }],
+		});
 	}
 	test("resource is updated", () => {
 		const cln = new FakeClient();
-    cln.configure({ secrets: { token: 'letmein'} }) // configure calls setup after setting the params
-		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/api-key-in-query?token=letmein" }]);
+		cln.configure({ secrets: { token: "letmein" } }); // configure calls setup after setting the params
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+		]);
 	});
 });
 
@@ -292,7 +319,6 @@ describe("Client with data in wide format", () => {
 	});
 });
 
-
 describe("Client with data split between two different resources", () => {
 	class JsonClient extends Client {
 		resource = {
@@ -328,12 +354,11 @@ describe("Client with data split between two different resources", () => {
 		const data = await cln.load();
 		expect(data).toStrictEqual(expectedOutput);
 	});
-
 });
 
 describe("Client with an indexed resource that returns a ResourceData object", () => {
-  // This is a special case where we expect one of the resources might provide data required
-  // for the next resource and the final resource basically compiles it all.
+	// This is a special case where we expect one of the resources might provide data required
+	// for the next resource and the final resource basically compiles it all.
 	class JsonClient extends Client {
 		resource = {
 			measurements: new Resource({
@@ -467,7 +492,7 @@ describe("Dynamic adapter that gets mapping from delayed configure", () => {
 		// Do some other things for whatever reasone
 		// configure by passing a map
 		cln.configure({
-			parameters : [
+			parameters: [
 				{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
 				{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
 				{ parameter: "temperature", unit: "f", key: "tempf" },
@@ -624,7 +649,7 @@ describe("Client with measurement errors", () => {
 		isMobile = () => false;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
-			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" }, 
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
 		];
 
@@ -636,7 +661,11 @@ describe("Client with measurement errors", () => {
 	test("parameter check", () => {
 		const cln = new JsonClient();
 		const keys = cln.parameters.map((o) => o.key);
-		expect(keys).toStrictEqual(["particulate_matter_25","particulate_matter_10", "tempf"]);
+		expect(keys).toStrictEqual([
+			"particulate_matter_25",
+			"particulate_matter_10",
+			"tempf",
+		]);
 	});
 
 	test("outputs correct format", async () => {
@@ -659,7 +688,6 @@ describe("Client with measurement errors", () => {
 // describe.todo('Provider with Locations that have different averaging times');
 // describe.todo('Provider with both fixed and mobile locations');
 
-
 describe("Client with digit group and decimal delimiter setting", () => {
 	const rawdata = {
 		locations: [
@@ -681,7 +709,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 			{
 				station: "ts1",
 				datetime: "2024-01-01T00:00:00-08:00",
-				parameter: "particulate_matter_10", 
+				parameter: "particulate_matter_10",
 				value: "0",
 			},
 			{
@@ -691,7 +719,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				value: "45",
 			},
 			{
-			station: "ts1",
+				station: "ts1",
 				datetime: "2024-01-02T01:00:00-08:00",
 				parameter: "tempf",
 				value: "45",
@@ -700,8 +728,8 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				station: "ts1",
 				datetime: "2024-01-01T04:00:00-08:00",
 				parameter: "tempf",
-				value: "6,54"
-			}
+				value: "6,54",
+			},
 		],
 	};
 
@@ -743,7 +771,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				key: "testing/ts1/pm25:mass",
 				timestamp: "2024-01-02T01:00:00-08:00",
 				value: 45,
-     	},
+			},
 			{
 				key: "testing/ts1/temperature",
 				timestamp: "2024-01-02T01:00:00-08:00",
@@ -754,7 +782,6 @@ describe("Client with digit group and decimal delimiter setting", () => {
 				timestamp: "2024-01-01T04:00:00-08:00",
 				value: -14.1,
 			},
-
 		],
 	};
 
@@ -772,10 +799,10 @@ describe("Client with digit group and decimal delimiter setting", () => {
 		geometryProjection = () => "WGS84";
 		owner = () => "test_owner";
 		isMobile = () => false;
-		numberFormat = {decimal: "comma", digitGroup: "dot"} as const;
+		numberFormat = { decimal: "comma", digitGroup: "dot" } as const;
 		parameters = [
 			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
-      { parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
 			{ parameter: "temperature", unit: "f", key: "tempf" },
 		];
 
@@ -787,7 +814,11 @@ describe("Client with digit group and decimal delimiter setting", () => {
 	test("parameter check", () => {
 		const cln = new JsonClient();
 		const keys = cln.parameters.map((o) => o.key);
-		expect(keys).toStrictEqual(["particulate_matter_25", "particulate_matter_10", "tempf"]);
+		expect(keys).toStrictEqual([
+			"particulate_matter_25",
+			"particulate_matter_10",
+			"tempf",
+		]);
 	});
 
 	test("outputs correct format", async () => {
@@ -796,120 +827,117 @@ describe("Client with digit group and decimal delimiter setting", () => {
 		expect(data.measurements.length).toBe(5);
 		expect(data).toStrictEqual(expected);
 	});
-
 });
 
-
 describe("Client with jmespath responsePath nested data key", () => {
-    class JsonClient extends Client {
-        resource = { measurements: new Resource({
-                url: "https://blah.org/test-provider/wrapped",
-                output: "object",
-                responsePath: { type: "jmespath", value: "data.measurements" }
-            }),
-			locations:  new Resource({
-                url: "https://blah.org/test-provider/wrapped",
-                output: "object",
-                responsePath: { type: "jmespath", value: "data.locations" }
-            })
-		}
-        provider = "testing";
-        xGeometry = "longitude";
-        averagingInterval = "averaging";
-        sensorStatus = () => "asdf";
-        yGeometry = "latitude";
-        locationId = "station";
-        locationLabel = "site_name";
-        geometryProjection = () => "WGS84";
-        owner = () => "test_owner";
-        isMobile = () => false;
-        parameters = [
-            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
-            { parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
-            { parameter: "temperature", unit: "f", key: "tempf" },
-        ];
-    }
+	class JsonClient extends Client {
+		resource = {
+			measurements: new Resource({
+				url: "https://blah.org/test-provider/wrapped",
+				output: "object",
+				responsePath: { type: "jmespath", value: "data.measurements" },
+			}),
+			locations: new Resource({
+				url: "https://blah.org/test-provider/wrapped",
+				output: "object",
+				responsePath: { type: "jmespath", value: "data.locations" },
+			}),
+		};
+		provider = "testing";
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
 
-    test("extracts nested arrays via jmespath responsePath", async () => {
-        const cln = new JsonClient();
-        const data = await cln.load();
-        expect(data).toStrictEqual(expectedOutput);
-    });
+	test("extracts nested arrays via jmespath responsePath", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+		expect(data).toStrictEqual(expectedOutput);
+	});
 });
 
 describe("Client with jmespath responsePath on single resource", () => {
-    class JsonClient extends Client {
-        resource = new Resource({
-            url: "https://blah.org/test-provider/wrapped-wide",
+	class JsonClient extends Client {
+		resource = new Resource({
+			url: "https://blah.org/test-provider/wrapped-wide",
 			output: "object",
-            responsePath: { type: "jmespath", value: "data" },
-        });
-        provider = "testing";
-        xGeometry = "longitude";
-        averagingInterval = 3600;
-        sensorStatus = constant("asdf");
-        yGeometry = "latitude";
-        locationId = "station";
-        locationLabel = "site_name";
-        geometryProjection = constant("WGS84");
-        owner = constant("test_owner");
-        isMobile = false;
-        parameters = [
-            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
-            { parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
-            { parameter: "temperature", unit: "f", key: "tempf" },
-        ];
-    }
+			responsePath: { type: "jmespath", value: "data" },
+		});
+		provider = "testing";
+		xGeometry = "longitude";
+		averagingInterval = 3600;
+		sensorStatus = constant("asdf");
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = constant("WGS84");
+		owner = constant("test_owner");
+		isMobile = false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
 
-    test("extracts wide format array via jmespath from single resource", async () => {
-        const cln = new JsonClient();
-        const data = await cln.load();
-        expect(data).toStrictEqual(expectedOutput);
-    });
+	test("extracts wide format array via jmespath from single resource", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+		expect(data).toStrictEqual(expectedOutput);
+	});
 });
 
-
 describe("Client with string responsePath on single resource", () => {
-    class JsonClient extends Client {
-        resource = new Resource({
-            url: "https://blah.org/test-provider/wrapped-wide",
-            output: "object",
-            responsePath: "data",
-        });
-        provider = "testing";
-        xGeometry = "longitude";
-        averagingInterval = () => 3600;
-        sensorStatus = () => "asdf";
-        yGeometry = "latitude";
-        locationId = "station";
-        locationLabel = "site_name";
-        geometryProjection = () => "WGS84";
-        owner = () => "test_owner";
-        isMobile = () => false;
-        parameters = [
-            { parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
-            { parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
-            { parameter: "temperature", unit: "f", key: "tempf" },
-        ];
-    }
+	class JsonClient extends Client {
+		resource = new Resource({
+			url: "https://blah.org/test-provider/wrapped-wide",
+			output: "object",
+			responsePath: "data",
+		});
+		provider = "testing";
+		xGeometry = "longitude";
+		averagingInterval = () => 3600;
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
 
-    test("extracts wide format array via string key from single resource", async () => {
-        const cln = new JsonClient();
-        const data = await cln.load();
-        expect(data).toStrictEqual(expectedOutput);
-    });
+	test("extracts wide format array via string key from single resource", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+		expect(data).toStrictEqual(expectedOutput);
+	});
 });
 
 describe("Client with timeEnding=false normalizes timestamps to time-ending", () => {
-
-  class JsonClient extends Client {
+	class JsonClient extends Client {
 		resource = new Resource({ url: "https://blah.org/long" });
 		provider = "testing";
 		longFormat = true;
 		timeEnding = false;
 		xGeometry = "longitude";
 		yGeometry = "latitude";
-		averagingInterval = () => 3600
+		averagingInterval = () => 3600;
 		sensorStatus = () => "asdf";
 		locationId = "station";
 		locationLabel = "site_name";

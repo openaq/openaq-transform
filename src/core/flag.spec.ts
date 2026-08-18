@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { Flag } from "./flag";
 import type { FlagData } from "../types/flag";
+import { Flag } from "./flag";
 
 const flagData: FlagData = {
 	sensorKey: "testing/ts1/temperature",

@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import type { ConstantValue } from "../types/client.ts";
 import type { SourceRecord } from "../types/data.ts";
@@ -699,5 +700,211 @@ describe("isBlank", () => {
 	test("booleans evaluate false", () => {
 		expect(isBlank(true)).toBe(false);
 		expect(isBlank(false)).toBe(false);
+	});
+});
+
+const charFor: Record<string, string> = {
+	point: ".",
+	comma: ",",
+	arabic: "\u066B",
+	apostrophe: "'",
+	interpunct: "\u00B7",
+	dot: ".",
+	space: " ",
+};
+
+const whitespaceCharArbitrary = fc.constantFrom(
+	" ",
+	"\t",
+	"\n",
+	"\r",
+	"\f",
+	"\v",
+	"\u00A0",
+	"\u202f",
+);
+
+const whitespaceStringArbitrary = (minLength = 0, maxLength = 10) =>
+	fc
+		.array(whitespaceCharArbitrary, { minLength, maxLength })
+		.map((chars) => chars.join(""));
+
+const decimalDigitGroupArbitrary: fc.Arbitrary<DecimalDigitGroup> = fc.oneof(
+	fc.record({
+		decimal: fc.constant("point" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("comma", "space", "apostrophe") as fc.Arbitrary<
+				"comma" | "space" | "apostrophe"
+			>,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("comma" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("dot", "space", "apostrophe") as fc.Arbitrary<
+				"dot" | "space" | "apostrophe"
+			>,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("arabic" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("comma", "space") as fc.Arbitrary<"comma" | "space">,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("interpunct" as const),
+		digitGroup: fc.option(fc.constant("comma" as const), { nil: undefined }),
+	}),
+) as fc.Arbitrary<DecimalDigitGroup>;
+
+function formatNumber(
+	value: number,
+	format: DecimalDigitGroup,
+	decimals: number,
+): string {
+	const fixed = value.toFixed(decimals);
+	const [intPart, fracPart] = fixed.split(".");
+	const negative = intPart.startsWith("-");
+	const digits = negative ? intPart.slice(1) : intPart;
+
+	let groupedInt = digits;
+	if (format.digitGroup) {
+		const groupChar = charFor[format.digitGroup];
+		const reversed = digits.split("").reverse();
+		const chunks: string[] = [];
+		for (let i = 0; i < reversed.length; i += 3) {
+			chunks.push(
+				reversed
+					.slice(i, i + 3)
+					.reverse()
+					.join(""),
+			);
+		}
+		groupedInt = chunks.reverse().join(groupChar);
+	}
+
+	const decimalChar = charFor[format.decimal];
+	const sign = negative ? "-" : "";
+	return fracPart
+		? `${sign}${groupedInt}${decimalChar}${fracPart}`
+		: `${sign}${groupedInt}`;
+}
+
+describe("normalizeNumericString - property tests", () => {
+	test("round-trips: formatting a number then normalizing recovers the original value", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const normalized = normalizeNumericString(formatted, format);
+					const recovered = Number(normalized);
+
+					expect(Number.isNaN(recovered)).toBe(false);
+					expect(recovered).toBeCloseTo(Number(n.toFixed(decimals)), 6);
+				},
+			),
+		);
+	});
+
+	test("never contains the configured digit-group character in its output", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const normalized = normalizeNumericString(formatted, format);
+
+					if (format.digitGroup) {
+						const groupChar = charFor[format.digitGroup];
+						if (groupChar !== ".") {
+							expect(normalized.includes(groupChar)).toBe(false);
+						}
+					}
+				},
+			),
+		);
+	});
+
+	test("returns an empty string for any blank input, regardless of format", () => {
+		fc.assert(
+			fc.property(
+				whitespaceStringArbitrary(0, 10),
+				decimalDigitGroupArbitrary,
+				(blankStr, format) => {
+					expect(normalizeNumericString(blankStr, format)).toBe("");
+				},
+			),
+		);
+	});
+
+	test("is idempotent once normalized to point-decimal with no digit grouping", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				fc.integer({ min: 0, max: 6 }),
+				(n, decimals) => {
+					const identityFormat: DecimalDigitGroup = { decimal: "point" };
+					const s = n.toFixed(decimals);
+					const once = normalizeNumericString(s, identityFormat);
+					const twice = normalizeNumericString(once, identityFormat);
+					expect(twice).toBe(once);
+				},
+			),
+		);
+	});
+});
+
+describe("getNumber", () => {
+	const wrapData = (value: unknown): SourceRecord =>
+		({ field: value }) as SourceRecord;
+	const numberFormat: DecimalDigitGroup = { decimal: "point" };
+
+	test("recovers the original number from its formatted string representation", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const result = getNumber(wrapData(formatted), "field", format);
+
+					expect(result).not.toBeUndefined();
+					expect(result as number).toBeCloseTo(Number(n.toFixed(decimals)), 6);
+				},
+			),
+		);
+	});
+	test("returns undefined for any blank value", () => {
+		fc.assert(
+			fc.property(
+				fc.oneof(
+					fc.constant(null),
+					fc.constant(undefined),
+					whitespaceStringArbitrary(1, 10),
+				),
+				(blankValue) => {
+					const result = getNumber(wrapData(blankValue), "field", numberFormat);
+					expect(result).toBeUndefined();
+				},
+			),
+		);
+	});
+	test("passes numeric primitives through unchanged", () => {
+		fc.assert(
+			fc.property(fc.double({ noNaN: true }), (n) => {
+				const result = getNumber(wrapData(n), "field", numberFormat);
+				expect(result).toBe(n);
+			}),
+		);
 	});
 });

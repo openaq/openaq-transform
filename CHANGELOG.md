@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0] - unreleased
 
+### Added
+- `Client`, `NodeClient`, and `BrowserClient` now accept a generic `secrets` type parameter (`Client<R, P, S>`), letting subclasses declare an interface for API keys/tokens/credentials.
+- New `datetimeType` client option (`"string" | "seconds" | "milliseconds"`) for parsing Unix timestamps directly.
+- `Resource` now accepts a `context` option for access context from parameters or previous data.
+- New `ConfigError` and `DatetimeError` error classes.
+- `pressure` parameter now supports an `mmhg` unit converter, and its range was widened to `[475, 1100]`.
+
+### Changed
+- **Breaking:** All generated keys (`Location`, `System`, `Sensor`, `Measurement`, `Flag`) now use `/` as the segment delimiter instead of `-` (e.g. `provider/siteId` instead of `provider-siteId`). Any code or downstream consumers that parse or compare these keys will need to be updated.
+- **Breaking:** `System.manufacturerName`/`modelName` no longer default to the string `"default"`, defaults to `undefined.` slashes and colons stripped/collapsed are sanitized before being used in a key.
+-  Measurement processing checks blank values through a single `isBlank()` check.
+
+### Fixed
+- `Coordinates` no longer incorrectly rejects a valid `(0, 0)` coordinate.
+
 ## [0.4.0] - 2026-06-26
 
 ### Added

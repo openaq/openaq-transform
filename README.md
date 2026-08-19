@@ -155,6 +155,32 @@ new Resource({
 })
 ```
 
+### Context
+
+`context` merges additional fields onto every row returned by a resourcem useful for attaching data that
+isn't present in the raw response, such as tagging rows with the parameters used to fetch them.
+
+`context` accepts either a static object, applied to every URL:
+
+ts
+new Resource({
+  url: 'https://api.example.com/data',
+  context: { provider: 'example' }
+})
+
+Or a function of the resolved parameters (and DataContext), letting context vary per-request:
+
+```ts
+new Resource({
+  url: 'https://api.example.com/locations/:id/measurements',
+  parameters: [{ id: 'A' }, { id: 'B' }],
+  context: (params) => ({ locationId: params.id })
+})
+````
+
+Fields already present on a row take precedence over context, it only fills in values that are not
+already there.
+
 #### Body
 
 For HTTP POST requests, `body` accepts a `string`, `URLSearchParams`, or
@@ -179,6 +205,7 @@ new Resource({
 | `body` | `string \| URLSearchParams \| FormData` | | Request body for POST requests. URL resources only |
 | `output` | `"array" \| "object"` | | How to combine responses from multiple URLs. See [API reader](#api-reader) |
 | `readAs` | `"json" \| "text" \| "blob"` | | Overrides content-type detection |
+| `context` | `Context \| (params, data) => Context` | | Fields merged onto rows from this resource, a static object or a function of the resolved parameters |
 | `strict` | `boolean` | `false` | If `true`, throws on first error. If `false`, errors are passed to `errorHandler` |
 
 ### Readers
@@ -297,7 +324,68 @@ For certain fields that accept `boolean` or `number`, a literal value matching
 the appropriate type can be passed as constant in the case that a dynamic lookup
 or mapping is not applicable.
 
-#### Parameter and unit mappings
+### Datetime handling
+
+Transform turns each row's raw datetime value into a normalized, timezone-aware timestamp.
+This is controlled by four related properties: `datetime`, `datetimeType`,`datetimeFormat`,
+`timezone`, and `timeEnding`.
+
+`datetime` is a field lookup (key, path expression, or function) that identifies where the
+timestamp lives in the source row, same as any other field mapping:
+
+```ts
+datetime = 'observed_at'
+```
+
+#### Parsing the datetimes
+
+`datetimeType` tells transform how to interpret the value derived from `datetime`:
+
+| datetimeType | Description |
+|---|---|
+|"string" (default) |	A formatted date/time string, parsed using `datetimeFormat` and `timezone`.|
+|"seconds" | 	A Unix epoch value in seconds (number or numeric string).|
+| "milliseconds" |	A Unix epoch value in milliseconds (number or numeric string).|
+
+For string timestamps, set `datetimeFormat` to a [Luxon format string](https://github.com/moment/luxon/blob/master/docs/formatting.md#table-of-tokens)
+matching the source data formatting. Include`timezone` if the string does not already encode an offset:
+
+```ts
+datetime = 'observed_at';
+datetimeType = 'string'; // default, can be omitted
+datetimeFormat = "yyyy-MM-dd'T'HH:mm:ssZZ"; // default
+timezone = 'America/Los_Angeles'; // only needed if the string has no offset
+```
+
+For Unix timestamps, set `datetimeType` and omit `datetimeFormat`:
+
+```ts
+datetime = 'observed_at';
+datetimeType = 'seconds'; // or 'milliseconds'
+````
+
+> [!NOTE]
+> `datetimeFormat` is only used when `datetimeType` is ``"string"``. Setting both `datetimeFormat` and a
+> `datetimeType` as `"seconds"` or `"milliseconds"` will throw a `ConfigError`.
+
+#### Time-beginning vs. time-ending intervals
+
+Timestamps can represent the start of an averaging interval (e.g. a reading at 03:00 represents the average from
+03:00–04:00), or thrather than the end. Transform's canonical output is always time-ending. If the source data is
+time-beginning, set `timeEnding = false` and transform will shift the parsed timestamp forward by the sensor's
+`averagingIntervalSeconds` to produce a time-ending value
+
+```ts
+timeEnding = false;
+averagingInterval = 3600; // required in this case, in seconds
+````
+
+| timeEnding | Behavior |
+|---|---| 
+| true (default) | The parsed datetime value is used as-is. |
+| false | The parsed datetime value is treated as time-beginning and adjusted by `averagingIntervalSeconds` to produce a time-ending.|
+
+### Parameter and unit mappings
 
 OpenAQ transform provide built-in definitions for common air quality and
 meteorological parameters, including PM, ozone, NO<sub>x</sub>, SO<sub>2</sub>, CO, temperature,
@@ -412,7 +500,7 @@ An array of `LocationJSON` objects. Each represents a monitoring site and its fu
 
 | Field | Type | Description |
 |---|---|---|
-| `key` | `string` | Unique location key (`{provider}-{siteId}`). |
+| `key` | `string` | Unique location key (`{provider}/{siteId}`). |
 | `site_id` | `string` | The provider's identifier for this site. |
 | `site_name` | `string` | Human-readable name for the site. |
 | `coordinates` | `object` | Longitude and latitude of the site. |

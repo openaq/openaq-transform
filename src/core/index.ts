@@ -51,10 +51,7 @@ export {
 	TransformError,
 	UnsupportedParameterError,
 } from "./errors";
-export { Location, Locations } from "./location";
-export { Measurement, Measurements } from "./measurement";
 export { FLAG_DEFAULTS, PARAMETER_DEFAULTS, PARAMETERS } from "./metric";
 export { apiReader } from "./readers";
 export { Resource } from "./resource";
-export { Sensor, Sensors } from "./sensor";
 export { constant, jmespath } from "./utils";

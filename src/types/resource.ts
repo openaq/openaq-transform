@@ -186,7 +186,7 @@ type ApiKeyAuth = {
  * Bearer token authentication configuration.
  *
  * @example
- * // Pending — token not yet obtained
+ * // Pending - token not yet obtained
  * const auth: BearerAuth = {
  *   type: 'Bearer',
  *   tokenUrl: 'https://example.com/oauth/token',

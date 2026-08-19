@@ -730,7 +730,7 @@ export abstract class Client<
 	/**
 	 * Add a location to our list
 	 */
-	getLocation(data: SourceRecord) {
+	private getLocation(data: SourceRecord) {
 		const siteId = getString(data, this.locationId) ?? "";
 		// BUILDING KEY
 		const key = Location.createKey({ provider: this.provider, siteId });
@@ -762,7 +762,7 @@ export abstract class Client<
 	/**
 	 * Process a list of locations
 	 */
-	processLocationsData(locations: SourceRecord[]) {
+	private processLocationsData(locations: SourceRecord[]) {
 		log(`Processing ${locations.length} locations`);
 		for (const location of locations) {
 			try {
@@ -780,7 +780,7 @@ export abstract class Client<
 	 *
 	 * @param {array} sensors - list of sensor data
 	 */
-	processSensorsData(sensors: SourceRecord[]) {
+	private processSensorsData(sensors: SourceRecord[]) {
 		log(`Processing ${sensors.length} sensors`);
 		for (const sensor of sensors) {
 			this.getSensor(sensor);
@@ -858,7 +858,7 @@ export abstract class Client<
 	 *
 	 * @param {array} measurements - list of measurement data
 	 */
-	processMeasurementsData(measurements: SourceRecord[]) {
+	private processMeasurementsData(measurements: SourceRecord[]) {
 		log(`Processing ${measurements.length} measurement(s)`);
 		// if we provided a parameter column key we use that
 		// otherwise we use the list of parameters
@@ -954,7 +954,7 @@ export abstract class Client<
 	 * @param {*} flags -
 	 * @returns {*} -
 	 */
-	processFlagsData(flags: SourceRecord[]) {
+	private processFlagsData(flags: SourceRecord[]): void {
 		log(`Processing ${flags.length} flags`);
 		flags.forEach((d: SourceRecord) => {
 			try {

@@ -1,20 +1,29 @@
 {
 	"name": "@openaq/transform",
+	"description": "Transform air quality data sources to a single standardized output",
+	"author": "OpenAQ <dev@openaq.org> (https://openaq.org)",
+	"contributors": [
+		"Russ Biggs <russ@openaq.org>",
+		"Christian Parker <chris@talloaks.io>",
+		"Jacob Fenton <jacob@openaq.org>"
+	],
 	"version": "0.5.0",
 	"type": "module",
 	"packageManager": "pnpm@10.30.3",
 	"files": [
 		"dist"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"engines": {
-		"node": ">=22.23.0 <23.0.0 || >=24.17.0 <25.0.0 || >=26.3.1"
+  	"node": ">=22.0.0"
 	},
 	"sideEffects": false,
 	"exports": {
 		"./browser": {
 			"browser": {
 				"types": "./dist/transform-browser/index.d.ts",
-				"browser": "./dist/transform-browser/index.js",
 				"default": "./dist/transform-browser/index.js"
 			},
 			"node": null,
@@ -27,7 +36,6 @@
 			"browser": null,
 			"node": {
 				"types": "./dist/transform-node/index.d.mts",
-				"node": "./dist/transform-node/index.mjs",
 				"default": "./dist/transform-node/index.mjs"
 			},
 			"default": {

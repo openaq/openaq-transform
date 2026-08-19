@@ -442,7 +442,7 @@ export abstract class Client<
 		await this.initAuth();
 	}
 
-	get measurements(): Measurements {
+	private get measurements(): Measurements {
 		if (!this.#measurements) {
 			this.#measurements = new Measurements(
 				this.parameters,

@@ -160,7 +160,8 @@ export async function apiReader(
  * const errorHandler = (err) => console.error('Fetch error:', err);
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
- */ export async function apiReader(
+ */
+export async function apiReader(
 	{ resource, concurrency = 3, errorHandler }: UrlReaderParameters,
 	parser: Parser,
 	data: DataContext,

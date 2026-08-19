@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.5.0] - unreleased
+## [0.5.0] - 2026-08-19
 
 ### Added
 - `Client`, `NodeClient`, and `BrowserClient` now accept a generic `secrets` type parameter (`Client<R, P, S>`), letting subclasses declare an interface for API keys/tokens/credentials.

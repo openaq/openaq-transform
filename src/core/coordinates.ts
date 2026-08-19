@@ -60,10 +60,10 @@ export class Coordinates {
 		this.proj = proj;
 		this.precision = Math.round(precision);
 
-		if (!this.x) {
+		if (this.x == null) {
 			throw new LongitudeBoundsError(this.x);
 		}
-		if (!this.y) {
+		if (this.y == null) {
 			throw new LatitudeBoundsError(this.y);
 		}
 

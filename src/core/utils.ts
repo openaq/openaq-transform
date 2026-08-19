@@ -6,6 +6,7 @@ import {
 	isStructuredKey,
 	type ParseFunction,
 	type StructuredKey,
+	type UnixDatetimeType,
 } from "../types/client";
 import type { SourceRecord } from "../types/data";
 import {
@@ -14,6 +15,7 @@ import {
 	PATH_EXPRESSION_TYPES,
 	type PathExpression,
 } from "../types/metric";
+import { DatetimeError } from "./errors";
 
 const log = createDebug("openaq-transform:core:utils");
 
@@ -178,7 +180,9 @@ export const getNumber = (
 	numberFormat: DecimalDigitGroup,
 ): number | undefined => {
 	let value = getValueFromKey(data, key) as number | null | string;
-	if (value == null || value === "") return undefined;
+	if (isBlank(value)) {
+		return undefined;
+	}
 	if (typeof value === "string") {
 		value = normalizeNumericString(value, numberFormat);
 	}
@@ -199,8 +203,12 @@ export const getBoolean = (
 	const value = getValueFromKey(data, key);
 	if (typeof value === "string") {
 		const lower = value.toLowerCase().trim();
-		if (lower === "false" || lower === "0") return false;
-		if (lower === "true" || lower === "1") return true;
+		if (lower === "false" || lower === "0") {
+			return false;
+		}
+		if (lower === "true" || lower === "1") {
+			return true;
+		}
 	}
 	return Boolean(value);
 };
@@ -223,8 +231,12 @@ export const getArray = (
 		| string
 		| number[]
 		| string[];
-	if (value == null || value === "") return undefined;
-	if (!Array.isArray(value)) return [value];
+	if (isBlank(value)) {
+		return undefined;
+	}
+	if (!Array.isArray(value)) {
+		return [value as string | number];
+	}
 	return value;
 };
 
@@ -286,10 +298,10 @@ export function normalizeNumericString(
 	value: string,
 	format: DecimalDigitGroup,
 ): string {
-	let v = value.trim();
-	if (v === "") {
+	if (isBlank(value)) {
 		return "";
 	}
+	let v = value.trim();
 
 	const { decimal, digitGroup } = format;
 	if (digitGroup) {
@@ -345,4 +357,72 @@ export function constant<T extends string | boolean | number>(
 		type: "constant",
 		value,
 	};
+}
+
+/**
+ * Sanitizes a name used as a key segment (e.g. manufacturerName, modelName)
+ */
+export function sanitizeKeyName(value?: string): string | undefined {
+	if (!value) return undefined;
+	const sanitized = value
+		.trim()
+		.replace(/[/:]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.trim();
+	return sanitized || undefined;
+}
+
+/**
+ * Converts a numeric or numeric-string timestamp into Unix seconds.
+ *
+ * @param value - The raw timestamp value. May be a `number` or a numeric
+ * `string` (e.g. `1746736701` or `"1746736701"`). Any value that cannot be
+ * coerced to a finite number will throw.
+ * @param type - Whether `value` represents `"seconds"` or `"milliseconds"`
+ * since the Unix epoch.
+ * @returns The timestamp normalized to Unix seconds.
+ * @throws {DatetimeError} If `value` cannot be coerced to a valid number.
+ *
+ * @example
+ * toUnixSeconds(466738980, "seconds"); // 466738980
+ * toUnixSeconds("466738980", "seconds"); // 466738980
+ * toUnixSeconds(466738980000, "milliseconds"); // 466738980
+ * toUnixSeconds("466738980000", "milliseconds"); // 466738980
+ */
+export function toUnixSeconds(value: unknown, type: UnixDatetimeType): number {
+	const num = isBlank(value) ? NaN : Number(value);
+
+	if (Number.isNaN(num)) {
+		throw new DatetimeError(
+			`Expected a numeric timestamp for type "${type}"`,
+			value,
+		);
+	}
+	return type === "milliseconds" ? num / 1000 : num;
+}
+
+/**
+ * Determines whether a value should be treated as "blank" (i.e. absent or empty)
+ *
+ * @param value - The value to check.
+ * @returns `true` if the value is `null`, `undefined`, or a whitespace-only
+ * string; `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * isBlank(null);        // true
+ * isBlank(undefined);   // true
+ * isBlank("");          // true
+ * isBlank(" ");         // true
+ * isBlank("foo");       // false
+ * isBlank(0);           // false
+ * isBlank(false);       // false
+ * ```
+ */
+export function isBlank(value: unknown): boolean {
+	return (
+		value === null ||
+		value === undefined ||
+		(typeof value === "string" && value.trim() === "")
+	);
 }

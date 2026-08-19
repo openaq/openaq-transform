@@ -160,7 +160,8 @@ export async function apiReader(
  * const errorHandler = (err) => console.error('Fetch error:', err);
  * const result = await apiReader({ resource, errorHandler }, async ({content}) => content, {});
  * // result: [...items from page 1, ...items from page 2]
- */ export async function apiReader(
+ */
+export async function apiReader(
 	{ resource, concurrency = 3, errorHandler }: UrlReaderParameters,
 	parser: Parser,
 	data: DataContext,
@@ -185,7 +186,7 @@ export async function apiReader(
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url }) => {
+			batch.map(async ({ url, context }) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
 
@@ -283,6 +284,12 @@ export async function apiReader(
 						console.error(`Reader parse error at ${url}:`, parseError.message);
 					}
 					return;
+				}
+
+				if (context) {
+					parsed = Array.isArray(parsed)
+						? parsed.map((row) => ({ ...context, ...row }))
+						: { ...context, ...parsed };
 				}
 
 				if (resource.output && Array.isArray(parsed)) {

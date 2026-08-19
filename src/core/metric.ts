@@ -14,7 +14,7 @@ import {
 	UnsupportedParameterError,
 	UnsupportedUnitsError,
 } from "./errors";
-import { normalizeNumericString } from "./utils";
+import { isBlank, normalizeNumericString } from "./utils";
 
 const noConversion = (d: number | string) => +d;
 const ppbToPpm = (ppb: number | string) => +ppb / 1000;
@@ -356,12 +356,13 @@ export const PARAMETERS: ParameterMap = {
 		numeric: true,
 		units: "hpa",
 		precision: 1,
-		range: [800, 1100],
+		range: [475, 1100],
 		converters: {
 			hpa: noConversion,
 			mb: noConversion,
 			mbar: noConversion,
 			kpa: (d: number | string) => +d * 10,
+			mmhg: (d: number | string) => +d * 1.33322,
 		},
 	},
 };
@@ -441,13 +442,7 @@ export class Metric {
 		const range = this.parameter?.range;
 		let nv = null;
 
-		// first check if its some form of missing
-		if (
-			v === "" ||
-			v === null ||
-			v === undefined ||
-			(typeof v === "number" && Number.isNaN(v))
-		) {
+		if (isBlank(v) || (typeof v === "number" && Number.isNaN(v))) {
 			throw new MissingValueError(v);
 		}
 

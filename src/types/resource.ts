@@ -1,3 +1,7 @@
+import type { PathExpression } from "./metric";
+import type { KnownParserOptions, ParserOptions } from "./parsers";
+import type { DataContext, ReadAs, ReaderOptions } from "./readers";
+
 export const RESOURCE_KEYS = [
 	"measurements",
 	"locations",
@@ -5,6 +9,63 @@ export const RESOURCE_KEYS = [
 	"flags",
 	"sensors",
 ] as const;
+
+/**
+ * Defines how the reader should combine responses from multiple URLs.
+ *
+ * - `undefined` (default): Returns results as-is without transformation.
+ *   Single URL returns its response directly; multiple URLs return array of responses.
+ * - `'array'`: Flattens array responses and collects object responses into an array.
+ *   Use for paginated APIs where each page returns an array that should be concatenated.
+ * - `'object'`: Merges object responses by concatenating arrays with matching keys.
+ *   Use for paginated composite responses (e.g., {locations: [...], measurements: [...]}).
+ *
+ * @example
+ * // Default (no output): return as-is
+ * // [{id:1}] from URL 1 → [{id:1}]
+ * // {a:1} from URL 1, {b:2} from URL 2 → [{a:1}, {b:2}]
+ *
+ * @example
+ * // Array output: flatten paginated array results
+ * output: 'array'
+ * // [{id:1}, {id:2}] + [{id:3}] → [{id:1}, {id:2}, {id:3}]
+ *
+ * @example
+ * // Object output: merge composite results
+ * output: 'object'
+ * // {stations:[a,b]} + {stations:[c]} → {stations:[a,b,c]}
+ */
+export type ResourceOutput = "array" | "object";
+
+export type ResourceConfig =
+	| {
+			url: string;
+			file?: never;
+			parameters?: Parameters[] | ParametersFunction | PathExpression;
+			body?: Body;
+			responsePath?: PathExpression | string;
+			context?: Context | ContextFunction;
+			output?: ResourceOutput;
+			readAs?: ReadAs;
+			auth?: Auth;
+			readerOptions?: ReaderOptions;
+			parserOptions?: KnownParserOptions | ParserOptions;
+			strict?: boolean;
+	  }
+	| {
+			url?: never;
+			file: File;
+			parameters?: never;
+			body?: never;
+			responsePath?: PathExpression | string;
+			context?: Context | ContextFunction;
+			output?: ResourceOutput;
+			readAs?: ReadAs;
+			auth?: Auth;
+			readerOptions?: ReaderOptions;
+			parserOptions?: KnownParserOptions | ParserOptions;
+			strict?: boolean;
+	  };
 
 export type ResourceKeys = (typeof RESOURCE_KEYS)[number];
 
@@ -125,7 +186,7 @@ type ApiKeyAuth = {
  * Bearer token authentication configuration.
  *
  * @example
- * // Pending — token not yet obtained
+ * // Pending - token not yet obtained
  * const auth: BearerAuth = {
  *   type: 'Bearer',
  *   tokenUrl: 'https://example.com/oauth/token',
@@ -190,4 +251,21 @@ export type BearerAuth = {
 	};
 };
 
+export type Parameters = Record<string, string | number | boolean>;
+
+export type ParametersFunction = (data?: DataContext) => Parameters[];
+
+export interface ResourceUrl {
+	url: string;
+	body?: Body;
+	context?: Context;
+}
+
 export type Auth = BasicAuth | ApiKeyAuth | BearerAuth;
+
+export type Context = Record<string, string | number | boolean>;
+
+export type ContextFunction = (
+	parameters: Parameters,
+	data?: DataContext,
+) => Context;

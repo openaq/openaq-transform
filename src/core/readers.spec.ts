@@ -1,6 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import type { JsonParser } from "../types/parsers";
 import { apiReader, mergeObjects } from "./readers";
 import { Resource } from "./resource";
 
@@ -23,6 +24,8 @@ const objectData = {
 		{ id: 3, temperature: 19.8 },
 	],
 };
+
+const identityParser: JsonParser = async (content) => content;
 
 // Mock server setup
 const handlers = [
@@ -79,18 +82,18 @@ const handlers = [
 		const page = url.searchParams.get("page");
 		if (page === "1") {
 			return HttpResponse.json([
-        {
-				  stations: objectData.stations.slice(0, 2),
-				  measurements: objectData.measurements.slice(0, 2),
-			  }
-      ]);
+				{
+					stations: objectData.stations.slice(0, 2),
+					measurements: objectData.measurements.slice(0, 2),
+				},
+			]);
 		} else if (page === "2") {
 			return HttpResponse.json([
-        {
-				  stations: objectData.stations.slice(2),
-				  measurements: objectData.measurements.slice(2),
-			  }
-      ]);
+				{
+					stations: objectData.stations.slice(2),
+					measurements: objectData.measurements.slice(2),
+				},
+			]);
 		}
 		return HttpResponse.json([objectData]);
 	}),
@@ -123,12 +126,12 @@ const handlers = [
 		}
 		return HttpResponse.json([]);
 	}),
-  http.get("https://api.test.com/auth-error", async () => {
-    return new HttpResponse(null, {
-      status: 401,
-      statusText: "Unauthorized",
-    });
-  }),
+	http.get("https://api.test.com/auth-error", async () => {
+		return new HttpResponse(null, {
+			status: 401,
+			statusText: "Unauthorized",
+		});
+	}),
 ];
 
 const server = setupServer(...handlers);
@@ -147,26 +150,18 @@ describe("apiReader", () => {
 		const resource = new Resource({ url: "https://api.test.com/stations" });
 
 		// Call the apiReader
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// Verify the result
-		expect(result as any).toEqual(sampleData);
+		expect(result).toEqual(sampleData);
 	});
 
 	test("auto-detects JSON content type when readAs is not specified", async () => {
 		const resource = new Resource({ url: "https://api.test.com/stations" });
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
-		expect(result as any).toEqual(sampleData);
+		expect(result).toEqual(sampleData);
 	});
 
 	test("paginated endpoint with multiple URLs that each return arrays should flatten into single array", async () => {
@@ -178,16 +173,11 @@ describe("apiReader", () => {
 		});
 
 		// Parser just passes content through
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// Expect content to be a flattened array of all items from both pages
-		expect(result as any).toEqual(sampleData);
+		expect(result).toEqual(sampleData);
 	});
-
 
 	test("paginated endpoint with multiple URLs that each return arrays should flatten into single array", async () => {
 		// Create a resource with URL template and parameters
@@ -198,14 +188,10 @@ describe("apiReader", () => {
 		});
 
 		// Parser just passes content through
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// Expect content to be a flattened array of all items from both pages
-		expect(result as any).toEqual(sampleData);
+		expect(result).toEqual(sampleData);
 	});
 
 	test("multiple station URLs that each return an object should return array of objects", async () => {
@@ -216,14 +202,10 @@ describe("apiReader", () => {
 			parameters: [{ station: "A" }, { station: "B" }, { station: "C" }],
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// Default: multiple URLs return array of their responses
-		expect(result as any).toEqual(objectData.stations);
+		expect(result).toEqual(objectData.stations);
 	});
 
 	test("endpoint that returns object remains an object", async () => {
@@ -232,13 +214,9 @@ describe("apiReader", () => {
 			output: "object",
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
-		expect(result as any).toEqual(objectData);
+		expect(result).toEqual(objectData);
 	});
 
 	test("EDGE CASE: endpoint that returns paginated object remains an object", async () => {
@@ -249,14 +227,10 @@ describe("apiReader", () => {
 			output: "object",
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// Expect content to be an array of station objects
-		expect(result as any).toEqual(objectData);
+		expect(result).toEqual(objectData);
 	});
 
 	test("EDGE CASE: endpoint that returns object AS AN ARRAY converts to an object", async () => {
@@ -265,13 +239,9 @@ describe("apiReader", () => {
 			output: "object",
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
-		expect(result as any).toEqual(objectData);
+		expect(result).toEqual(objectData);
 	});
 
 	test("EDGE CASE: endpoint that returns paginated object AS AN ARRAY converts to an object", async () => {
@@ -281,13 +251,9 @@ describe("apiReader", () => {
 			output: "object",
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
-		expect(result as any).toEqual(objectData);
+		expect(result).toEqual(objectData);
 	});
 
 	test("non-strict mode (default) continues on error and calls errorHandler", async () => {
@@ -305,7 +271,7 @@ describe("apiReader", () => {
 
 		const result = await apiReader(
 			{ resource, errorHandler },
-			async (content: any) => content,
+			identityParser,
 			{},
 		);
 
@@ -330,7 +296,7 @@ describe("apiReader", () => {
 		});
 
 		await expect(async () => {
-			await apiReader({ resource }, async (content: any) => content, {});
+			await apiReader({ resource }, identityParser, {});
 		}).rejects.toThrow();
 	});
 
@@ -344,17 +310,13 @@ describe("apiReader", () => {
 
 		const errors: Error[] = [];
 		// ErrorHandler that logs but doesn't throw (simulating client.strict=false)
-		const errorHandler = (err: Error | string, strict: boolean) => {
+		const errorHandler = (err: Error | string, _strict?: boolean) => {
 			errors.push(err instanceof Error ? err : new Error(err));
 			// Not throwing here even though strict=true is passed
 		};
 
 		await expect(async () => {
-			await apiReader(
-				{ resource, errorHandler },
-				async (content: any) => content,
-				{},
-			);
+			await apiReader({ resource, errorHandler }, identityParser, {});
 		}).rejects.toThrow();
 
 		// ErrorHandler should have been called
@@ -381,11 +343,7 @@ describe("apiReader", () => {
 		};
 
 		await expect(async () => {
-			await apiReader(
-				{ resource, errorHandler },
-				async (content: any) => content,
-				{},
-			);
+			await apiReader({ resource, errorHandler }, identityParser, {});
 		}).rejects.toThrow();
 
 		// ErrorHandler should have been called before the throw
@@ -408,11 +366,7 @@ describe("apiReader", () => {
 
 		let thrownError: Error | null = null;
 		try {
-			await apiReader(
-				{ resource, errorHandler },
-				async (content: any) => content,
-				{},
-			);
+			await apiReader({ resource, errorHandler }, identityParser, {});
 		} catch (error) {
 			thrownError = error as Error;
 		}
@@ -426,41 +380,35 @@ describe("apiReader", () => {
 		expect(errors.length).toBeGreaterThanOrEqual(1);
 	});
 
-  test("stops fetching subsequent batches when all URLs in first batch fail with strict errors", async () => {
-    const resource = new Resource({
-      url: "https://api.test.com/auth-error",
-      parameters: [
-        { page: 1 },
-        { page: 2 },
-        { page: 3 }, // batch 1 (concurrency=2): pages 1,2
-        { page: 4 }, // batch 2: pages 3,4 — should never run
-      ],
-      output: "array",
-      strict: false, // resource itself is not strict
-    });
+	test("stops fetching subsequent batches when all URLs in first batch fail with strict errors", async () => {
+		const resource = new Resource({
+			url: "https://api.test.com/auth-error",
+			parameters: [{ page: 1 }, { page: 2 }, { page: 3 }, { page: 4 }],
+			output: "array",
+			strict: false, // resource itself is not strict
+		});
 
-    const errors: Error[] = [];
-    const errorHandler = (err: Error | string, strict?: boolean) => {
-      const error = err instanceof Error ? err : new Error(err);
-      errors.push(error);
-      if (strict) {
-        throw error;
-      }
-    };
+		const errors: Error[] = [];
+		const errorHandler = (err: Error | string, strict?: boolean) => {
+			const error = err instanceof Error ? err : new Error(err);
+			errors.push(error);
+			if (strict) {
+				throw error;
+			}
+		};
 
-    await expect(async () => {
-      await apiReader(
-        { resource, errorHandler, concurrency: 2 },
-        async (content: any) => content,
-        {},
-      );
-    }).rejects.toThrow();
+		await expect(async () => {
+			await apiReader(
+				{ resource, errorHandler, concurrency: 2 },
+				identityParser,
+				{},
+			);
+		}).rejects.toThrow();
 
-    // Only first batch should have been attempted (2 URLs, not 4)
-    expect(errors).toHaveLength(2);
-    expect(errors.every((e) => e.name === "FetchError")).toBe(true);
-  });
-
+		// Only first batch should have been attempted (2 URLs, not 4)
+		expect(errors).toHaveLength(2);
+		expect(errors.every((e) => e.name === "FetchError")).toBe(true);
+	});
 
 	test("distinguishes between fetch errors and parse errors", async () => {
 		const resource = new Resource({
@@ -476,18 +424,16 @@ describe("apiReader", () => {
 		};
 
 		// Parser that throws on page 2
+		const throwingParser: JsonParser = async (content) => {
+			if (Array.isArray(content) && content.length > 0 && content[0].id === 3) {
+				throw new Error("Parser failed to process data");
+			}
+			return content;
+		};
+
 		const result = await apiReader(
 			{ resource, errorHandler },
-			async (content: any) => {
-				if (
-					Array.isArray(content) &&
-					content.length > 0 &&
-					content[0].id === 3
-				) {
-					throw new Error("Parser failed to process data");
-				}
-				return content;
-			},
+			throwingParser,
 			{},
 		);
 
@@ -508,16 +454,12 @@ describe("apiReader", () => {
 			strict: false,
 		});
 
-		const errors: any[] = [];
+		const errors: (Error & { statusCode?: number })[] = [];
 		const errorHandler = (err: Error | string) => {
 			errors.push(err instanceof Error ? err : new Error(err));
 		};
 
-		await apiReader(
-			{ resource, errorHandler },
-			async (content: any) => content,
-			{},
-		);
+		await apiReader({ resource, errorHandler }, identityParser, {});
 
 		// Should have one fetch error with status code
 		expect(errors).toHaveLength(1);
@@ -530,11 +472,7 @@ describe("apiReader", () => {
 			url: "https://api.test.com/objects",
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// With no output specified, single URL returns the response directly
 		expect(result).toEqual(objectData);
@@ -547,11 +485,7 @@ describe("apiReader", () => {
 			// No output specified - should return array of responses
 		});
 
-		const result = await apiReader(
-			{ resource },
-			async (content: any) => content,
-			{},
-		);
+		const result = await apiReader({ resource }, identityParser, {});
 
 		// With no output specified, multiple URLs return array of their responses
 		// Each response is an array, so we get an array of arrays
@@ -570,4 +504,63 @@ test("mergeObjects works", async () => {
 	const expected = { locations: ["a", "b", "c"], measurements: [1, 2, 3] };
 
 	expect(mergeObjects(input)).toEqual(expected);
+});
+
+test("context is merged onto each row of an array response", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations",
+		context: { source: "test-provider" },
+	});
+
+	const result = await apiReader({ resource }, identityParser, {});
+
+	expect(result).toEqual(
+		sampleData.map((row) => ({ source: "test-provider", ...row })),
+	);
+});
+
+test("context is merged onto an object response", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations/:station",
+		parameters: [{ station: "A" }],
+		context: (params) => ({ station: params.station }),
+	});
+
+	const result = await apiReader({ resource }, identityParser, {});
+
+	expect(result).toEqual({ station: "A", ...objectData.stations[0] });
+});
+
+test("context is merged per-url when derived from parameters", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations/:station",
+		parameters: [{ station: "A" }, { station: "B" }],
+		context: (params) => ({ station: params.station }),
+	});
+
+	const result = await apiReader({ resource }, identityParser, {});
+
+	expect(result).toEqual([
+		{ station: "A", ...objectData.stations[0] },
+		{ station: "B", ...objectData.stations[1] },
+	]);
+});
+
+test("real fields in the response take precedence over context", async () => {
+	const resource = new Resource({
+		url: "https://api.test.com/stations",
+		context: { id: "should-not-win" },
+	});
+
+	const result = await apiReader({ resource }, identityParser, {});
+
+	expect(result).toEqual(sampleData);
+});
+
+test("no context means rows are unchanged", async () => {
+	const resource = new Resource({ url: "https://api.test.com/stations" });
+
+	const result = await apiReader({ resource }, identityParser, {});
+
+	expect(result).toEqual(sampleData);
 });

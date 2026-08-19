@@ -162,9 +162,9 @@ test("lesserOf works", () => {
 });
 
 test("greaterOf returns provided date when it is later", () => {
-    const datetime1 = new Datetime(1746736700);
-    const datetime2 = new Datetime(1746736701);
-    expect(datetime1.greaterOf(datetime2)).toEqual(datetime2);
+	const datetime1 = new Datetime(1746736700);
+	const datetime2 = new Datetime(1746736701);
+	expect(datetime1.greaterOf(datetime2)).toEqual(datetime2);
 });
 
 test("lesserOf works when values equal", () => {
@@ -212,20 +212,20 @@ test("static method returns offset data v2", () => {
 });
 
 test("static now with Duration offset works", () => {
-    const now = Datetime.now(Duration.fromObject({ hours: 1 }));
-    const fmt = now.toUTC();
-    expect(fmt).toBe("2025-06-01T04:00:00Z");
+	const now = Datetime.now(Duration.fromObject({ hours: 1 }));
+	const fmt = now.toUTC();
+	expect(fmt).toBe("2025-06-01T04:00:00Z");
 });
 
 test("static now with no valid offset falls back to now", () => {
-    const now = Datetime.now(undefined);
-    expect(now).toBeInstanceOf(Datetime);
-    expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
+	const now = Datetime.now(undefined);
+	expect(now).toBeInstanceOf(Datetime);
+	expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
 });
 
 test("toString with format string returns formatted date", () => {
-    const datetime = new Datetime("2025-01-01T00:00:00-05:00");
-    expect(datetime.toString("yyyy-MM-dd")).toBe("2025-01-01");
+	const datetime = new Datetime("2025-01-01T00:00:00-05:00");
+	expect(datetime.toString("yyyy-MM-dd")).toBe("2025-01-01");
 });
 
 test("minus returns a new Datetime instance", () => {
@@ -243,7 +243,7 @@ test("minus does not mutate original instance", () => {
 
 test("minus with string throws luxon error", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
-	expect(() => datetime.minus('60')).toThrow();
+	expect(() => datetime.minus("60")).toThrow();
 });
 
 test("minus with object with misnamed key throws luxon error", () => {
@@ -263,7 +263,9 @@ test("minus with object with negative number throws RangeError", () => {
 
 test("minus with Duration with negative number throws RangeError", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
-	expect(() => datetime.minus(Duration.fromObject({ hours: -1 }))).toThrow(RangeError);
+	expect(() => datetime.minus(Duration.fromObject({ hours: -1 }))).toThrow(
+		RangeError,
+	);
 });
 
 test("minus preserves locationTimezone", () => {
@@ -285,8 +287,6 @@ test("minus with all three input types produces the same result", () => {
 	expect(fromDuration.toUTC()).toBe(fromOffset.toUTC());
 });
 
-
-
 test("add returns a new Datetime instance", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
 	const result = datetime.add(60);
@@ -302,7 +302,7 @@ test("add does not mutate original instance", () => {
 
 test("add with string throws luxon error", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
-	expect(() => datetime.add('60')).toThrow();
+	expect(() => datetime.add("60")).toThrow();
 });
 
 test("add with object with misnamed key throws luxon error with add", () => {
@@ -322,7 +322,9 @@ test("add with object with negative number throws RangeError", () => {
 
 test("add with Duration with negative number throws RangeError", () => {
 	const datetime = new Datetime("2025-01-01T12:00:00Z");
-	expect(() => datetime.add(Duration.fromObject({ hours: -1 }))).toThrow(RangeError);
+	expect(() => datetime.add(Duration.fromObject({ hours: -1 }))).toThrow(
+		RangeError,
+	);
 });
 
 test("add preserves locationTimezone", () => {

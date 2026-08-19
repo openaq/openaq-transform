@@ -6,6 +6,7 @@ import {
 	type ClientParser,
 	type ClientReader,
 	type ConstantValue,
+	type DatetimeType,
 	type IndexedResource,
 	type IngestMatchingMethod,
 	isIndexed,
@@ -32,6 +33,7 @@ import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
+	ConfigError,
 	Errors,
 	FetchError,
 	MissingAttributeError,
@@ -47,7 +49,6 @@ import {
 } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
-
 import {
 	cleanKey,
 	formatValueForLog,
@@ -56,6 +57,8 @@ import {
 	getNumber,
 	getString,
 	getValueFromKey,
+	isBlank,
+	toUnixSeconds,
 } from "./utils";
 
 const log = createDebug("openaq-transform:core:client");
@@ -63,10 +66,11 @@ const log = createDebug("openaq-transform:core:client");
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,
 	P extends ParserMethods = ParserMethods,
+	S = object,
 > {
 	provider!: string;
 	resource?: Resource | IndexedResource;
-	secrets?: object;
+	secrets?: S;
 	reader: ClientReader<R> = "api";
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;
@@ -77,6 +81,7 @@ export abstract class Client<
 	longFormat: boolean = false;
 	geometryProjection: string | PathExpression | ConstantValue | ParseFunction =
 		"projection";
+	datetimeType: DatetimeType = "string";
 	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
 	timeEnding: boolean = true;
 
@@ -142,7 +147,7 @@ export abstract class Client<
 	#locations: Locations;
 	#sensors: Sensors;
 	#errors: Errors;
-	#params: ClientConfiguration;
+	#params: ClientConfiguration<S>;
 	// offset, to, from support
 	// limit the returned values to the following periods
 	#datetimeTo: Datetime;
@@ -153,13 +158,13 @@ export abstract class Client<
 	log: Map<string, Array<LogEntry>>;
 	strict: boolean = false;
 
-	constructor(params?: ClientConfiguration) {
+	constructor(params?: ClientConfiguration<S>) {
 		// update with config if the config was passed in
 		// this will still behave oddly in our abstract/extend framework
-		this.configure(params as ClientConfiguration);
+		this.configure(params as ClientConfiguration<S>);
 	}
 
-	configure(params: ClientConfiguration) {
+	configure(params: ClientConfiguration<S>) {
 		if (params && typeof params === "object") {
 			this.#params = { ...this.#params, ...params };
 			this.setup();
@@ -173,8 +178,16 @@ export abstract class Client<
 		if (this.#params?.provider) {
 			this.provider = this.#params.provider;
 		}
+		if (this.#params?.datetimeType) {
+			this.datetimeType = this.#params.datetimeType;
+		}
 		if (this.#params?.datetimeFormat) {
 			this.datetimeFormat = this.#params.datetimeFormat;
+		}
+		if (this.datetimeType !== "string" && this.#params?.datetimeFormat) {
+			throw new ConfigError(
+				`datetimeFormat is not used when datetimeType is "${this.datetimeType}"`,
+			);
 		}
 		if (this.#params?.timezone) {
 			this.timezone = this.#params.timezone;
@@ -429,7 +442,7 @@ export abstract class Client<
 		await this.initAuth();
 	}
 
-	get measurements(): Measurements {
+	private get measurements(): Measurements {
 		if (!this.#measurements) {
 			this.#measurements = new Measurements(
 				this.parameters,
@@ -442,26 +455,57 @@ export abstract class Client<
 	}
 
 	/**
-	 * Create a proper timestamp
+	 * Extracts and parses the datetime value from a source record into a
+	 * `Datetime` instance.
 	 *
-	 * @param {*} row - data with fields to create timestamp
-	 * @returns {string} - formated timestamp string
+	 * The value is located using `this.datetime` (a field key or
+	 * `ParseFunction`) and parsed according to `this.datetimeType`:
+	 * - `"string"` — parsed as a formatted string using `this.datetimeFormat`
+	 * and `this.timezone`.
+	 * - `"seconds"` / `"milliseconds"` — parsed as a Unix epoch value via
+	 * {@link toUnixSeconds}, using `this.timezone` as the display/location
+	 * timezone.
+	 *
+	 * If `this.timeEnding` is `false`, the parsed datetime is treated as the
+	 * start of the averaging interval and is advanced by
+	 * `averagingIntervalSeconds` to represent the end of the interval instead.
+	 *
+	 * @param row - The source record to extract the datetime field from.
+	 * @param averagingIntervalSeconds - The averaging interval, in seconds,
+	 * used to shift the timestamp to interval-end when `this.timeEnding` is
+	 * `false`. Required in that case, ignored otherwise.
+	 * @returns A `Datetime` instance representing the parsed (and, if
+	 * applicable, interval-end-adjusted) timestamp.
+	 * @throws {Error} If the datetime field is missing, `null`, `undefined`,
+	 * or an empty string.
+	 * @throws {Error} If `this.timeEnding` is `false` and
+	 * `averagingIntervalSeconds` is not provided.
+	 * @throws {DatetimeError} If `this.datetimeType` is `"seconds"` or
+	 * `"milliseconds"` and the field value cannot be coerced to a number.
+	 * @throws {TypeError} If `this.datetimeType` is `"string"` and the value
+	 * cannot be parsed with `this.datetimeFormat`.
 	 */
 	getDatetime(
 		row: SourceRecord,
 		averagingIntervalSeconds: number | undefined,
 	): Datetime {
-		const dtString = getValueFromKey(row, this.datetime);
-		log(`getDatetime`, dtString);
-		if (typeof dtString !== "string" || !dtString) {
+		const dtValue = getValueFromKey(row, this.datetime);
+		if (!dtValue && dtValue !== 0) {
 			throw new Error(
 				`Missing date/time field. Looking in ${formatValueForLog(this.datetime)}`,
 			);
 		}
-		let dt = new Datetime(dtString, {
-			format: this.datetimeFormat,
-			timezone: this.timezone,
-		});
+
+		let dt =
+			this.datetimeType === "string"
+				? new Datetime(dtValue as string, {
+						format: this.datetimeFormat,
+						timezone: this.timezone,
+					})
+				: new Datetime(toUnixSeconds(dtValue, this.datetimeType), {
+						locationTimezone: this.timezone,
+					});
+
 		if (!this.timeEnding) {
 			if (!averagingIntervalSeconds) {
 				throw new Error(
@@ -508,10 +552,6 @@ export abstract class Client<
 	): Promise<ResourceData> {
 		let data: ResourceData = {};
 		log("Loading indexed resources");
-		// I think we should use the devs resource order here and just check to make sure the keys match
-		// this way the dev can control the order of the resource calls, for example, for clarity we
-		// need to hit the meta resource first
-		// I am indifferent to how we do it though, so feel free to change what I did
 		for (const key of Object.keys(indexedResource) as Array<
 			keyof typeof indexedResource
 		>) {
@@ -690,7 +730,7 @@ export abstract class Client<
 	/**
 	 * Add a location to our list
 	 */
-	getLocation(data: SourceRecord) {
+	private getLocation(data: SourceRecord) {
 		const siteId = getString(data, this.locationId) ?? "";
 		// BUILDING KEY
 		const key = Location.createKey({ provider: this.provider, siteId });
@@ -722,7 +762,7 @@ export abstract class Client<
 	/**
 	 * Process a list of locations
 	 */
-	processLocationsData(locations: SourceRecord[]) {
+	private processLocationsData(locations: SourceRecord[]) {
 		log(`Processing ${locations.length} locations`);
 		for (const location of locations) {
 			try {
@@ -740,7 +780,7 @@ export abstract class Client<
 	 *
 	 * @param {array} sensors - list of sensor data
 	 */
-	processSensorsData(sensors: SourceRecord[]) {
+	private processSensorsData(sensors: SourceRecord[]) {
 		log(`Processing ${sensors.length} sensors`);
 		for (const sensor of sensors) {
 			this.getSensor(sensor);
@@ -818,7 +858,7 @@ export abstract class Client<
 	 *
 	 * @param {array} measurements - list of measurement data
 	 */
-	processMeasurementsData(measurements: SourceRecord[]) {
+	private processMeasurementsData(measurements: SourceRecord[]) {
 		log(`Processing ${measurements.length} measurement(s)`);
 		// if we provided a parameter column key we use that
 		// otherwise we use the list of parameters
@@ -853,7 +893,7 @@ export abstract class Client<
 
 					// for wide format data we will not assume that null is a real measurement
 					// but for long format data we will assume it is valid
-					if (value !== undefined && (value || this.longFormat)) {
+					if (value !== undefined && (this.longFormat || !isBlank(value))) {
 						const metric = this.measurements.metricFromProviderKey(
 							metricName as string,
 						);
@@ -914,7 +954,7 @@ export abstract class Client<
 	 * @param {*} flags -
 	 * @returns {*} -
 	 */
-	processFlagsData(flags: SourceRecord[]) {
+	private processFlagsData(flags: SourceRecord[]): void {
 		log(`Processing ${flags.length} flags`);
 		flags.forEach((d: SourceRecord) => {
 			try {

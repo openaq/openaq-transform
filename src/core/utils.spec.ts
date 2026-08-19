@@ -1,116 +1,119 @@
-import { describe, expect, test } from 'vitest';
-import type { PathExpression } from '../types/metric.ts';
-import { SourceRecord } from '../types/data.ts';
-
+import fc from "fast-check";
+import { describe, expect, test } from "vitest";
+import type { ConstantValue } from "../types/client.ts";
+import type { SourceRecord } from "../types/data.ts";
+import type { DecimalDigitGroup, PathExpression } from "../types/metric.ts";
+import { DatetimeError } from "./errors.ts";
 import {
-  cleanKey,
-  normalizeNumericString,
-  countDecimals,
-  getBoolean,
-  getNumber,
-  getString,
-  getArray,
-  getValueFromKey,
-  constant,
-  jmespath,
-} from './utils.ts';
-import { DecimalDigitGroup } from '../types/metric.ts';
-import { ConstantValue } from '../types/client.ts';
+	cleanKey,
+	constant,
+	countDecimals,
+	getArray,
+	getBoolean,
+	getNumber,
+	getString,
+	getValueFromKey,
+	isBlank,
+	jmespath,
+	normalizeNumericString,
+	sanitizeKeyName,
+	toUnixSeconds,
+} from "./utils.ts";
 
-test('cleanKey replaces only if value is truthy', () => {
-  expect(cleanKey('')).toBe('');
+test("cleanKey replaces only if value is truthy", () => {
+	expect(cleanKey("")).toBe("");
 });
 
-test('cleanKey removes leading and trailing whitespace', () => {
-  expect(cleanKey(' foobar ')).toBe('foobar');
+test("cleanKey removes leading and trailing whitespace", () => {
+	expect(cleanKey(" foobar ")).toBe("foobar");
 });
 
-test('cleanKey replaces internal spaces with underscore', () => {
-  expect(cleanKey('foo bar')).toBe('foo_bar');
+test("cleanKey replaces internal spaces with underscore", () => {
+	expect(cleanKey("foo bar")).toBe("foo_bar");
 });
 
-test('cleanKey removes non-word characters', () => {
-  expect(cleanKey('$foo#bar^')).toBe('foobar');
+test("cleanKey removes non-word characters", () => {
+	expect(cleanKey("$foo#bar^")).toBe("foobar");
 });
 
-test('cleanKey changes string to lowercase', () => {
-  expect(cleanKey('FOOBAR')).toBe('foobar');
+test("cleanKey changes string to lowercase", () => {
+	expect(cleanKey("FOOBAR")).toBe("foobar");
 });
 
-test('getValueFromKey returns undefined when key does not exist', () => {
-  expect(getValueFromKey({}, 'undefined_key')).toBe(undefined);
+test("getValueFromKey returns undefined when key does not exist", () => {
+	expect(getValueFromKey({}, "undefined_key")).toBe(undefined);
 });
 
-test('getValueFromKey returns value when key exists', () => {
-  expect(getValueFromKey({ pm25: null }, 'pm25')).toBe(null);
+test("getValueFromKey returns value when key exists", () => {
+	expect(getValueFromKey({ pm25: null }, "pm25")).toBe(null);
 });
 
-test('getValueFromKey returns value when using key function', () => {
-  expect(getValueFromKey({ pm25: 42 }, (o) => o.pm25)).toBe(42);
+test("getValueFromKey returns value when using key function", () => {
+	expect(getValueFromKey({ pm25: 42 }, (o) => o.pm25)).toBe(42);
 });
 
-test('getValueFromKey throws for unsafe optional property access', () => {
-  expect(getValueFromKey({ pm25: null }, (o) => o.foo)).toThrow(Error);
+test("getValueFromKey throws for unsafe optional property access", () => {
+	expect(getValueFromKey({ pm25: null }, (o) => o.foo)).toThrow(Error);
 });
 
-test('getValueFromKey returns value when using jmespath expression', () => {
-  const pathExpression = {
-    type: 'jmespath',
-    value: '$.measurements[0].pm25',
-  } satisfies PathExpression;
-  expect(
-    getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
-  ).toBe(42);
+test("getValueFromKey returns value when using jmespath expression", () => {
+	const pathExpression = {
+		type: "jmespath",
+		value: "$.measurements[0].pm25",
+	} satisfies PathExpression;
+	expect(
+		getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
+	).toBe(42);
 });
 
-test('getValueFromKey returns value when using constant value', () => {
-  const constantValue = {
-    type: 'constant',
-    value: 3600,
-  } satisfies ConstantValue;
-  expect(getValueFromKey({ measurements: [{ pm25: 42 }] }, constantValue)).toBe(
-    3600,
-  );
+test("getValueFromKey returns value when using constant value", () => {
+	const constantValue = {
+		type: "constant",
+		value: 3600,
+	} satisfies ConstantValue;
+	expect(getValueFromKey({ measurements: [{ pm25: 42 }] }, constantValue)).toBe(
+		3600,
+	);
 });
 
-test('getValueFromKey throws when unsupported expression type is passed', () => {
-  // @ts-expect-error Testing unsupported type value
-  const pathExpression = {
-    type: 'xpath',
-    value: '/measurements[0]/pm25',
-  } satisfies PathExpression;
-  // @ts-expect-error Testing unsupported type value
-  expect(() =>
-    getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
-  ).toThrow(TypeError);
+test("getValueFromKey throws when unsupported expression type is passed", () => {
+	// @ts-expect-error Testing unsupported type value
+	const pathExpression = {
+		type: "xpath",
+		value: "/measurements[0]/pm25",
+	} satisfies PathExpression;
+	// @ts-expect-error Testing unsupported type value
+	expect(() =>
+		getValueFromKey({ measurements: [{ pm25: 42 }] }, pathExpression),
+	).toThrow(TypeError);
 });
 
-test('getValueFromKey returns null when key function throws a non-TypeError', () => {
-  expect(
-    getValueFromKey({ pm25: 42 }, () => {
-      throw new Error('unexpected');
-    }),
-  ).toBe(null);
+test("getValueFromKey returns null when key function throws a non-TypeError", () => {
+	expect(
+		getValueFromKey({ pm25: 42 }, () => {
+			throw new Error("unexpected");
+		}),
+	).toBe(null);
 });
 
-test('getValueFromKey returns boolean true primitive directly', () => {
-  expect(getValueFromKey({ is_mobile: false }, true)).toBe(true);
+test("getValueFromKey returns boolean true primitive directly", () => {
+	expect(getValueFromKey({ is_mobile: false }, true)).toBe(true);
 });
 
-test('getValueFromKey returns boolean false primitive directly', () => {
-  expect(getValueFromKey({ is_mobile: true }, false)).toBe(false);
+test("getValueFromKey returns boolean false primitive directly", () => {
+	expect(getValueFromKey({ is_mobile: true }, false)).toBe(false);
 });
 
-test('getValueFromKey returns number primitive directly', () => {
-  expect(getValueFromKey({ interval: 42 }, 3600)).toBe(3600);
+test("getValueFromKey returns number primitive directly", () => {
+	expect(getValueFromKey({ interval: 42 }, 3600)).toBe(3600);
 });
 
-test('getValueFromKey returns zero number primitive directly', () => {
-  expect(getValueFromKey({ interval: 42 }, 0)).toBe(0);
+test("getValueFromKey returns zero number primitive directly", () => {
+	expect(getValueFromKey({ interval: 42 }, 0)).toBe(0);
 });
 
-test('countDecimals returns the right value', () => {
-  expect(countDecimals(7.24)).toBe(2);
+test("countDecimals returns the right value", () => {
+	expect(countDecimals(7.24)).toBe(2);
 });
 
 // test('getMethod returns method by key', () => {
@@ -162,415 +165,746 @@ test('countDecimals returns the right value', () => {
 // });
 
 const record = (value: unknown) => ({ value }) as unknown as SourceRecord;
-const key = 'value';
+const key = "value";
 
-describe('getString', () => {
-  test('returns the string value as-is', () => {
-    expect(getString(record('hello'), key)).toBe('hello');
-  });
+describe("getString", () => {
+	test("returns the string value as-is", () => {
+		expect(getString(record("hello"), key)).toBe("hello");
+	});
 
-  test('coerces a number to string', () => {
-    expect(getString(record(42), key)).toBe('42');
-  });
+	test("coerces a number to string", () => {
+		expect(getString(record(42), key)).toBe("42");
+	});
 
-  test('coerces a boolean to string', () => {
-    expect(getString(record(true), key)).toBe('true');
-  });
+	test("coerces a boolean to string", () => {
+		expect(getString(record(true), key)).toBe("true");
+	});
 
-  test('returns undefined for null', () => {
-    expect(getString(record(null), key)).toBeUndefined();
-  });
+	test("returns undefined for null", () => {
+		expect(getString(record(null), key)).toBeUndefined();
+	});
 
-  test('returns undefined for undefined', () => {
-    expect(getString(record(undefined), key)).toBeUndefined();
-  });
+	test("returns undefined for undefined", () => {
+		expect(getString(record(undefined), key)).toBeUndefined();
+	});
 
-  test('returns empty string for empty string', () => {
-    expect(getString(record(''), key)).toBe('');
-  });
+	test("returns empty string for empty string", () => {
+		expect(getString(record(""), key)).toBe("");
+	});
 
-  test('returns a string for jmespath expression', () => {
-    expect(getString(record(42), { type: 'jmespath', value: 'value' })).toBe(
-      '42',
-    );
-  });
+	test("returns a string for jmespath expression", () => {
+		expect(getString(record(42), { type: "jmespath", value: "value" })).toBe(
+			"42",
+		);
+	});
 
-  test('returns a string for constant value of type string', () => {
-    expect(getString(record(42), { type: 'constant', value: '2' })).toBe('2');
-  });
+	test("returns a string for constant value of type string", () => {
+		expect(getString(record(42), { type: "constant", value: "2" })).toBe("2");
+	});
 
-  test('returns a string for constant value of type number', () => {
-    expect(getString(record(42), { type: 'constant', value: 2 })).toBe('2');
-  });
+	test("returns a string for constant value of type number", () => {
+		expect(getString(record(42), { type: "constant", value: 2 })).toBe("2");
+	});
 });
 
-describe('getNumber', () => {
-  const numberFormat: DecimalDigitGroup = { decimal: 'point' };
+describe("getNumber", () => {
+	const numberFormat: DecimalDigitGroup = { decimal: "point" };
 
-  test('returns a number value as-is', () => {
-    expect(getNumber(record(42), key, numberFormat)).toBe(42);
-  });
+	test("returns a number value as-is", () => {
+		expect(getNumber(record(42), key, numberFormat)).toBe(42);
+	});
 
-  test('coerces a numeric string to number', () => {
-    expect(getNumber(record('3.14'), key, numberFormat)).toBe(3.14);
-  });
+	test("coerces a numeric string to number", () => {
+		expect(getNumber(record("3.14"), key, numberFormat)).toBe(3.14);
+	});
 
-  test('returns undefined for null', () => {
-    expect(getNumber(record(null), key, numberFormat)).toBeUndefined();
-  });
+	test("returns undefined for null", () => {
+		expect(getNumber(record(null), key, numberFormat)).toBeUndefined();
+	});
 
-  test('returns undefined for undefined', () => {
-    expect(getNumber(record(undefined), key, numberFormat)).toBeUndefined();
-  });
+	test("returns undefined for undefined", () => {
+		expect(getNumber(record(undefined), key, numberFormat)).toBeUndefined();
+	});
 
-  test('returns undefined for non-numeric string', () => {
-    expect(getNumber(record('abc'), key, numberFormat)).toBeNaN();
-  });
+	test("returns undefined for non-numeric string", () => {
+		expect(getNumber(record("abc"), key, numberFormat)).toBeNaN();
+	});
 
-  test('returns undefined for empty string', () => {
-    expect(getNumber(record(''), key, numberFormat)).toBeUndefined();
-  });
+	test("returns undefined for empty string", () => {
+		expect(getNumber(record(""), key, numberFormat)).toBeUndefined();
+	});
 
-  test("returns 0 for '0'", () => {
-    expect(getNumber(record('0'), key, numberFormat)).toBe(0);
-  });
+	test("returns 0 for '0'", () => {
+		expect(getNumber(record("0"), key, numberFormat)).toBe(0);
+	});
 
-  test('returns number 0 for jmespath expression', () => {
-    expect(
-      getNumber(
-        record('0'),
-        { type: 'jmespath', value: 'value' },
-        numberFormat,
-      ),
-    ).toBe(0);
-  });
+	test("returns number 0 for jmespath expression", () => {
+		expect(
+			getNumber(
+				record("0"),
+				{ type: "jmespath", value: "value" },
+				numberFormat,
+			),
+		).toBe(0);
+	});
 
-  test('returns constant number for constant value string', () => {
-    expect(
-      getNumber(record('0'), { type: 'constant', value: '42' }, numberFormat),
-    ).toBe(42);
-  });
+	test("returns constant number for constant value string", () => {
+		expect(
+			getNumber(record("0"), { type: "constant", value: "42" }, numberFormat),
+		).toBe(42);
+	});
 
-  test('returns constant number for constant value number', () => {
-    expect(
-      getNumber(record('0'), { type: 'constant', value: 42 }, numberFormat),
-    ).toBe(42);
-  });
+	test("returns constant number for constant value number", () => {
+		expect(
+			getNumber(record("0"), { type: "constant", value: 42 }, numberFormat),
+		).toBe(42);
+	});
 
-  test('returns number primitive directly', () => {
-    expect(getNumber(record(42), 3600, numberFormat)).toBe(3600);
-  });
+	test("returns number primitive directly", () => {
+		expect(getNumber(record(42), 3600, numberFormat)).toBe(3600);
+	});
 
-  test('returns zero number primitive directly', () => {
-    expect(getNumber(record(42), 0, numberFormat)).toBe(0);
-  });
+	test("returns zero number primitive directly", () => {
+		expect(getNumber(record(42), 0, numberFormat)).toBe(0);
+	});
 
-  test('parses a comma-decimal string with matching numberFormat', () => {
-    const format: DecimalDigitGroup = { decimal: 'comma' };
-    expect(getNumber(record('3,14'), key, format)).toBe(3.14);
-  });
+	test("parses a comma-decimal string with matching numberFormat", () => {
+		const format: DecimalDigitGroup = { decimal: "comma" };
+		expect(getNumber(record("3,14"), key, format)).toBe(3.14);
+	});
 });
 
-describe('getBoolean', () => {
-  test('returns true for boolean true', () => {
-    expect(getBoolean(record(true), key)).toBe(true);
-  });
+describe("getBoolean", () => {
+	test("returns true for boolean true", () => {
+		expect(getBoolean(record(true), key)).toBe(true);
+	});
 
-  test('returns false for boolean false', () => {
-    expect(getBoolean(record(false), key)).toBe(false);
-  });
+	test("returns false for boolean false", () => {
+		expect(getBoolean(record(false), key)).toBe(false);
+	});
 
-  test('returns false for string "false"', () => {
-    expect(getBoolean(record('false'), key)).toBe(false);
-  });
+	test('returns false for string "false"', () => {
+		expect(getBoolean(record("false"), key)).toBe(false);
+	});
 
-  test('returns false for string "FALSE"', () => {
-    expect(getBoolean(record('FALSE'), key)).toBe(false);
-  });
+	test('returns false for string "FALSE"', () => {
+		expect(getBoolean(record("FALSE"), key)).toBe(false);
+	});
 
-  test('returns false for string "0"', () => {
-    expect(getBoolean(record('0'), key)).toBe(false);
-  });
+	test('returns false for string "0"', () => {
+		expect(getBoolean(record("0"), key)).toBe(false);
+	});
 
-  test('returns true for string "true"', () => {
-    expect(getBoolean(record('true'), key)).toBe(true);
-  });
+	test('returns true for string "true"', () => {
+		expect(getBoolean(record("true"), key)).toBe(true);
+	});
 
-  test('returns true for string "TRUE"', () => {
-    expect(getBoolean(record('TRUE'), key)).toBe(true);
-  });
+	test('returns true for string "TRUE"', () => {
+		expect(getBoolean(record("TRUE"), key)).toBe(true);
+	});
 
-  test('returns true for string "1"', () => {
-    expect(getBoolean(record('1'), key)).toBe(true);
-  });
+	test('returns true for string "1"', () => {
+		expect(getBoolean(record("1"), key)).toBe(true);
+	});
 
-  test('returns false for null', () => {
-    expect(getBoolean(record(null), key)).toBe(false);
-  });
+	test("returns false for null", () => {
+		expect(getBoolean(record(null), key)).toBe(false);
+	});
 
-  test('returns false for empty string', () => {
-    expect(getBoolean(record(''), key)).toBe(false);
-  });
+	test("returns false for empty string", () => {
+		expect(getBoolean(record(""), key)).toBe(false);
+	});
 
-  test('returns true for a non-empty arbitrary string', () => {
-    expect(getBoolean(record('some-value'), key)).toBe(true);
-  });
+	test("returns true for a non-empty arbitrary string", () => {
+		expect(getBoolean(record("some-value"), key)).toBe(true);
+	});
 
-  test('returns true when key is literal true', () => {
-    expect(getBoolean(record(false), true)).toBe(true);
-  });
+	test("returns true when key is literal true", () => {
+		expect(getBoolean(record(false), true)).toBe(true);
+	});
 
-  test('returns false when key is literal false', () => {
-    expect(getBoolean(record(true), false)).toBe(false);
-  });
+	test("returns false when key is literal false", () => {
+		expect(getBoolean(record(true), false)).toBe(false);
+	});
 });
 
-describe('getArray tests', () => {
-  test('returns array for string array', () => {
-    expect(getArray(record(['some-value']), key)).toStrictEqual(['some-value']);
-  });
-  test('returns array for string', () => {
-    expect(getArray(record('some-value'), key)).toStrictEqual(['some-value']);
-  });
-  test('returns array for numeric array', () => {
-    expect(getArray(record([0]), key)).toStrictEqual([0]);
-  });
-  test('returns array for number', () => {
-    expect(getArray(record(0), key)).toStrictEqual([0]);
-  });
-  test('returns undefined for undefined', () => {
-    expect(getArray(record(undefined), key)).toBeUndefined();
-  });
-  test('returns undefined for null', () => {
-    expect(getArray(record(null), key)).toBeUndefined();
-  });
-  test('returns empty array for array', () => {
-    expect(getArray(record([]), key)).toStrictEqual([]);
-  });
+describe("getArray tests", () => {
+	test("returns array for string array", () => {
+		expect(getArray(record(["some-value"]), key)).toStrictEqual(["some-value"]);
+	});
+	test("returns array for string", () => {
+		expect(getArray(record("some-value"), key)).toStrictEqual(["some-value"]);
+	});
+	test("returns array for numeric array", () => {
+		expect(getArray(record([0]), key)).toStrictEqual([0]);
+	});
+	test("returns array for number", () => {
+		expect(getArray(record(0), key)).toStrictEqual([0]);
+	});
+	test("returns undefined for undefined", () => {
+		expect(getArray(record(undefined), key)).toBeUndefined();
+	});
+	test("returns undefined for null", () => {
+		expect(getArray(record(null), key)).toBeUndefined();
+	});
+	test("returns empty array for array", () => {
+		expect(getArray(record([]), key)).toStrictEqual([]);
+	});
 
-  test('returns array for path expression', () => {
-    expect(
-      getArray(record('some-value'), {
-        type: 'jmespath',
-        value: 'value',
-      } satisfies PathExpression),
-    ).toStrictEqual(['some-value']);
-  });
+	test("returns array for path expression", () => {
+		expect(
+			getArray(record("some-value"), {
+				type: "jmespath",
+				value: "value",
+			} satisfies PathExpression),
+		).toStrictEqual(["some-value"]);
+	});
 
-  test('returns array for constant value', () => {
-    expect(
-      getArray(record('some-value'), {
-        type: 'constant',
-        value: 42,
-      } satisfies ConstantValue),
-    ).toStrictEqual([42]);
-  });
+	test("returns array for constant value", () => {
+		expect(
+			getArray(record("some-value"), {
+				type: "constant",
+				value: 42,
+			} satisfies ConstantValue),
+		).toStrictEqual([42]);
+	});
 });
 
 // Test cases based on "common" cases as described in the table here:
 // https://en.wikipedia.org/wiki/Decimal_separator#Other_numeral_systems
 
-describe('normalizeNumericString', () => {
-  describe('comma grouped, point decimal', () => {
-    const format: DecimalDigitGroup = { decimal: 'point', digitGroup: 'comma' };
+describe("normalizeNumericString", () => {
+	describe("comma grouped, point decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
 
-    test('parses a fully-formatted number', () => {
-      expect(normalizeNumericString('1,234,567.89', format)).toBe('1234567.89');
-    });
+		test("parses a fully-formatted number", () => {
+			expect(normalizeNumericString("1,234,567.89", format)).toBe("1234567.89");
+		});
 
-    test('parses an integer with group separators', () => {
-      expect(normalizeNumericString('1,234,567', format)).toBe('1234567');
-    });
+		test("parses an integer with group separators", () => {
+			expect(normalizeNumericString("1,234,567", format)).toBe("1234567");
+		});
 
-    test('parses a number without group separator', () => {
-      expect(normalizeNumericString('1234567.89', format)).toBe('1234567.89');
-    });
+		test("parses a number without group separator", () => {
+			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
+		});
 
-    test('parses zero', () => {
-      expect(normalizeNumericString('0.00', format)).toBe('0.00');
-    });
+		test("parses zero", () => {
+			expect(normalizeNumericString("0.00", format)).toBe("0.00");
+		});
 
-    test('parses a negative number', () => {
-      expect(normalizeNumericString('-1,234.56', format)).toBe('-1234.56');
-    });
+		test("parses a negative number", () => {
+			expect(normalizeNumericString("-1,234.56", format)).toBe("-1234.56");
+		});
 
-    test('returns empty string for empty input', () => {
-      expect(normalizeNumericString('  ', format)).toBe('');
-    });
-  });
+		test("returns empty string for empty input", () => {
+			expect(normalizeNumericString("  ", format)).toBe("");
+		});
+	});
 
-  describe('no group, point decimal', () => {
-    const format: DecimalDigitGroup = { decimal: 'point' };
+	describe("no group, point decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "point" };
 
-    test('parses a plain integer', () => {
-      expect(normalizeNumericString('1234567', format)).toBe('1234567');
-    });
+		test("parses a plain integer", () => {
+			expect(normalizeNumericString("1234567", format)).toBe("1234567");
+		});
 
-    test('parses a number with decimal part', () => {
-      expect(normalizeNumericString('1234567.89', format)).toBe('1234567.89');
-    });
+		test("parses a number with decimal part", () => {
+			expect(normalizeNumericString("1234567.89", format)).toBe("1234567.89");
+		});
 
-    test('returns empty string for empty input', () => {
-      expect(normalizeNumericString('', format)).toBe('');
-    });
-  });
+		test("returns empty string for empty input", () => {
+			expect(normalizeNumericString("", format)).toBe("");
+		});
+	});
 
-  describe('no group, comma decimal', () => {
-    const format: DecimalDigitGroup = { decimal: 'comma' };
+	describe("no group, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma" };
 
-    test('parses a plain number and converts comma to period', () => {
-      expect(normalizeNumericString('1234567,89', format)).toBe('1234567.89');
-    });
+		test("parses a plain number and converts comma to period", () => {
+			expect(normalizeNumericString("1234567,89", format)).toBe("1234567.89");
+		});
 
-    test('parses an integer', () => {
-      expect(normalizeNumericString('1234567', format)).toBe('1234567');
-    });
-  });
+		test("parses an integer", () => {
+			expect(normalizeNumericString("1234567", format)).toBe("1234567");
+		});
+	});
 
-  describe('dot grouped, comma decimal', () => {
-    const format: DecimalDigitGroup = { decimal: 'comma', digitGroup: 'dot' };
+	describe("dot grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "dot" };
 
-    test('parses a comma decimal got grouped number', () => {
-      expect(normalizeNumericString('1.234.567,89', format)).toBe('1234567.89');
-    });
+		test("parses a comma decimal got grouped number", () => {
+			expect(normalizeNumericString("1.234.567,89", format)).toBe("1234567.89");
+		});
 
-    test('parses an integer with dot separators', () => {
-      expect(normalizeNumericString('1.234.567', format)).toBe('1234567');
-    });
+		test("parses an integer with dot separators", () => {
+			expect(normalizeNumericString("1.234.567", format)).toBe("1234567");
+		});
 
-    test('parses a small number', () => {
-      expect(normalizeNumericString('1.000,00', format)).toBe('1000.00');
-    });
-  });
+		test("parses a small number", () => {
+			expect(normalizeNumericString("1.000,00", format)).toBe("1000.00");
+		});
+	});
 
-  describe('comma grouped, interpunct decimal', () => {
-    const format: DecimalDigitGroup = {
-      decimal: 'interpunct',
-      digitGroup: 'comma',
-    };
+	describe("comma grouped, interpunct decimal", () => {
+		const format: DecimalDigitGroup = {
+			decimal: "interpunct",
+			digitGroup: "comma",
+		};
 
-    test('parses a interpunct comma grouped number', () => {
-      expect(normalizeNumericString('1,234,567\u00B789', format)).toBe(
-        '1234567.89',
-      );
-    });
+		test("parses a interpunct comma grouped number", () => {
+			expect(normalizeNumericString("1,234,567\u00B789", format)).toBe(
+				"1234567.89",
+			);
+		});
 
-    test('parses without group separator', () => {
-      expect(normalizeNumericString('1234567\u00B789', format)).toBe(
-        '1234567.89',
-      );
-    });
-  });
+		test("parses without group separator", () => {
+			expect(normalizeNumericString("1234567\u00B789", format)).toBe(
+				"1234567.89",
+			);
+		});
+	});
 
-  describe('Indian number grouping', () => {
-    const format: DecimalDigitGroup = { decimal: 'point', digitGroup: 'comma' };
+	describe("Indian number grouping", () => {
+		const format: DecimalDigitGroup = { decimal: "point", digitGroup: "comma" };
 
-    test('parses Indian-style grouping', () => {
-      expect(normalizeNumericString('12,34,567.89', format)).toBe('1234567.89');
-    });
-  });
+		test("parses Indian-style grouping", () => {
+			expect(normalizeNumericString("12,34,567.89", format)).toBe("1234567.89");
+		});
+	});
 
-  describe('apostrophe grouped, point decimal', () => {
-    const format: DecimalDigitGroup = {
-      decimal: 'point',
-      digitGroup: 'apostrophe',
-    };
+	describe("apostrophe grouped, point decimal", () => {
+		const format: DecimalDigitGroup = {
+			decimal: "point",
+			digitGroup: "apostrophe",
+		};
 
-    test('parses an apostrophe grouped point decimal number', () => {
-      expect(normalizeNumericString("1'234'567.89", format)).toBe('1234567.89');
-    });
+		test("parses an apostrophe grouped point decimal number", () => {
+			expect(normalizeNumericString("1'234'567.89", format)).toBe("1234567.89");
+		});
 
-    test('parses an integer with apostrophe groups', () => {
-      expect(normalizeNumericString("1'234'567", format)).toBe('1234567');
-    });
-  });
+		test("parses an integer with apostrophe groups", () => {
+			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
+		});
+	});
 
-  describe('apostrophe grouped, comma decimal', () => {
-    const format: DecimalDigitGroup = {
-      decimal: 'comma',
-      digitGroup: 'apostrophe',
-    };
+	describe("apostrophe grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = {
+			decimal: "comma",
+			digitGroup: "apostrophe",
+		};
 
-    test('parses an apostophe grouped comma decimal number', () => {
-      expect(normalizeNumericString("1'234'567,89", format)).toBe('1234567.89');
-    });
+		test("parses an apostophe grouped comma decimal number", () => {
+			expect(normalizeNumericString("1'234'567,89", format)).toBe("1234567.89");
+		});
 
-    test('parses an integer with apostrophe groups', () => {
-      expect(normalizeNumericString("1'234'567", format)).toBe('1234567');
-    });
-  });
+		test("parses an integer with apostrophe groups", () => {
+			expect(normalizeNumericString("1'234'567", format)).toBe("1234567");
+		});
+	});
 
-  describe('space grouped, comma decimal', () => {
-    const format: DecimalDigitGroup = { decimal: 'comma', digitGroup: 'space' };
+	describe("space grouped, comma decimal", () => {
+		const format: DecimalDigitGroup = { decimal: "comma", digitGroup: "space" };
 
-    test('parses space as group separator', () => {
-      expect(normalizeNumericString('1 234 567,89', format)).toBe('1234567.89');
-    });
+		test("parses space as group separator", () => {
+			expect(normalizeNumericString("1 234 567,89", format)).toBe("1234567.89");
+		});
 
-    test('parses non-breaking space (U+00A0) as group separator', () => {
-      expect(normalizeNumericString('1\u00A0234\u00A0567,89', format)).toBe(
-        '1234567.89',
-      );
-    });
+		test("parses non-breaking space (U+00A0) as group separator", () => {
+			expect(normalizeNumericString("1\u00A0234\u00A0567,89", format)).toBe(
+				"1234567.89",
+			);
+		});
 
-    test('parses narrow no-break space (U+202F) as group separator', () => {
-      expect(normalizeNumericString('1\u202F234\u202F567,89', format)).toBe(
-        '1234567.89',
-      );
-    });
+		test("parses narrow no-break space (U+202F) as group separator", () => {
+			expect(normalizeNumericString("1\u202F234\u202F567,89", format)).toBe(
+				"1234567.89",
+			);
+		});
 
-    test('parses an integer with space separators', () => {
-      expect(normalizeNumericString('1 234 567', format)).toBe('1234567');
-    });
-  });
+		test("parses an integer with space separators", () => {
+			expect(normalizeNumericString("1 234 567", format)).toBe("1234567");
+		});
+	});
 
-  describe('arabic decimal separator (U+066B)', () => {
-    const format: DecimalDigitGroup = { decimal: 'arabic' };
+	describe("arabic decimal separator (U+066B)", () => {
+		const format: DecimalDigitGroup = { decimal: "arabic" };
 
-    test('parses a number with arabic decimal comma', () => {
-      expect(normalizeNumericString('1234567\u066B89', format)).toBe(
-        '1234567.89',
-      );
-    });
-  });
+		test("parses a number with arabic decimal comma", () => {
+			expect(normalizeNumericString("1234567\u066B89", format)).toBe(
+				"1234567.89",
+			);
+		});
+	});
 });
 
-describe('jmespath()', () => {
-  test('Creates a PathExpression', () => {
-    const result = jmespath('device.logging.interval');
+describe("jmespath()", () => {
+	test("Creates a PathExpression", () => {
+		const result = jmespath("device.logging.interval");
 
-    expect(result).toEqual({
-      type: 'jmespath',
-      value: 'device.logging.interval',
-    });
-  });
+		expect(result).toEqual({
+			type: "jmespath",
+			value: "device.logging.interval",
+		});
+	});
 });
 
-describe('constant()', () => {
-  test('Create a ConstantValue with a number', () => {
-    const result = constant(3600);
+describe("constant()", () => {
+	test("Create a ConstantValue with a number", () => {
+		const result = constant(3600);
 
-    expect(result).toEqual({
-      type: 'constant',
-      value: 3600,
-    });
-  });
+		expect(result).toEqual({
+			type: "constant",
+			value: 3600,
+		});
+	});
 
-  test('Create a ConstantValue with a string', () => {
-    const result = constant('foo');
+	test("Create a ConstantValue with a string", () => {
+		const result = constant("foo");
 
-    expect(result).toEqual({
-      type: 'constant',
-      value: 'foo',
-    });
-  });
+		expect(result).toEqual({
+			type: "constant",
+			value: "foo",
+		});
+	});
 
-  test('Create a ConstantValue with a boolean', () => {
-    const result = constant(true);
+	test("Create a ConstantValue with a boolean", () => {
+		const result = constant(true);
 
-    expect(result).toEqual({
-      type: 'constant',
-      value: true,
-    });
-  });
+		expect(result).toEqual({
+			type: "constant",
+			value: true,
+		});
+	});
+});
+
+describe("sanitizeManufacturerModelKeySegment", () => {
+	test("returns undefined for empty or whitespace-only input", () => {
+		expect(sanitizeKeyName("")).toBeUndefined();
+		expect(sanitizeKeyName("   ")).toBeUndefined();
+		expect(sanitizeKeyName(undefined)).toBeUndefined();
+	});
+
+	test("trims surrounding whitespace", () => {
+		expect(sanitizeKeyName("  Met One  ")).toBe("Met One");
+	});
+
+	test("replaces slashes with a dash", () => {
+		expect(sanitizeKeyName("Met/One")).toBe("Met-One");
+	});
+
+	test("replaces double colons with a single dash", () => {
+		expect(sanitizeKeyName("Met::One")).toBe("Met-One");
+	});
+
+	test("collapses mixed runs of delimiters into one dash", () => {
+		expect(sanitizeKeyName("Met/::One")).toBe("Met-One");
+	});
+
+	test("strips leading/trailing delimiters entirely rather than leaving a dash", () => {
+		expect(sanitizeKeyName("/Met One/")).toBe("Met One");
+		expect(sanitizeKeyName("::Met One::")).toBe("Met One");
+	});
+
+	test("leaves ordinary names unaffected", () => {
+		expect(sanitizeKeyName("Met One")).toBe("Met One");
+	});
+});
+
+describe("toUnixSeconds", () => {
+	test("converts a number in seconds unchanged", () => {
+		expect(toUnixSeconds(466738980, "seconds")).toBe(466738980);
+	});
+
+	test("converts a numeric string in seconds", () => {
+		expect(toUnixSeconds("466738980", "seconds")).toBe(466738980);
+	});
+
+	test("converts a number in milliseconds to seconds", () => {
+		expect(toUnixSeconds(466738980000, "milliseconds")).toBe(466738980);
+	});
+
+	test("converts a numeric string in milliseconds to seconds", () => {
+		expect(toUnixSeconds("466738980000", "milliseconds")).toBe(466738980);
+	});
+
+	test("preserves fractional seconds", () => {
+		expect(toUnixSeconds(466738980.5, "seconds")).toBe(466738980.5);
+	});
+
+	test("preserves fractional result when converting milliseconds", () => {
+		expect(toUnixSeconds(466738980500, "milliseconds")).toBeCloseTo(
+			466738980.5,
+		);
+	});
+
+	test("throws when value is a non-numeric string", () => {
+		expect(() => toUnixSeconds("not-a-number", "seconds")).toThrow(
+			DatetimeError,
+		);
+	});
+
+	test("throws when value is undefined", () => {
+		expect(() => toUnixSeconds(undefined, "seconds")).toThrow(DatetimeError);
+	});
+
+	test("throws when value is null", () => {
+		expect(() => toUnixSeconds(null, "seconds")).toThrow(DatetimeError);
+	});
+
+	test("throws when value is an empty string", () => {
+		expect(() => toUnixSeconds("", "seconds")).toThrow(DatetimeError);
+	});
+
+	test("throws when value is an object", () => {
+		expect(() => toUnixSeconds({}, "seconds")).toThrow(DatetimeError);
+	});
+
+	test("handles zero", () => {
+		expect(toUnixSeconds(0, "seconds")).toBe(0);
+		expect(toUnixSeconds("0", "seconds")).toBe(0);
+		expect(toUnixSeconds(0, "milliseconds")).toBe(0);
+		expect(toUnixSeconds("0", "milliseconds")).toBe(0);
+	});
+});
+
+describe("isBlank", () => {
+	test("null evaluates true", () => {
+		expect(isBlank(null)).toBe(true);
+	});
+
+	test("undefined evaluates true", () => {
+		expect(isBlank(undefined)).toBe(true);
+	});
+
+	test("empty string, no characters evaluadtes true", () => {
+		expect(isBlank("")).toBe(true);
+	});
+
+	test("empty string, spaces-only evaluates true", () => {
+		expect(isBlank("  ")).toBe(true);
+	});
+
+	test("string evaluates false", () => {
+		expect(isBlank("foo")).toBe(false);
+	});
+
+	test("zero evaluates false", () => {
+		expect(isBlank(0)).toBe(false);
+	});
+
+	test("number evaluates false", () => {
+		expect(isBlank(42)).toBe(false);
+	});
+
+	test("booleans evaluate false", () => {
+		expect(isBlank(true)).toBe(false);
+		expect(isBlank(false)).toBe(false);
+	});
+});
+
+const charFor: Record<string, string> = {
+	point: ".",
+	comma: ",",
+	arabic: "\u066B",
+	apostrophe: "'",
+	interpunct: "\u00B7",
+	dot: ".",
+	space: " ",
+};
+
+const whitespaceCharArbitrary = fc.constantFrom(
+	" ",
+	"\t",
+	"\n",
+	"\r",
+	"\f",
+	"\v",
+	"\u00A0",
+	"\u202f",
+);
+
+const whitespaceStringArbitrary = (minLength = 0, maxLength = 10) =>
+	fc
+		.array(whitespaceCharArbitrary, { minLength, maxLength })
+		.map((chars) => chars.join(""));
+
+const decimalDigitGroupArbitrary: fc.Arbitrary<DecimalDigitGroup> = fc.oneof(
+	fc.record({
+		decimal: fc.constant("point" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("comma", "space", "apostrophe") as fc.Arbitrary<
+				"comma" | "space" | "apostrophe"
+			>,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("comma" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("dot", "space", "apostrophe") as fc.Arbitrary<
+				"dot" | "space" | "apostrophe"
+			>,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("arabic" as const),
+		digitGroup: fc.option(
+			fc.constantFrom("comma", "space") as fc.Arbitrary<"comma" | "space">,
+			{ nil: undefined },
+		),
+	}),
+	fc.record({
+		decimal: fc.constant("interpunct" as const),
+		digitGroup: fc.option(fc.constant("comma" as const), { nil: undefined }),
+	}),
+) as fc.Arbitrary<DecimalDigitGroup>;
+
+function formatNumber(
+	value: number,
+	format: DecimalDigitGroup,
+	decimals: number,
+): string {
+	const fixed = value.toFixed(decimals);
+	const [intPart, fracPart] = fixed.split(".");
+	const negative = intPart.startsWith("-");
+	const digits = negative ? intPart.slice(1) : intPart;
+
+	let groupedInt = digits;
+	if (format.digitGroup) {
+		const groupChar = charFor[format.digitGroup];
+		const reversed = digits.split("").reverse();
+		const chunks: string[] = [];
+		for (let i = 0; i < reversed.length; i += 3) {
+			chunks.push(
+				reversed
+					.slice(i, i + 3)
+					.reverse()
+					.join(""),
+			);
+		}
+		groupedInt = chunks.reverse().join(groupChar);
+	}
+
+	const decimalChar = charFor[format.decimal];
+	const sign = negative ? "-" : "";
+	return fracPart
+		? `${sign}${groupedInt}${decimalChar}${fracPart}`
+		: `${sign}${groupedInt}`;
+}
+
+describe("normalizeNumericString - property tests", () => {
+	test("round-trips: formatting a number then normalizing recovers the original value", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const normalized = normalizeNumericString(formatted, format);
+					const recovered = Number(normalized);
+
+					expect(Number.isNaN(recovered)).toBe(false);
+					expect(recovered).toBeCloseTo(Number(n.toFixed(decimals)), 6);
+				},
+			),
+		);
+	});
+
+	test("never contains the configured digit-group character in its output", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const normalized = normalizeNumericString(formatted, format);
+
+					if (format.digitGroup) {
+						const groupChar = charFor[format.digitGroup];
+						if (groupChar !== ".") {
+							expect(normalized.includes(groupChar)).toBe(false);
+						}
+					}
+				},
+			),
+		);
+	});
+
+	test("returns an empty string for any blank input, regardless of format", () => {
+		fc.assert(
+			fc.property(
+				whitespaceStringArbitrary(0, 10),
+				decimalDigitGroupArbitrary,
+				(blankStr, format) => {
+					expect(normalizeNumericString(blankStr, format)).toBe("");
+				},
+			),
+		);
+	});
+
+	test("is idempotent once normalized to point-decimal with no digit grouping", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				fc.integer({ min: 0, max: 6 }),
+				(n, decimals) => {
+					const identityFormat: DecimalDigitGroup = { decimal: "point" };
+					const s = n.toFixed(decimals);
+					const once = normalizeNumericString(s, identityFormat);
+					const twice = normalizeNumericString(once, identityFormat);
+					expect(twice).toBe(once);
+				},
+			),
+		);
+	});
+});
+
+describe("getNumber", () => {
+	const wrapData = (value: unknown): SourceRecord =>
+		({ field: value }) as SourceRecord;
+	const numberFormat: DecimalDigitGroup = { decimal: "point" };
+
+	test("recovers the original number from its formatted string representation", () => {
+		fc.assert(
+			fc.property(
+				fc.double({ min: -1_000_000, max: 1_000_000, noNaN: true }),
+				decimalDigitGroupArbitrary,
+				fc.integer({ min: 0, max: 6 }),
+				(n, format, decimals) => {
+					const formatted = formatNumber(n, format, decimals);
+					const result = getNumber(wrapData(formatted), "field", format);
+
+					expect(result).not.toBeUndefined();
+					expect(result as number).toBeCloseTo(Number(n.toFixed(decimals)), 6);
+				},
+			),
+		);
+	});
+	test("returns undefined for any blank value", () => {
+		fc.assert(
+			fc.property(
+				fc.oneof(
+					fc.constant(null),
+					fc.constant(undefined),
+					whitespaceStringArbitrary(1, 10),
+				),
+				(blankValue) => {
+					const result = getNumber(wrapData(blankValue), "field", numberFormat);
+					expect(result).toBeUndefined();
+				},
+			),
+		);
+	});
+	test("passes numeric primitives through unchanged", () => {
+		fc.assert(
+			fc.property(fc.double({ noNaN: true }), (n) => {
+				const result = getNumber(wrapData(n), "field", numberFormat);
+				expect(result).toBe(n);
+			}),
+		);
+	});
 });

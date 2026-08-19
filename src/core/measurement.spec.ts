@@ -20,7 +20,7 @@ test("Measurement to initialize correctly", () => {
 		value: 4,
 	});
 	// just track that it worked
-	expect(m.key).toEqual("system-key-temperature-2025-01-01T00:00:00-05:00");
+	expect(m.key).toEqual("system-key/temperature-2025-01-01T00:00:00-05:00");
 });
 
 test("Measurement without sensorKey throws error", () => {
@@ -72,7 +72,7 @@ test("Measurement with numeric error value gets flag and null value", () => {
 			metric: {
 				parameter: "temperature",
 				unit: "c",
-        providerFlags: new Map<string | number, string>([[-99, 'ERROR']]),
+				providerFlags: new Map<string | number, string>([[-99, "ERROR"]]),
 			},
 			status: "active",
 			averagingIntervalSeconds: 3600,
@@ -84,7 +84,7 @@ test("Measurement with numeric error value gets flag and null value", () => {
 	expect(m.value).toBeNull();
 	expect(m.flags).toBeDefined();
 	expect(m.flags?.length).toBeGreaterThan(0);
-	expect(m.flags[0]).toBe('ERROR');
+	expect(m.flags[0]).toBe("ERROR");
 });
 
 test("Measurement with string error value gets flag and null value", () => {
@@ -94,18 +94,18 @@ test("Measurement with string error value gets flag and null value", () => {
 			metric: {
 				parameter: "temperature",
 				unit: "c",
-        providerFlags: new Map<string | number, string>([[-99, 'ERROR']]),
+				providerFlags: new Map<string | number, string>([[-99, "ERROR"]]),
 			},
 			status: "active",
 			averagingIntervalSeconds: 3600,
 			loggingIntervalSeconds: 3600,
 		}),
 		timestamp: new Datetime("2025-01-01T00:00:00-05:00"),
-		value: '-99',
+		value: "-99",
 	});
-  console.log(m)
+	console.log(m);
 	expect(m.value).toBeNull();
 	expect(m.flags).toBeDefined();
 	expect(m.flags?.length).toBeGreaterThan(0);
-	expect(m.flags[0]).toBe('ERROR');
+	expect(m.flags[0]).toBe("ERROR");
 });

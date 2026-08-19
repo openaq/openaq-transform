@@ -39,10 +39,10 @@ export interface SystemJSON {
 	key: string;
 
 	/** Name of the system manufacturer */
-	manufacturer_name: string;
+	manufacturer_name?: string;
 
 	/** Model name or identifier of the system */
-	model_name: string;
+	model_name?: string;
 
 	/** Array of sensors associated with this system in JSON format */
 	sensors: SensorJSON[];

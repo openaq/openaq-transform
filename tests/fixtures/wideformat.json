@@ -13,6 +13,7 @@
 			"station": "ts1",
 			"datetime": "2024-01-01T00:00:00-08:00",
 			"particulate_matter_25": 10,
+			"particulate_matter_10": 0,
 			"tempf": 80
 		}
 	]

@@ -281,7 +281,7 @@ export function isPathExpression(value: unknown): value is PathExpression {
  * }
  * ```
  */
-interface ClientParameter {
+export interface ClientParameter {
 	/** The name of the parameter being measured (e.g., 'o3', 'pm25') */
 	parameter: string;
 

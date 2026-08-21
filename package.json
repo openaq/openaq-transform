@@ -7,7 +7,7 @@
 		"Christian Parker <chris@talloaks.io>",
 		"Jacob Fenton <jacob@openaq.org>"
 	],
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
@@ -15,7 +15,9 @@
 	},
 	"type": "module",
 	"packageManager": "pnpm@10.30.3",
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"publishConfig": {
 		"access": "public"
 	},
@@ -24,36 +26,21 @@
 	},
 	"sideEffects": false,
 	"exports": {
-		"./browser": {
-			"browser": {
-				"types": "./dist/transform-browser/index.d.ts",
-				"default": "./dist/transform-browser/index.js"
-			},
-			"node": null,
-			"default": {
-				"types": "./dist/transform-browser/index.d.ts",
-				"default": "./dist/transform-browser/index.js"
-			}
+		"./core": {
+			"types": "./dist/core/index.d.mts",
+			"import": "./dist/core/index.mjs"
 		},
 		"./node": {
-			"browser": null,
-			"node": {
-				"types": "./dist/transform-node/index.d.mts",
-				"default": "./dist/transform-node/index.mjs"
-			},
-			"default": {
-				"types": "./dist/transform-node/index.d.mts",
-				"default": "./dist/transform-node/index.mjs"
-			}
+			"types": "./dist/node/index.d.mts",
+			"import": "./dist/node/index.mjs"
 		},
-		"./core": {
-			"types": "./dist/transform-core/index.d.ts",
-			"import": "./dist/transform-core/index.js",
-			"default": "./dist/transform-core/index.js"
+		"./browser": {
+			"types": "./dist/browser/index.d.ts",
+			"import": "./dist/browser/index.js"
 		}
 	},
 	"scripts": {
-		"build": "pnpm run build:core && pnpm run build:platforms",
+		"build": "tsdown",
 		"build:core": "tsdown --config tsdown.core.config.ts",
 		"build:platforms": "tsdown --config tsdown.platforms.config.ts",
 		"dev": "tsdown --watch",

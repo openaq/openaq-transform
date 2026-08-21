@@ -45,35 +45,34 @@ import {
  * const resource = new Resource({ file: uploadedFile });
  */
 export class Resource {
-	#file?: File | Array<File>;
-	#url?: string;
-	#parameters?: Parameters[] | ParametersFunction | PathExpression;
-	#body?: Body;
-	#data: DataContext;
-	#context?: Context | ContextFunction;
-	#responsePath?: PathExpression | string;
-	#output?: ResourceOutput;
-	#readAs?: ReadAs;
-	#strict: boolean;
-	#auth?: Auth;
-	#readerOptions?: UrlReaderOptions;
-	#parserOptions?: KnownParserOptions | ParserOptions;
+	private _file?: File | Array<File>;
+	private _url?: string;
+	private _parameters?: Parameters[] | ParametersFunction | PathExpression;
+	private _body?: Body;
+	private _data: DataContext;
+	private _context?: Context | ContextFunction;
+	private _responsePath?: PathExpression | string;
+	private _output?: ResourceOutput;
+	private _readAs?: ReadAs;
+	private _strict: boolean;
+	private _auth?: Auth;
+	private _readerOptions?: UrlReaderOptions;
+	private _parserOptions?: KnownParserOptions | ParserOptions;
 
 	constructor(config: ResourceConfig) {
 		this.validateConfig(config);
-
-		this.#file = config.file;
-		this.#url = config.url;
-		this.#parameters = config.parameters;
-		this.#body = config.body;
-		this.#context = config.context;
-		this.#responsePath = config.responsePath;
-		this.#output = config.output;
-		this.#readAs = config.readAs;
-		this.#strict = config.strict ?? false;
-		this.#auth = config.auth;
-		this.#readerOptions = config.readerOptions;
-		this.#parserOptions = config.parserOptions;
+		this._file = config.file;
+		this._url = config.url;
+		this._parameters = config.parameters;
+		this._body = config.body;
+		this._context = config.context;
+		this._responsePath = config.responsePath;
+		this._output = config.output;
+		this._readAs = config.readAs;
+		this._strict = config.strict ?? false;
+		this._auth = config.auth;
+		this._readerOptions = config.readerOptions;
+		this._parserOptions = config.parserOptions;
 	}
 
 	private validateConfig(config: unknown): asserts config is ResourceConfig {
@@ -111,11 +110,11 @@ export class Resource {
 	}
 
 	isFileResource(): this is Resource & { file: File } {
-		return this.#file !== undefined;
+		return this._file !== undefined;
 	}
 
 	isUrlResource(): this is Resource & { url: string } {
-		return this.#url !== undefined;
+		return this._url !== undefined;
 	}
 
 	get protocol(): string {
@@ -124,10 +123,10 @@ export class Resource {
 	}
 
 	get files(): Array<File> | undefined {
-		return this.#file
-			? Array.isArray(this.#file)
-				? this.#file
-				: [this.#file]
+		return this._file
+			? Array.isArray(this._file)
+				? this._file
+				: [this._file]
 			: undefined;
 	}
 
@@ -136,7 +135,7 @@ export class Resource {
 	 * before processing (e.g. `"data.measurements"` for `{ data: { measurements: [...] } }`).
 	 */
 	get responsePath(): PathExpression | string | undefined {
-		return this.#responsePath;
+		return this._responsePath;
 	}
 
 	/**
@@ -145,7 +144,7 @@ export class Resource {
 	 * Set to 'array' for paginated APIs that need flattening, or 'object' for merging.
 	 */
 	get output(): ResourceOutput | undefined {
-		return this.#output;
+		return this._output;
 	}
 
 	/**
@@ -156,7 +155,7 @@ export class Resource {
 	 * characteristic of the data source, not the reading strategy.
 	 */
 	get readAs(): ReadAs | undefined {
-		return this.#readAs;
+		return this._readAs;
 	}
 
 	/**
@@ -167,11 +166,11 @@ export class Resource {
 	 * are still valuable even if some URLs fail.
 	 */
 	get strict(): boolean {
-		return this.#strict;
+		return this._strict;
 	}
 
 	get auth(): Auth | undefined {
-		return this.#auth;
+		return this._auth;
 	}
 
 	get authHeaders(): Record<string, string> {
@@ -213,8 +212,8 @@ export class Resource {
 	get headers(): Headers {
 		const merged = new Headers();
 
-		if (this.#readerOptions?.headers) {
-			for (const [key, value] of Object.entries(this.#readerOptions.headers)) {
+		if (this._readerOptions?.headers) {
+			for (const [key, value] of Object.entries(this._readerOptions.headers)) {
 				merged.set(key, typeof value === "function" ? value() : value);
 			}
 		}
@@ -228,18 +227,18 @@ export class Resource {
 
 	get readerOptions(): ReaderOptions {
 		return {
-			...this.#readerOptions,
+			...this._readerOptions,
 			headers: this.headers,
 		};
 	}
 
 	get parserOptions(): KnownParserOptions | ParserOptions | undefined {
-		return this.#parserOptions;
+		return this._parserOptions;
 	}
 
 	set auth(auth: Auth) {
-		this.#auth = {
-			...this.#auth,
+		this._auth = {
+			...this._auth,
 			...auth,
 		};
 	}
@@ -255,12 +254,12 @@ export class Resource {
 	}
 
 	private buildUrl(parameters: Parameters): string {
-		if (!this.#url) {
+		if (!this._url) {
 			throw new TypeError(
 				"Cannot build URL: resource is file-based, not URL-based",
 			);
 		}
-		const replaced = this.#url.replace(/:(\w+)/g, (_match, key) => {
+		const replaced = this._url.replace(/:(\w+)/g, (_match, key) => {
 			const value = parameters[key];
 			if (value === undefined) {
 				throw new Error(`Missing required parameter: ${key}`);
@@ -324,11 +323,11 @@ export class Resource {
 	}
 
 	set data(data: DataContext) {
-		this.#data = JSON.parse(JSON.stringify(data));
+		this._data = JSON.parse(JSON.stringify(data));
 	}
 
 	get urls(): ResourceUrl[] {
-		if (!this.#url) {
+		if (!this._url) {
 			throw new TypeError(
 				"Cannot get URLs: resource is file-based, not URL-based",
 			);
@@ -336,14 +335,14 @@ export class Resource {
 
 		const urls: ResourceUrl[] = [];
 
-		if (this.#parameters !== undefined) {
+		if (this._parameters !== undefined) {
 			const parameters = this.resolveParameters();
 
 			for (const params of parameters) {
 				const url = this.buildUrl(params);
 				const body =
-					this.#body !== undefined
-						? Resource.buildBody(this.#body, params)
+					this._body !== undefined
+						? Resource.buildBody(this._body, params)
 						: undefined;
 				const context = this.resolveContext(params);
 
@@ -355,9 +354,9 @@ export class Resource {
 			}
 		} else {
 			urls.push({
-				url: this.#url,
-				...(this.#body && { body: this.#body }),
-				...(typeof this.#context === "object" && { context: this.#context }),
+				url: this._url,
+				...(this._body && { body: this._body }),
+				...(typeof this._context === "object" && { context: this._context }),
 			});
 		}
 		const { auth } = this;
@@ -376,26 +375,26 @@ export class Resource {
 	}
 
 	private resolveContext(params: Parameters): Context | undefined {
-		if (!this.#context) return undefined;
-		return typeof this.#context === "function"
-			? this.#context(params, this.#data)
-			: this.#context;
+		if (!this._context) return undefined;
+		return typeof this._context === "function"
+			? this._context(params, this._data)
+			: this._context;
 	}
 
 	private resolveParameters(): Parameters[] {
-		if (!this.#parameters) {
+		if (!this._parameters) {
 			return [];
 		}
 
-		if (Array.isArray(this.#parameters)) {
-			return this.#parameters;
+		if (Array.isArray(this._parameters)) {
+			return this._parameters;
 		}
 
-		if (isPathExpression(this.#parameters)) {
-			if (this.#parameters.type === "jmespath") {
+		if (isPathExpression(this._parameters)) {
+			if (this._parameters.type === "jmespath") {
 				const value = search(
-					this.#data as unknown as JSONValue,
-					this.#parameters.value,
+					this._data as unknown as JSONValue,
+					this._parameters.value,
 				);
 				return value as Parameters[];
 			} else {
@@ -405,6 +404,6 @@ export class Resource {
 			}
 		}
 
-		return this.#parameters(this.#data);
+		return this._parameters(this._data);
 	}
 }

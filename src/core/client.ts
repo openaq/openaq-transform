@@ -141,18 +141,18 @@ export abstract class Client<
 		key: string | number | PathExpression | ConstantValue | ParseFunction,
 	) => getNumber(data, key, this.numberFormat);
 
-	#startedOn?: Datetime;
-	#finishedOn?: Datetime;
-	#measurements?: Measurements;
-	#locations: Locations;
-	#sensors: Sensors;
-	#errors: Errors;
-	#params: ClientConfiguration<S>;
+	private _startedOn?: Datetime;
+	private _finishedOn?: Datetime;
+	private _measurements?: Measurements;
+	private _locations: Locations;
+	private _sensors: Sensors;
+	private _errors: Errors;
+	private _params: ClientConfiguration<S>;
 	// offset, to, from support
 	// limit the returned values to the following periods
-	#datetimeTo: Datetime;
-	#datetimeFrom?: Datetime;
-	#offset?: number;
+	private _datetimeTo: Datetime;
+	private _datetimeFrom?: Datetime;
+	private _offset?: number;
 
 	// log object for compiling errors/warnings for later reference
 	log: Map<string, Array<LogEntry>>;
@@ -166,154 +166,154 @@ export abstract class Client<
 
 	configure(params: ClientConfiguration<S>) {
 		if (params && typeof params === "object") {
-			this.#params = { ...this.#params, ...params };
+			this._params = { ...this._params, ...params };
 			this.setup();
 		}
 	}
 
 	setup() {
-		if (this.#params?.resource) {
-			this.resource = this.#params.resource;
+		if (this._params?.resource) {
+			this.resource = this._params.resource;
 		}
-		if (this.#params?.provider) {
-			this.provider = this.#params.provider;
+		if (this._params?.provider) {
+			this.provider = this._params.provider;
 		}
-		if (this.#params?.datetimeType) {
-			this.datetimeType = this.#params.datetimeType;
+		if (this._params?.datetimeType) {
+			this.datetimeType = this._params.datetimeType;
 		}
-		if (this.#params?.datetimeFormat) {
-			this.datetimeFormat = this.#params.datetimeFormat;
+		if (this._params?.datetimeFormat) {
+			this.datetimeFormat = this._params.datetimeFormat;
 		}
-		if (this.datetimeType !== "string" && this.#params?.datetimeFormat) {
+		if (this.datetimeType !== "string" && this._params?.datetimeFormat) {
 			throw new ConfigError(
 				`datetimeFormat is not used when datetimeType is "${this.datetimeType}"`,
 			);
 		}
-		if (this.#params?.timezone) {
-			this.timezone = this.#params.timezone;
+		if (this._params?.timezone) {
+			this.timezone = this._params.timezone;
 		}
-		if (this.#params?.longFormat) {
-			this.longFormat = this.#params.longFormat;
+		if (this._params?.longFormat) {
+			this.longFormat = this._params.longFormat;
 		}
-		if (this.#params?.reader) {
-			this.reader = this.#params.reader;
+		if (this._params?.reader) {
+			this.reader = this._params.reader;
 		}
-		if (this.#params?.parser) {
-			this.parser = this.#params.parser;
+		if (this._params?.parser) {
+			this.parser = this._params.parser;
 		}
 		// mapped data variables
-		if (this.#params?.locationId) {
-			this.locationId = this.#params.locationId;
+		if (this._params?.locationId) {
+			this.locationId = this._params.locationId;
 		}
-		if (this.#params?.locationLabel) {
-			this.locationLabel = this.#params.locationLabel;
+		if (this._params?.locationLabel) {
+			this.locationLabel = this._params.locationLabel;
 		}
 		// these are used for long format
-		if (this.#params?.parameterName) {
-			this.parameterName = this.#params.parameterName;
+		if (this._params?.parameterName) {
+			this.parameterName = this._params.parameterName;
 		}
-		if (this.#params?.parameterValue) {
-			this.parameterValue = this.#params.parameterValue;
+		if (this._params?.parameterValue) {
+			this.parameterValue = this._params.parameterValue;
 		}
-		if (this.#params?.flags) {
-			this.flags = this.#params.flags;
+		if (this._params?.flags) {
+			this.flags = this._params.flags;
 		}
-		if (this.#params?.numberFormat) {
-			this.numberFormat = this.#params.numberFormat;
+		if (this._params?.numberFormat) {
+			this.numberFormat = this._params.numberFormat;
 		}
-		if (this.#params?.yGeometry) {
-			this.yGeometry = this.#params.yGeometry;
+		if (this._params?.yGeometry) {
+			this.yGeometry = this._params.yGeometry;
 		}
-		if (this.#params?.xGeometry) {
-			this.xGeometry = this.#params.xGeometry;
+		if (this._params?.xGeometry) {
+			this.xGeometry = this._params.xGeometry;
 		}
-		if (this.#params?.geometryProjection) {
-			this.geometryProjection = this.#params.geometryProjection;
+		if (this._params?.geometryProjection) {
+			this.geometryProjection = this._params.geometryProjection;
 		}
-		if (this.#params?.manufacturer) {
-			this.manufacturer = this.#params.manufacturer;
+		if (this._params?.manufacturer) {
+			this.manufacturer = this._params.manufacturer;
 		}
-		if (this.#params?.model) {
-			this.model = this.#params.model;
+		if (this._params?.model) {
+			this.model = this._params.model;
 		}
-		if (this.#params?.owner) {
-			this.owner = this.#params.owner;
+		if (this._params?.owner) {
+			this.owner = this._params.owner;
 		}
-		if (this.#params?.datetime) {
-			this.datetime = this.#params.datetime;
+		if (this._params?.datetime) {
+			this.datetime = this._params.datetime;
 		}
-		if (this.#params?.timeEnding !== undefined) {
-			this.timeEnding = this.#params.timeEnding;
+		if (this._params?.timeEnding !== undefined) {
+			this.timeEnding = this._params.timeEnding;
 		}
-		if (this.#params?.license) {
-			this.license = this.#params.license;
+		if (this._params?.license) {
+			this.license = this._params.license;
 		}
-		if (this.#params?.isMobile) {
-			this.isMobile = this.#params.isMobile;
+		if (this._params?.isMobile) {
+			this.isMobile = this._params.isMobile;
 		}
-		if (this.#params?.loggingInterval) {
-			this.loggingInterval = this.#params.loggingInterval;
+		if (this._params?.loggingInterval) {
+			this.loggingInterval = this._params.loggingInterval;
 		}
-		if (this.#params?.averagingInterval) {
-			this.averagingInterval = this.#params.averagingInterval;
+		if (this._params?.averagingInterval) {
+			this.averagingInterval = this._params.averagingInterval;
 		}
-		if (this.#params?.sensorStatus) {
-			this.sensorStatus = this.#params.sensorStatus;
+		if (this._params?.sensorStatus) {
+			this.sensorStatus = this._params.sensorStatus;
 		}
-		if (this.#params?.ingestMatchingMethod) {
-			this.ingestMatchingMethod = this.#params.ingestMatchingMethod;
+		if (this._params?.ingestMatchingMethod) {
+			this.ingestMatchingMethod = this._params.ingestMatchingMethod;
 		}
-		if (this.#params?.parameters) {
-			this.parameters = this.#params.parameters;
+		if (this._params?.parameters) {
+			this.parameters = this._params.parameters;
 		}
-		if (this.#params?.providerFlags) {
-			this.providerFlags = this.#params.providerFlags;
+		if (this._params?.providerFlags) {
+			this.providerFlags = this._params.providerFlags;
 		}
-		if (this.#params?.secrets) {
-			this.secrets = this.#params.secrets;
+		if (this._params?.secrets) {
+			this.secrets = this._params.secrets;
 		}
-		if (this.#params?.datetimeFrom) {
+		if (this._params?.datetimeFrom) {
 			try {
-				this.#datetimeFrom = new Datetime(this.#params.datetimeFrom);
+				this._datetimeFrom = new Datetime(this._params.datetimeFrom);
 			} catch (e) {
 				throw new Error(
 					`Config error: could not parse datetimeFrom value - ${e instanceof Error ? e.message : String(e)}`,
 				);
 			}
 		}
-		if (this.#params?.datetimeTo) {
+		if (this._params?.datetimeTo) {
 			try {
-				this.#datetimeTo = new Datetime(this.#params.datetimeTo);
+				this._datetimeTo = new Datetime(this._params.datetimeTo);
 			} catch (e) {
 				throw new Error(
 					`Config error: could not parse datetimeTo value - ${e instanceof Error ? e.message : String(e)}`,
 				);
 			}
 		}
-		if (this.#params?.offset !== undefined) {
-			if (typeof this.#params.offset !== "number" || this.#params.offset <= 0) {
+		if (this._params?.offset !== undefined) {
+			if (typeof this._params.offset !== "number" || this._params.offset <= 0) {
 				throw new Error(
-					`Config error: offset must be a positive number, got ${this.#params.offset}`,
+					`Config error: offset must be a positive number, got ${this._params.offset}`,
 				);
 			}
-			this.#offset = this.#params.offset;
+			this._offset = this._params.offset;
 		}
 
 		// if there is no datetimeTo we default to now
 		// minus any buffer to deal with hourly data that might be time begining
-		if (!this.#datetimeTo) {
-			this.#datetimeTo = Datetime.now();
+		if (!this._datetimeTo) {
+			this._datetimeTo = Datetime.now();
 		}
 
 		// if there is no datetimeFrom but we have an offset
 		// we default to using datetimeTo - offset
-		if (!this.#datetimeFrom && this.#offset) {
-			this.#datetimeFrom = this.#datetimeTo.minus(this.#offset);
+		if (!this._datetimeFrom && this._offset) {
+			this._datetimeFrom = this._datetimeTo.minus(this._offset);
 		}
 
-		this.#locations = new Locations();
-		this.#sensors = new Sensors();
-		this.#errors = new Errors();
+		this._locations = new Locations();
+		this._sensors = new Sensors();
+		this._errors = new Errors();
 	}
 
 	private async initAuth() {
@@ -443,15 +443,15 @@ export abstract class Client<
 	}
 
 	private get measurements(): Measurements {
-		if (!this.#measurements) {
-			this.#measurements = new Measurements(
+		if (!this._measurements) {
+			this._measurements = new Measurements(
 				this.parameters,
 				this.supportedParameters,
 				this.providerFlags,
 				this.numberFormat,
 			);
 		}
-		return this.#measurements;
+		return this._measurements;
 	}
 
 	/**
@@ -667,7 +667,7 @@ export abstract class Client<
 	// fetching in upload tool - throw error if strict is on
 	// developing - throw error
 	errorHandler(err: TransformError | Error | string, strict: boolean = false) {
-		const transformError: TransformError = this.#errors.add(err);
+		const transformError: TransformError = this._errors.add(err);
 		if (strict || this.strict || transformError.strict) {
 			// rethrow if we are in strict mode
 			// or if the context is strict
@@ -686,11 +686,11 @@ export abstract class Client<
 		this.setup();
 		await this.preLoad();
 		// start the fetch clock
-		this.#startedOn = Datetime.now();
+		this._startedOn = Datetime.now();
 		const data = await this.loadResources();
 		this.process(data);
 		log(`Finished load + process`);
-		this.#finishedOn = Datetime.now();
+		this._finishedOn = Datetime.now();
 		return this.data();
 	}
 
@@ -735,7 +735,7 @@ export abstract class Client<
 		// BUILDING KEY
 		const key = Location.createKey({ provider: this.provider, siteId });
 
-		let location: Location | undefined = this.#locations.get(key);
+		let location: Location | undefined = this._locations.get(key);
 
 		if (!location) {
 			// process data through the location map
@@ -754,7 +754,7 @@ export abstract class Client<
 				owner: getString(data, this.owner) ?? "",
 				label: getString(data, this.locationLabel) ?? "",
 			});
-			this.#locations.add(location);
+			this._locations.add(location);
 		}
 		return location;
 	}
@@ -825,8 +825,8 @@ export abstract class Client<
 
 		let sensor: Sensor | undefined;
 
-		if (this.#sensors.has(key)) {
-			sensor = this.#sensors.get(key);
+		if (this._sensors.has(key)) {
+			sensor = this._sensors.get(key);
 		} else {
 			sensor = new Sensor({
 				systemKey: system.key,
@@ -843,7 +843,7 @@ export abstract class Client<
 				supportedParameters: this.supportedParameters,
 			});
 			location.add(sensor);
-			this.#sensors.add(sensor);
+			this._sensors.add(sensor);
 		}
 
 		if (!sensor) {
@@ -925,8 +925,8 @@ export abstract class Client<
 							averagingIntervalSeconds,
 						);
 						if (
-							datetime.isGreaterThan(this.#datetimeTo) ||
-							(this.#datetimeFrom && datetime.isLessThan(this.#datetimeFrom))
+							datetime.isGreaterThan(this._datetimeTo) ||
+							(this._datetimeFrom && datetime.isLessThan(this._datetimeFrom))
 						) {
 							return;
 						}
@@ -1097,15 +1097,15 @@ export abstract class Client<
 	summary(): Summary {
 		return {
 			sourceName: this.provider,
-			locations: this.#locations.length,
-			bounds: this.#locations.bounds,
-			systems: this.#locations.systemsLength,
-			sensors: this.#sensors.length,
-			flags: this.#sensors.flagsLength,
+			locations: this._locations.length,
+			bounds: this._locations.bounds,
+			systems: this._locations.systemsLength,
+			sensors: this._sensors.length,
+			flags: this._sensors.flagsLength,
 			measurements: this.measurements.length,
 			datetimeFrom: this.measurements.from?.toString(),
 			datetimeTo: this.measurements.to?.toString(),
-			errors: this.#errors.summary(),
+			errors: this._errors.summary(),
 		};
 	}
 
@@ -1120,14 +1120,14 @@ export abstract class Client<
 				schema: "v0.1",
 				sourceName: this.provider,
 				ingestMatchingMethod: this.ingestMatchingMethod,
-				startedOn: this.#startedOn?.toString(),
-				finishedOn: this.#finishedOn?.toString(),
+				startedOn: this._startedOn?.toString(),
+				finishedOn: this._finishedOn?.toString(),
 				exportedOn: Datetime.now().toString(),
 				fetchSummary: this.summary(),
 			},
 			measurements: this.measurements.json(),
-			locations: this.#locations.json(),
-			errors: this.#errors.json(),
+			locations: this._locations.json(),
+			errors: this._errors.json(),
 		};
 	}
 

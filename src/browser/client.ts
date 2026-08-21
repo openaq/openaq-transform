@@ -1,5 +1,5 @@
-import { apiReader, json, xml } from "@openaq/transform/core";
-import { Client } from "@openaq/transform/core/client";
+import { apiReader, json, xml } from "../core";
+import { Client } from "../core/client";
 import type { ParserMethods } from "../types/parsers";
 import type { ReaderMethods } from "../types/readers";
 import { csv, tsv } from "./parsers";

@@ -7,7 +7,7 @@
 		"Christian Parker <chris@talloaks.io>",
 		"Jacob Fenton <jacob@openaq.org>"
 	],
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",

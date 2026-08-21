@@ -2,19 +2,12 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig([
 	{
-		entry: ["src/core/**/*.ts", "!**/*.spec.ts"],
+		entry: ["src/core/index.ts"],
 		outDir: "dist/core",
-		root: "src/core",
 		format: ["esm"],
 		clean: true,
 		dts: true,
-		unbundle: true,
-		deps: {
-			neverBundle: [/node_modules/],
-			dts: {
-				neverBundle: [/node_modules/],
-			},
-		},
+		sourcemap: true,
 	},
 	{
 		entry: ["src/node/index.ts"],
@@ -23,12 +16,6 @@ export default defineConfig([
 		platform: "node",
 		sourcemap: true,
 		dts: true,
-		deps: {
-			neverBundle: [/^\.\.\/core/],
-			dts: {
-				neverBundle: [/^\.\.\/core/],
-			},
-		},
 	},
 	{
 		entry: ["src/browser/index.ts"],
@@ -37,11 +24,5 @@ export default defineConfig([
 		platform: "browser",
 		sourcemap: true,
 		dts: true,
-		deps: {
-			neverBundle: [/^\.\.\/core/],
-			dts: {
-				neverBundle: [/^\.\.\/core/],
-			},
-		},
 	},
 ]);

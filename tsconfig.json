@@ -1,6 +1,13 @@
 {
 	"outDir": "dist/",
 	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@openaq/transform/core": ["./src/core/index.ts"],
+			"@openaq/transform/core/client": ["./src/core/client.ts"],
+			"@openaq/transform/core/parsers": ["./src/core/parsers.ts"],
+			"@openaq/transform/core/readers": ["./src/core/readers.ts"]
+		},
 		"target": "ES2022",
 		"module": "ESNext",
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],

@@ -7,7 +7,8 @@
 		"Christian Parker <chris@talloaks.io>",
 		"Jacob Fenton <jacob@openaq.org>"
 	],
-	"version": "0.5.0",
+	"version": "0.6.0",
+	"license": "Apache-2.0",
 	"type": "module",
 	"packageManager": "pnpm@10.30.3",
 	"files": [
@@ -50,7 +51,9 @@
 		}
 	},
 	"scripts": {
-		"build": "tsdown",
+		"build": "pnpm run build:core && pnpm run build:platforms",
+		"build:core": "tsdown --config tsdown.core.config.ts",
+		"build:platforms": "tsdown --config tsdown.platforms.config.ts",
 		"dev": "tsdown --watch",
 		"fix": "pnpm run format && pnpm run lint",
 		"format": "biome check --write .",

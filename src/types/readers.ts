@@ -1,4 +1,4 @@
-import type { Resource } from "../core/resource";
+import type { Resource } from "../core";
 import type { ResourceData } from "./data";
 import type { Parser } from "./parsers";
 import type { ResourceKeys } from "./resource";

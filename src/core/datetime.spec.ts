@@ -345,3 +345,26 @@ test("add with all three input types produces the same result", () => {
 	expect(fromNumber.toUTC()).toBe(fromDuration.toUTC());
 	expect(fromDuration.toUTC()).toBe(fromOffset.toUTC());
 });
+
+test("now with timezone anchors to that timezone's current moment", () => {
+	const now = Datetime.now(0, "America/Denver");
+	expect(now).toBeInstanceOf(Datetime);
+	expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
+	expect(now.toLocal()).toBe("2025-05-31T23:00:00-06:00");
+});
+
+test("now with timezone reflects that timezone's calendar day", () => {
+	const now = Datetime.now(0, "Australia/Hobart");
+	expect(now.toLocal("yyyy-LL-dd")).toBe("2025-06-01");
+});
+
+test("now with offset and timezone combined", () => {
+	const now = Datetime.now(3600, "Australia/Hobart");
+	expect(now.toUTC()).toBe("2025-06-01T04:00:00Z");
+	expect(now.toLocal()).toBe("2025-06-01T14:00:00+10:00");
+});
+
+test("now without timezone falls back to system/local zone (backwards compatible)", () => {
+	const now = Datetime.now();
+	expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
+});

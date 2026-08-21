@@ -1,5 +1,5 @@
 import type { BBox } from "geojson";
-import { Resource } from "../core/resource";
+import { Resource } from "../core";
 import type { SourceRecord } from "./data";
 import type { TimestampString } from "./datetime";
 import type { ErrorJSON, ErrorSummary } from "./errors";

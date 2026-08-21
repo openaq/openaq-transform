@@ -52,7 +52,7 @@ export {
 	UnsupportedParameterError,
 } from "./errors";
 export { FLAG_DEFAULTS, PARAMETER_DEFAULTS, PARAMETERS } from "./metric";
-export { json, xml } from "./parsers";
+export { json, ndjson, xml } from "./parsers";
 export { apiReader } from "./readers";
 export { Resource } from "./resource";
 export { constant, jmespath } from "./utils";

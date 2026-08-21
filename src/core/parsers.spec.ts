@@ -1,6 +1,12 @@
 import { describe, expect, test, vi } from "vitest";
 import type { XmlParserOptions } from "../types/parsers";
-import { createDelimitedParsers, json, parseDelimited, xml } from "./parsers";
+import {
+	createDelimitedParsers,
+	json,
+	ndjson,
+	parseDelimited,
+	xml,
+} from "./parsers";
 
 describe("json parser", () => {
 	test("parses valid JSON string", async () => {
@@ -67,6 +73,90 @@ describe("json parser", () => {
 		const jsonString = '{"message": "Foo\\\\Bar\\t!"}';
 		const result = await json(jsonString);
 		expect(result).toEqual({ message: "Foo\\Bar\t!" });
+	});
+});
+
+describe("ndjson parser", () => {
+	test("parses multiple JSON lines into an array", async () => {
+		const content =
+			'{"id":1,"name":"Richard Tauber"}\n{"id":2,"name":"John McCormack"}';
+		const result = await ndjson(content);
+		expect(result).toEqual([
+			{ id: 1, name: "Richard Tauber" },
+			{ id: 2, name: "John McCormack" },
+		]);
+	});
+
+	test("handles trailing newline", async () => {
+		const content = '{"id":1}\n{"id":2}\n';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+	});
+
+	test("handles CRLF line endings", async () => {
+		const content = '{"id":1}\r\n{"id":2}\r\n';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+	});
+
+	test("skips blank lines between records", async () => {
+		const content = '{"id":1}\n\n{"id":2}\n';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+	});
+
+	test("skips lines containing only whitespace", async () => {
+		const content = '{"id":1}\n   \n{"id":2}';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+	});
+
+	test("handles single line with no trailing newline", async () => {
+		const content = '{"id":1,"name":"John McCormack"}';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1, name: "John McCormack" }]);
+	});
+
+	test("returns empty array for empty string", async () => {
+		const result = await ndjson("");
+		expect(result).toEqual([]);
+	});
+
+	test("returns empty array for string with only whitespace or newlines", async () => {
+		const result = await ndjson("\n\n   \n");
+		expect(result).toEqual([]);
+	});
+
+	test("handles nested objects within a line", async () => {
+		const content = '{"id":1,"meta":{"nested":{"value":42}}}';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 1, meta: { nested: { value: 42 } } }]);
+	});
+
+	test("handles arrays as individual line values", async () => {
+		const content = "[1,2,3]\n[4,5,6]";
+		const result = await ndjson(content);
+		expect(result).toEqual([
+			[1, 2, 3],
+			[4, 5, 6],
+		]);
+	});
+
+	test("handles primitive values per line", async () => {
+		const content = '1\ntrue\nnull\n"John McCormack"';
+		const result = await ndjson(content);
+		expect(result).toEqual([1, true, null, "John McCormack"]);
+	});
+
+	test("throws error on invalid JSON in a line", async () => {
+		const content = '{"id":1}\n{invalid}\n{"id":2}';
+		await expect(ndjson(content)).rejects.toThrow();
+	});
+
+	test("preserves line order", async () => {
+		const content = '{"id":3}\n{"id":1}\n{"id":2}';
+		const result = await ndjson(content);
+		expect(result).toEqual([{ id: 3 }, { id: 1 }, { id: 2 }]);
 	});
 });
 

@@ -124,7 +124,7 @@ export class Datetime {
 				}
 			}
 
-			if (!this.locationTimezone && !!parsedDate.zoneName) {
+			if (!this.locationTimezone && parsedDate.zoneName) {
 				this.locationTimezone = parsedDate.zoneName;
 			}
 		}
@@ -289,11 +289,15 @@ export class Datetime {
 	 * optionally adjusted by a specified offset into the past.
 	 *
 	 * @param {number | Duration | TimeOffset} [timeOffset=0] - The amount to subtract from the current time.
+	 * @param {string} [timezone] - The IANA to intepret "now".
 	 *
 	 * @returns {Datetime} A new Datetime instance adjusted by the specified offset
 	 */
-	static now(timeOffset: number | Duration | TimeOffset = 0): Datetime {
-		const now = DateTime.now();
+	static now(
+		timeOffset: number | Duration | TimeOffset = 0,
+		timezone?: string,
+	): Datetime {
+		const now = timezone ? DateTime.now().setZone(timezone) : DateTime.now();
 		let dt: DateTime;
 
 		if (typeof timeOffset === "number") {
@@ -304,6 +308,9 @@ export class Datetime {
 			dt = now.minus(timeOffset);
 		}
 
-		return new Datetime(dt);
+		return new Datetime(
+			dt,
+			timezone ? { timezone, locationTimezone: timezone } : undefined,
+		);
 	}
 }

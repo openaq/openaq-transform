@@ -9,7 +9,13 @@ const configs: UserConfig[] = [
 		sourcemap: true,
 		clean: true,
 		dts: true,
-		deps: { onlyBundle: false },
+		deps: {
+			onlyBundle: false,
+			neverBundle: [/^@openaq\/transform\//],
+			dts: {
+				neverBundle: [/^@openaq\/transform\//],
+			},
+		},
 	},
 	{
 		entry: ["src/node/index.ts"],
@@ -19,17 +25,13 @@ const configs: UserConfig[] = [
 		sourcemap: true,
 		clean: false,
 		dts: true,
-		deps: { neverBundle: ["fs/promises"], onlyBundle: false },
-	},
-	{
-		entry: ["src/core/index.ts"],
-		outDir: "dist/transform-core",
-		format: ["esm"],
-		platform: "neutral",
-		sourcemap: true,
-		clean: false,
-		dts: true,
-		deps: { onlyBundle: false },
+		deps: {
+			onlyBundle: false,
+			neverBundle: [/^@openaq\/transform\//],
+			dts: {
+				neverBundle: [/^@openaq\/transform\//],
+			},
+		},
 	},
 ];
 

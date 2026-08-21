@@ -76,6 +76,25 @@ export const json: JsonParser<SourceRecord | SourceRecord[]> = async (
 	}
 };
 
+export const ndjson: StringParser<SourceRecord[]> = async (content) => {
+	const records: SourceRecord[] = [];
+	let start = 0;
+	for (let i = 0; i < content.length; i++) {
+		if (content[i] === "\n") {
+			const line = content.slice(start, i).trim();
+			if (line) {
+				records.push(JSON.parse(line));
+			}
+			start = i + 1;
+		}
+	}
+	const last = content.slice(start).trim();
+	if (last) {
+		records.push(JSON.parse(last));
+	}
+	return records;
+};
+
 export const xml: StringParser<SourceRecord | SourceRecord[]> = async (
 	content,
 	options,

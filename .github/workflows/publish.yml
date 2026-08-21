@@ -78,4 +78,4 @@ jobs:
           node-version: 26
           package-manager-cache: false
       - name: Publish npm package
-        run: npm publish --provenance --access public
+        run: npm stage publish --ignore-scripts

@@ -1,4 +1,4 @@
-import { mergeObjects } from "@openaq/transform/core/readers";
+import { mergeObjects } from "../core/readers";
 import type { SourceRecord } from "../types/data";
 import type { Parser } from "../types/parsers";
 import type { DataContext, FileReaderParameters } from "../types/readers";

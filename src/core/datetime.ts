@@ -2,6 +2,18 @@ import { DateTime, Duration } from "luxon";
 import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
 
+
+function assertValid(
+	dt: DateTime,
+	message: () => string,
+): asserts dt is DateTime<true> {
+	if (!dt.isValid) {
+		throw new TypeError(message());
+	}
+}
+function isValidDatetime(dt: DateTime): dt is DateTime<true> {
+	return dt.isValid;
+}
 /**
  * A wrapper class for Luxon's `DateTime` that provides simplified
  * handling for various date and time inputs, with a focus on timezone management.
@@ -92,11 +104,11 @@ export class Datetime {
 	 * @returns {DateTime<true>} A valid Luxon DateTime object.
 	 * @throws {TypeError} If the input is missing, parsing fails, or the resulting date is invalid.
 	 */
-	private parseDate(): DateTime {
+	private parseDate(): DateTime<true> {
 		if (!this.#input) {
 			throw new TypeError("Input required");
 		}
-		let parsedDate: DateTime | null = null;
+		let parsedDate: DateTime;
 
 		if (this.#input instanceof DateTime) {
 			parsedDate = this.#input;
@@ -128,13 +140,9 @@ export class Datetime {
 				this.locationTimezone = parsedDate.zoneName;
 			}
 		}
-		if (!parsedDate.isValid) {
-			throw new TypeError(
-				`Invalid date input: "${formatValueForLog(this.#input)}" with format "${
-					this.format
-				}: ${parsedDate.invalidReason}".`,
-			);
-		}
+		assertValid(parsedDate,
+			() => `Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`
+		);
 		return parsedDate;
 	}
 
@@ -188,7 +196,8 @@ export class Datetime {
 	 * @returns {string} An ISO 8601 string in UTC, e.g., '2025-01-01T00:00:00Z'.
 	 */
 	toUTC(formatString: string | null = null): string {
-		const date = this.date.setZone("UTC") as DateTime<true>;
+		const date = this.date.setZone("UTC");
+		assertValid(date, () => `Could not convert to UTC: ${date.invalidReason}`);
 		return formatString
 			? date.toFormat(formatString)
 			: date.toISO({ suppressMilliseconds: true });
@@ -203,7 +212,7 @@ export class Datetime {
 	 */
 	toLocal(formatString: string | null = null): string | undefined {
 		const date = this.date.setZone(this.locationTimezone);
-		if (date.isValid) {
+		if (isValidDatetime(date)) {
 			return formatString
 				? date.toFormat(formatString)
 				: date.toISO({ suppressMilliseconds: true });
@@ -298,6 +307,7 @@ export class Datetime {
 		timezone?: string,
 	): Datetime {
 		const now = timezone ? DateTime.now().setZone(timezone) : DateTime.now();
+		assertValid(now, () => `Invalid timezone: "${timezone}"`);
 		let dt: DateTime;
 
 		if (typeof timeOffset === "number") {

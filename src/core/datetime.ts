@@ -2,7 +2,6 @@ import { DateTime, Duration } from "luxon";
 import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
 
-
 function assertValid(
 	dt: DateTime,
 	message: () => string,
@@ -140,8 +139,10 @@ export class Datetime {
 				this.locationTimezone = parsedDate.zoneName;
 			}
 		}
-		assertValid(parsedDate,
-			() => `Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`
+		assertValid(
+			parsedDate,
+			() =>
+				`Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`,
 		);
 		return parsedDate;
 	}

@@ -9,14 +9,34 @@ const shared = {
 	deps: {
 		neverBundle: [
 			/^@openaq\/transform($|\/)/,
-			"geojson", "luxon", "proj4", "csv-parse", "fast-xml-parser",
+			"geojson",
+			"luxon",
+			"proj4",
+			"csv-parse",
+			"fast-xml-parser",
 			/^@jmespath-community/,
 		],
 	},
 } satisfies UserConfig;
 
 export default defineConfig([
-	{ ...shared, entry: ["src/core/index.ts"], outDir: "dist/core", platform: "neutral" },
-	{ ...shared, entry: ["src/node/index.ts"], outDir: "dist/node", platform: "node" },
-	{ ...shared, entry: ["src/browser/index.ts"], outDir: "dist/browser", platform: "browser", target: "es2023" },
+	{
+		...shared,
+		entry: ["src/core/index.ts"],
+		outDir: "dist/core",
+		platform: "neutral",
+	},
+	{
+		...shared,
+		entry: ["src/node/index.ts"],
+		outDir: "dist/node",
+		platform: "node",
+	},
+	{
+		...shared,
+		entry: ["src/browser/index.ts"],
+		outDir: "dist/browser",
+		platform: "browser",
+		target: "es2023",
+	},
 ]);

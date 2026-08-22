@@ -9,6 +9,7 @@ export default defineConfig([
 		deps: {
 			neverBundle: [
 				/^@openaq\/transform($|\/)/,
+				"geojson",
 				"luxon",
 				"proj4",
 				"csv-parse",
@@ -28,6 +29,7 @@ export default defineConfig([
 		deps: {
 			neverBundle: [
 				/^@openaq\/transform($|\/)/,
+				"geojson",
 				"luxon",
 				"proj4",
 				"csv-parse",
@@ -46,6 +48,7 @@ export default defineConfig([
 		deps: {
 			neverBundle: [
 				/^@openaq\/transform($|\/)/,
+				"geojson",
 				"luxon",
 				"proj4",
 				"csv-parse",

@@ -1,4 +1,4 @@
-import type { FlagData, FlagJSON } from "../types/flag";
+import type { FlagData, FlagJSON } from "./types/flag";
 import { stripNulls } from "./utils";
 
 export class Flag {

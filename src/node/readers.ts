@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
-import type { ResourceData, SourceRecord } from "../types/data";
-import type { StringParser } from "../types/parsers";
-import type { DataContext, FileSystemReaderParameters } from "../types/readers";
+import type {
+	DataContext,
+	FileSystemReaderParameters,
+	ResourceData,
+	SourceRecord,
+	StringParser,
+} from "@openaq/transform/core";
 
 export const fileSystemReader = async (
 	{ resource, encoding }: FileSystemReaderParameters,

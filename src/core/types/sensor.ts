@@ -1,4 +1,4 @@
-import type { Metric } from "../core/metric";
+import type { Metric } from "../metric";
 import type { FlagJSON } from "./flag";
 import type { ParameterMap, ParameterUnit } from "./metric";
 

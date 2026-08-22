@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import type { FlagInput } from "../types/flag";
-import type { SensorData, SensorKeyData } from "../types/sensor";
 import { Sensor, Sensors } from "./sensor";
+import type { FlagInput } from "./types/flag";
+import type { SensorData, SensorKeyData } from "./types/sensor";
 
 const systemKey = "example-provider/42/met-one::bam-1022";
 

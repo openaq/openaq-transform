@@ -1,35 +1,4 @@
 import { createDebug } from "obug";
-import {
-	type ClientConfiguration,
-	type ClientInfo,
-	type ClientInfoKey,
-	type ClientParser,
-	type ClientReader,
-	type ConstantValue,
-	type DatetimeType,
-	type IndexedResource,
-	type IngestMatchingMethod,
-	isIndexed,
-	isIndexedParser,
-	isIndexedReader,
-	type LogEntry,
-	type ParseFunction,
-	type Summary,
-	type TransformData,
-} from "../types/client";
-import type { ResourceData, SourceRecord } from "../types/data";
-import type { FlagInput } from "../types/flag";
-import type {
-	ClientParameters,
-	DecimalDigitGroup,
-	ParameterMap,
-	PathExpression,
-	ValueFlagMap,
-} from "../types/metric";
-import { isParser, type Parser, type ParserMethods } from "../types/parsers";
-import { isReader, type Reader, type ReaderMethods } from "../types/readers";
-import type { BearerAuth, ResourceKeys } from "../types/resource";
-import type { SystemData } from "../types/system";
 import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
@@ -49,6 +18,37 @@ import {
 } from "./metric";
 import type { Resource } from "./resource";
 import { Sensor, Sensors } from "./sensor";
+import type { PathExpression } from "./types";
+import {
+	type ClientConfiguration,
+	type ClientInfo,
+	type ClientInfoKey,
+	type ClientParser,
+	type ClientReader,
+	type ConstantValue,
+	type DatetimeType,
+	type IndexedResource,
+	type IngestMatchingMethod,
+	isIndexed,
+	isIndexedParser,
+	isIndexedReader,
+	type LogEntry,
+	type ParseFunction,
+	type Summary,
+	type TransformData,
+} from "./types/client";
+import type { ResourceData, SourceRecord } from "./types/data";
+import type { FlagInput } from "./types/flag";
+import type {
+	ClientParameters,
+	DecimalDigitGroup,
+	ParameterMap,
+	ValueFlagMap,
+} from "./types/metric";
+import { isParser, type Parser, type ParserMethods } from "./types/parsers";
+import { isReader, type Reader, type ReaderMethods } from "./types/readers";
+import type { BearerAuth, ResourceKeys } from "./types/resource";
+import type { SystemData } from "./types/system";
 import {
 	cleanKey,
 	formatValueForLog,

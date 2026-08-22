@@ -1,5 +1,6 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
 import { createDebug } from "obug";
+import { DatetimeError } from "./errors";
 import {
 	type ConstantValue,
 	isConstantValue,
@@ -7,15 +8,14 @@ import {
 	type ParseFunction,
 	type StructuredKey,
 	type UnixDatetimeType,
-} from "../types/client";
-import type { SourceRecord } from "../types/data";
+} from "./types/client";
+import type { SourceRecord } from "./types/data";
 import {
 	type DecimalDigitGroup,
 	isPathExpression,
 	PATH_EXPRESSION_TYPES,
 	type PathExpression,
-} from "../types/metric";
-import { DatetimeError } from "./errors";
+} from "./types/metric";
 
 const log = createDebug("openaq-transform:core:utils");
 

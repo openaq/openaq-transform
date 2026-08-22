@@ -4,6 +4,7 @@ import { DateTime, Settings } from "luxon";
 const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
 
+import type { Reader } from "@openaq/transform/core";
 import { describe, expect, test } from "vitest";
 import {
 	csvdata,
@@ -11,7 +12,6 @@ import {
 	widedata,
 } from "../../tests/fixtures/sampledata.ts";
 import { Resource } from "../core/resource.ts";
-import type { Reader } from "../types/readers.ts";
 import { BrowserClient as Client } from "./client.ts";
 import { csv } from "./parsers";
 

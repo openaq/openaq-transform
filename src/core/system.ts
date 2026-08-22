@@ -2,8 +2,8 @@ import { createDebug } from "obug";
 
 const log = createDebug("openaq-transform:core:system");
 
-import type { SystemData, SystemJSON } from "../types/system";
 import type { Sensor } from "./sensor";
+import type { SystemData, SystemJSON } from "./types/system";
 import { sanitizeKeyName, stripNulls } from "./utils";
 
 export class System {

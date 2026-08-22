@@ -1,14 +1,14 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
-import type { PathExpression } from "../types";
-import { isPathExpression } from "../types/metric";
-import type { KnownParserOptions, ParserOptions } from "../types/parsers";
+import type { PathExpression } from "./types";
+import { isPathExpression } from "./types/metric";
+import type { KnownParserOptions, ParserOptions } from "./types/parsers";
 import type {
 	DataContext,
 	ReadAs,
 	ReaderOptions,
 	UrlReaderOptions,
-} from "../types/readers";
-import type { ResourceConfig, ResourceOutput } from "../types/resource";
+} from "./types/readers";
+import type { ResourceConfig, ResourceOutput } from "./types/resource";
 import {
 	type Auth,
 	type AuthValueFunction,
@@ -19,7 +19,7 @@ import {
 	type Parameters,
 	type ParametersFunction,
 	type ResourceUrl,
-} from "../types/resource";
+} from "./types/resource";
 
 /**
  * A data source configuration for fetching and processing remote or local data.

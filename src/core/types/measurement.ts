@@ -1,6 +1,6 @@
-import type { Coordinates } from "../core/coordinates";
-import type { Datetime } from "../core/datetime";
-import type { Sensor } from "../core/sensor";
+import type { Coordinates } from "../coordinates";
+import type { Datetime } from "../datetime";
+import type { Sensor } from "../sensor";
 import type { CoordinatesJSON } from "./coordinates";
 import type { TimestampString } from "./datetime";
 /**

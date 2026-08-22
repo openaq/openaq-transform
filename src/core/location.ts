@@ -3,15 +3,15 @@ import { createDebug } from "obug";
 const log = createDebug("openaq-transform:core:locations");
 
 import type { BBox } from "geojson";
+import { Coordinates, updateBounds } from "./coordinates";
+import { Sensor } from "./sensor";
+import { System } from "./system";
 import type {
 	LocationData,
 	LocationJSON,
 	LocationKeyData,
-} from "../types/location";
-import type { SystemData } from "../types/system";
-import { Coordinates, updateBounds } from "./coordinates";
-import { Sensor } from "./sensor";
-import { System } from "./system";
+} from "./types/location";
+import type { SystemData } from "./types/system";
 import { stripNulls } from "./utils";
 
 export class Locations {

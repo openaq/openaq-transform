@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import type { LocationData } from "../types/location";
-import type { SystemData } from "../types/system";
 import { Location, Locations } from "./location";
 import { Sensor } from "./sensor";
+import type { LocationData } from "./types/location";
+import type { SystemData } from "./types/system";
 
 function makeLocationData(overrides: Partial<LocationData> = {}): LocationData {
 	return {

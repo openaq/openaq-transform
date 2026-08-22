@@ -3,7 +3,12 @@ import { createDebug } from "obug";
 const log = createDebug("openaq-transform:core:measurements");
 
 import type { BBox } from "geojson";
-import type { MeasurementData, MeasurementJSON } from "../types/measurement";
+import { type Coordinates, updateBounds } from "./coordinates";
+import type { Datetime } from "./datetime";
+import { MissingAttributeError, TransformError } from "./errors";
+import { Metric, PARAMETER_DEFAULTS } from "./metric";
+import type { Sensor } from "./sensor";
+import type { MeasurementData, MeasurementJSON } from "./types/measurement";
 import type {
 	ClientParameters,
 	DecimalDigitGroup,
@@ -11,12 +16,7 @@ import type {
 	ParameterMap,
 	PathExpression,
 	ValueFlagMap,
-} from "../types/metric";
-import { type Coordinates, updateBounds } from "./coordinates";
-import type { Datetime } from "./datetime";
-import { MissingAttributeError, TransformError } from "./errors";
-import { Metric, PARAMETER_DEFAULTS } from "./metric";
-import type { Sensor } from "./sensor";
+} from "./types/metric";
 
 export class Measurements {
 	headers: string[];

@@ -1,5 +1,5 @@
 import { DateTime, Duration } from "luxon";
-import type { DatetimeOptions, TimeOffset } from "../types/datetime";
+import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
 
 /**

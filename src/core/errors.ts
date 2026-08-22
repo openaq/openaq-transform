@@ -1,6 +1,6 @@
 import { createDebug } from "obug";
-import type { ErrorJSON, ErrorSummary } from "../types/errors";
 import { PARAMETERS } from "./metric";
+import type { ErrorJSON, ErrorSummary } from "./types/errors";
 
 const TRANSFORM_ERROR = "TransformError";
 const MEASUREMENT_ERROR = "MeasurementError";

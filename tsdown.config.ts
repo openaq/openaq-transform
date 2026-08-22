@@ -6,8 +6,17 @@ export default defineConfig([
 		outDir: "dist/core",
 		format: ["esm"],
 		clean: true,
+		deps: {
+			neverBundle: [
+				/^@openaq\/transform($|\/)/,
+				"luxon",
+				"proj4",
+				"csv-parse",
+				"fast-xml-parser",
+				/^@jmespath-community/,
+			],
+		},
 		dts: true,
-		sourcemap: true,
 	},
 	{
 		entry: ["src/node/index.ts"],
@@ -16,6 +25,16 @@ export default defineConfig([
 		platform: "node",
 		sourcemap: true,
 		dts: true,
+		deps: {
+			neverBundle: [
+				/^@openaq\/transform($|\/)/,
+				"luxon",
+				"proj4",
+				"csv-parse",
+				"fast-xml-parser",
+				/^@jmespath-community/,
+			],
+		},
 	},
 	{
 		entry: ["src/browser/index.ts"],
@@ -24,5 +43,15 @@ export default defineConfig([
 		platform: "browser",
 		sourcemap: true,
 		dts: true,
+		deps: {
+			neverBundle: [
+				/^@openaq\/transform($|\/)/,
+				"luxon",
+				"proj4",
+				"csv-parse",
+				"fast-xml-parser",
+				/^@jmespath-community/,
+			],
+		},
 	},
 ]);

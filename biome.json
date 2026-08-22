@@ -32,23 +32,23 @@
 		}
 	},
 	"overrides": [
-  {
-    "includes": ["src/core/**"],
-    "linter": {
-      "rules": {
-        "style": {
-          "noRestrictedImports": {
-            "level": "error",
-            "options": {
-              "paths": {
-                "@openaq/transform/core": "Core must not import itself, use a relative path.",
-                "@openaq/transform": "Core must not import itself, use a relative path."
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-]
+		{
+			"includes": ["src/core/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"@openaq/transform/core": "Core must not import itself, use a relative path.",
+									"@openaq/transform": "Core must not import itself, use a relative path."
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	]
 }

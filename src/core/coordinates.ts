@@ -1,12 +1,12 @@
 import type { BBox } from "geojson";
 import proj4 from "proj4";
-import type { CoordinatesJSON } from "../types/coordinates";
 import {
 	InvalidPrecisionError,
 	LatitudeBoundsError,
 	LocationError,
 	LongitudeBoundsError,
 } from "./errors";
+import type { CoordinatesJSON } from "./types/coordinates";
 import { countDecimals } from "./utils";
 
 /**

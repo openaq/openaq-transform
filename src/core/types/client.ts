@@ -1,5 +1,5 @@
 import type { BBox } from "geojson";
-import { Resource } from "../core";
+import type { Resource } from "../resource";
 import type { SourceRecord } from "./data";
 import type { TimestampString } from "./datetime";
 import type { ErrorJSON, ErrorSummary } from "./errors";
@@ -168,13 +168,8 @@ export type IndexedResource = {
 	measurements: Resource;
 } & Partial<Record<Exclude<ResourceKeys, "measurements">, Resource>>;
 
-export function isIndexed(resource: unknown): resource is IndexedResource {
-	return (
-		typeof resource === "object" &&
-		resource !== null &&
-		!(resource instanceof Resource) &&
-		"measurements" in resource
-	);
+export function isIndexed(r: Resource | IndexedResource): r is IndexedResource {
+	return !("isFileResource" in r);
 }
 
 export type IngestMatchingMethod = "ingest-id" | "source-spatial";

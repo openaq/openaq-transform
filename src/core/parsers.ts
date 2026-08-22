@@ -1,14 +1,14 @@
 import type { Options as CsvParseOptions } from "csv-parse";
 import { XMLParser } from "fast-xml-parser";
 import { createDebug } from "obug";
-import type { SourceRecord } from "../types/data";
+import type { SourceRecord } from "./types/data";
 import type {
 	CsvParseFunction,
 	DelimitedParserOptions,
 	JsonParser,
 	StringParser,
 	XmlParserOptions,
-} from "../types/parsers";
+} from "./types/parsers";
 
 const log = createDebug("openaq-transform:core:parsers");
 

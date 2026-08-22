@@ -1,9 +1,9 @@
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import type { JsonParser } from "../types/parsers";
 import { apiReader, mergeObjects } from "./readers";
 import { Resource } from "./resource";
+import type { JsonParser } from "./types/parsers";
 
 // Sample test data
 const sampleData = [

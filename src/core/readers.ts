@@ -1,11 +1,12 @@
 import { createDebug } from "obug";
-import type { SourceRecord } from "../types/data";
+import { FetchError, ParseError } from "./errors";
+import type { SourceRecord } from "./types/data";
 import type {
 	BlobParser,
 	JsonParser,
 	Parser,
 	StringParser,
-} from "../types/parsers";
+} from "./types/parsers";
 import {
 	type DataContext,
 	type IndexedReaderOptions,
@@ -15,8 +16,7 @@ import {
 	type ReaderOptions,
 	type UrlReaderOptions,
 	type UrlReaderParameters,
-} from "../types/readers";
-import { FetchError, ParseError } from "./errors";
+} from "./types/readers";
 
 const log = createDebug("openaq-transform:core:readers");
 

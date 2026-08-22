@@ -43,9 +43,18 @@ export { isPathExpression, PATH_EXPRESSION_TYPES } from "./metric";
 export type {
 	IndexedParser,
 	Parser,
+	ParserMethods,
 	ParserOptions,
 	StringParser,
 } from "./parsers";
-export type { IndexedReaderOptions, Reader, ReaderOptions } from "./readers";
+export type {
+	DataContext,
+	FileReaderParameters,
+	FileSystemReaderParameters,
+	IndexedReaderOptions,
+	Reader,
+	ReaderMethods,
+	ReaderOptions,
+} from "./readers";
 export type { BearerAuth, ResourceKeys } from "./resource";
 export type { SystemData } from "./system";

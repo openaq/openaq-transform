@@ -1,5 +1,4 @@
 import { describe, expect, test, vi } from "vitest";
-import type { XmlParserOptions } from "../types/parsers";
 import {
 	createDelimitedParsers,
 	json,
@@ -7,6 +6,7 @@ import {
 	parseDelimited,
 	xml,
 } from "./parsers";
+import type { XmlParserOptions } from "./types/parsers";
 
 describe("json parser", () => {
 	test("parses valid JSON string", async () => {

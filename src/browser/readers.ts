@@ -1,7 +1,10 @@
-import { mergeObjects } from "../core/readers";
-import type { SourceRecord } from "../types/data";
-import type { Parser } from "../types/parsers";
-import type { DataContext, FileReaderParameters } from "../types/readers";
+import type {
+	DataContext,
+	FileReaderParameters,
+	Parser,
+	SourceRecord,
+} from "@openaq/transform/core";
+import { mergeObjects } from "@openaq/transform/core";
 
 export const fileReader = async (
 	{ resource, encoding, errorHandler }: FileReaderParameters,

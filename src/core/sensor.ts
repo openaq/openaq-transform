@@ -2,10 +2,10 @@ import { createDebug } from "obug";
 
 const log = createDebug("openaq-transform:core:sensor");
 
-import type { FlagData, FlagInput } from "../types/flag";
-import type { SensorData, SensorJSON, SensorKeyData } from "../types/sensor";
 import { Flag } from "./flag";
 import { Metric } from "./metric";
+import type { FlagData, FlagInput } from "./types/flag";
+import type { SensorData, SensorJSON, SensorKeyData } from "./types/sensor";
 import { stripNulls } from "./utils";
 
 export class Sensors {

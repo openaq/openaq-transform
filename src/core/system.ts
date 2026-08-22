@@ -2,8 +2,8 @@ import { createDebug } from "obug";
 
 const log = createDebug("openaq-transform:core:system");
 
-import type { SystemData, SystemJSON } from "../types/system";
 import type { Sensor } from "./sensor";
+import type { SystemData, SystemJSON } from "./types/system";
 import { sanitizeKeyName, stripNulls } from "./utils";
 
 export class System {
@@ -34,9 +34,9 @@ export class System {
 		const manufacturerName = sanitizeKeyName(data.manufacturerName);
 		const modelName = sanitizeKeyName(data.modelName);
 		const key = [data.locationKey];
-		const instrument = [];
-		if (data.manufacturerName) instrument.push(manufacturerName);
-		if (data.modelName) instrument.push(modelName);
+		const instrument: string[] = [];
+		if (manufacturerName) instrument.push(manufacturerName);
+		if (modelName) instrument.push(modelName);
 		const instrumentKey = instrument.join("::");
 		if (instrumentKey) key.push(instrumentKey);
 		return key.join("/");

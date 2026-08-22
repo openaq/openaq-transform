@@ -1,28 +1,42 @@
-import { defineConfig } from "tsdown";
+import { defineConfig, type UserConfig } from "tsdown";
+
+const shared = {
+	format: ["esm"],
+	dts: true,
+	sourcemap: true,
+	clean: true,
+	outExtensions: () => ({ js: ".mjs", dts: ".d.mts" }),
+	deps: {
+		neverBundle: [
+			/^@openaq\/transform($|\/)/,
+			"geojson",
+			"luxon",
+			"proj4",
+			"csv-parse",
+			"fast-xml-parser",
+			/^@jmespath-community/,
+		],
+	},
+} satisfies UserConfig;
 
 export default defineConfig([
 	{
+		...shared,
 		entry: ["src/core/index.ts"],
 		outDir: "dist/core",
-		format: ["esm"],
-		clean: true,
-		dts: true,
-		sourcemap: true,
+		platform: "neutral",
 	},
 	{
+		...shared,
 		entry: ["src/node/index.ts"],
 		outDir: "dist/node",
-		format: ["esm"],
 		platform: "node",
-		sourcemap: true,
-		dts: true,
 	},
 	{
+		...shared,
 		entry: ["src/browser/index.ts"],
 		outDir: "dist/browser",
-		format: ["esm"],
 		platform: "browser",
-		sourcemap: true,
-		dts: true,
+		target: "es2023",
 	},
 ]);

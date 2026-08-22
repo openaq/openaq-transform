@@ -1,11 +1,3 @@
-import type {
-	ClientParameters,
-	DecimalDigitGroup,
-	Parameter,
-	ParameterMap,
-	UnitConverter,
-	ValueFlagMap,
-} from "../types/metric";
 import {
 	HighValueError,
 	LowValueError,
@@ -14,6 +6,14 @@ import {
 	UnsupportedParameterError,
 	UnsupportedUnitsError,
 } from "./errors";
+import type {
+	ClientParameters,
+	DecimalDigitGroup,
+	Parameter,
+	ParameterMap,
+	UnitConverter,
+	ValueFlagMap,
+} from "./types/metric";
 import { isBlank, normalizeNumericString } from "./utils";
 
 const noConversion = (d: number | string) => +d;

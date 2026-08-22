@@ -1,9 +1,9 @@
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import type { ConstantValue } from "../types/client.ts";
-import type { SourceRecord } from "../types/data.ts";
-import type { DecimalDigitGroup, PathExpression } from "../types/metric.ts";
 import { DatetimeError } from "./errors.ts";
+import type { ConstantValue } from "./types/client.ts";
+import type { SourceRecord } from "./types/data.ts";
+import type { DecimalDigitGroup, PathExpression } from "./types/metric.ts";
 import {
 	cleanKey,
 	constant,

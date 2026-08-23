@@ -410,6 +410,75 @@ e.g.
 { parameter: 'pm25', unit: 'ug/m3', key: 'pm25' }
 ```
 
+### Number formats
+
+Global sources may not represent numeric strings the same way: `1,234.5`,
+`1.234,5`, `1 234,5` and `1'234.5` all mean the same thing. `numberFormat` tells
+transform how to interpret numeric strings before conversion, so they normalize
+to a plain JavaScript number rather than failing or truncating.
+
+Without this comma digit group markers would evaluate to `NaN` e.g.
+
+```js
+Number('1,234.00')
+// NaN
+```
+
+a numeric string that uses a dot for digit group marker would evaluate incorrectly
+as a decimal value 1.234, when the local representation really means 1234 e.g.
+
+```js
+Number('1.234');
+// 1.234
+````
+
+`numberFormat` accepts a `DecimalDigitGroup` object with two fields:
+
+- `decimal`: the character used as the decimal separator.
+- `digitGroup`: the character used to group thousands. Optional; omit it when
+  the source has no grouping separators.
+
+Only certain pairings are valid, reflecting real-world conventions:
+
+| `decimal` | Allowed `digitGroup` | Example |
+| --- | --- | --- |
+| `"point"` (default) | `"comma"`, `"space"`, `"apostrophe"` | `1,234.5` |
+| `"comma"` | `"dot"`, `"space"`, `"apostrophe"` | `1.234,5` |
+| `"arabic"` | `"comma"`, `"space"` | `١٬٢٣٤٫٥` |
+| `"interpunct"` | `"comma"` | `1,234·5` |
+
+The default is `{ decimal: 'point' }`, a decimal point with no grouping
+separator.
+
+#### Client-level
+
+Set `numberFormat` on the client to apply it to every numeric field parsed from
+that source, including coordinates and interval values:
+
+```ts
+export class Client extends NodeClient {
+  provider = 'example';
+  numberFormat = { decimal: 'comma', digitGroup: 'dot' };
+}
+```
+
+#### Per-parameter
+
+A parameter mapping can override the client default when a single field uses a
+different convention from the rest of the response:
+
+```ts
+parameters = [
+  { parameter: 'pm25', unit: 'ug/m3', key: 'pm25' },
+  {
+    parameter: 'temperature',
+    unit: 'c',
+    key: 'temp',
+    numberFormat: { decimal: 'comma', digitGroup: 'space' },
+  },
+];
+```
+
 ## Guides
 
 ### Long format data

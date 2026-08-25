@@ -1,4 +1,6 @@
 export { Client } from "./client";
+export type { DatetimeFormat } from "./constants";
+export { ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
 export { Datetime } from "./datetime";
 export {
 	ConfigError,
@@ -62,7 +64,3 @@ export {
 	isStructuredKey,
 } from "./types";
 export { constant, jmespath } from "./utils";
-
-
-export { ISO_UTC, SQL_UTC, SQL_NAIVE } from "./constants";
-export type { DatetimeFormat } from "./constants";

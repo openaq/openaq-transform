@@ -1,7 +1,7 @@
 import { DateTime, Duration } from "luxon";
+import { type DatetimeFormat, ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
 import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
-import { ISO_UTC, SQL_UTC, SQL_NAIVE, DatetimeFormat } from './constants';
 
 function assertValid(
 	dt: DateTime,
@@ -15,16 +15,13 @@ function isValidDatetime(dt: DateTime): dt is DateTime<true> {
 	return dt.isValid;
 }
 
-
 export const ISO_FORMAT = Symbol("iso");
-
 
 const FORMATS: Record<string, string | typeof ISO_FORMAT> = {
 	[ISO_UTC]: ISO_FORMAT,
 	[SQL_UTC]: "yyyy-MM-dd HH:mm:ssZZ",
 	[SQL_NAIVE]: "yyyy-MM-dd HH:mm:ss",
 };
-
 
 /** @internal */
 export function resolveFormat(f?: DatetimeFormat) {
@@ -92,7 +89,6 @@ export class Datetime {
 		input: string | number | Date | DateTime,
 		options?: DatetimeOptions,
 	) {
-
 		const resolvedFormat = resolveFormat(options?.format);
 		const formatHasZone =
 			typeof resolvedFormat === "string" && /Z/.test(resolvedFormat);
@@ -101,10 +97,9 @@ export class Datetime {
 		if ((formatHasZone || inputHasZone) && options?.timezone) {
 			throw new TypeError(
 				`Cannot set a timezone ("${options.timezone}") when the input or format ` +
-				`also has zone information.`,
+					`also has zone information.`,
 			);
 		}
-
 
 		if (input instanceof Date && !options?.timezone) {
 			throw new TypeError("Input of type Date must include timezone option");
@@ -174,7 +169,6 @@ export class Datetime {
 		);
 		return parsedDate;
 	}
-
 
 	/**
 	 * Converts the internal Luxon `DateTime` to a native JavaScript `Date` object.

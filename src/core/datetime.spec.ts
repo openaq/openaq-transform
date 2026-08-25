@@ -1,7 +1,7 @@
 import { DateTime, Duration, Settings } from "luxon";
 import { expect, test } from "vitest";
-import { Datetime } from "./datetime";
 import { ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
+import { Datetime } from "./datetime";
 
 const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
@@ -376,7 +376,6 @@ test("now without timezone falls back to system/local zone (backwards compatible
 	expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
 });
 
-
 test("ISO_UTC alias parses a Z-suffixed string as UTC", () => {
 	const dt = new Datetime("2025-06-01T00:00:00Z", { format: ISO_UTC });
 	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
@@ -395,12 +394,16 @@ test("SQL_UTC parses correctly", () => {
 
 test("SQL_NAIVE requires a timezone", () => {
 	const dt = new Datetime("2025-05-01 00:00:00", {
-		format: SQL_NAIVE, timezone: "America/Denver",
+		format: SQL_NAIVE,
+		timezone: "America/Denver",
 	});
 	expect(dt.toUTC()).toBe("2025-05-01T06:00:00Z");
 });
 
 test("custom format strings pass through as Luxon format", () => {
-	const dt = new Datetime("01/06/2025 00:00", { format: "dd/MM/yyyy HH:mm", timezone: "UTC" });
+	const dt = new Datetime("01/06/2025 00:00", {
+		format: "dd/MM/yyyy HH:mm",
+		timezone: "UTC",
+	});
 	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
 });

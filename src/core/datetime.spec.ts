@@ -1,6 +1,7 @@
 import { DateTime, Duration, Settings } from "luxon";
 import { expect, test } from "vitest";
 import { Datetime } from "./datetime";
+import { ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
 
 const expectedNow = DateTime.local(2025, 6, 1, 1, 0, 0);
 Settings.now = () => expectedNow.toMillis();
@@ -119,6 +120,12 @@ test("datetime string with Z correctly throws when timezone is also included", (
 				locationTimezone: "America/Denver",
 			}),
 	).toThrow(TypeError);
+});
+test("ZZ format parses a bare Z designator as UTC", () => {
+	const dt = new Datetime("2025-01-01T00:00:00Z", {
+		format: "yyyy-MM-dd'T'HH:mm:ssZZ",
+	});
+	expect(dt.toUTC()).toBe("2025-01-01T00:00:00Z");
 });
 
 test("Datetime string with Z correctly parses and adds timezone offset when format is provided", () => {
@@ -367,4 +374,33 @@ test("now with offset and timezone combined", () => {
 test("now without timezone falls back to system/local zone (backwards compatible)", () => {
 	const now = Datetime.now();
 	expect(now.toUTC()).toBe("2025-06-01T05:00:00Z");
+});
+
+
+test("ISO_UTC alias parses a Z-suffixed string as UTC", () => {
+	const dt = new Datetime("2025-06-01T00:00:00Z", { format: ISO_UTC });
+	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
+});
+
+test("ISO_UTC is equivalent default", () => {
+	const a = new Datetime("2025-06-01T00:00:00Z", { format: ISO_UTC });
+	const b = new Datetime("2025-06-01T00:00:00Z");
+	expect(a.toUTC()).toBe(b.toUTC());
+});
+
+test("SQL_UTC parses correctly", () => {
+	const dt = new Datetime("2025-06-01 00:00:00Z", { format: SQL_UTC });
+	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
+});
+
+test("SQL_NAIVE requires a timezone", () => {
+	const dt = new Datetime("2025-05-01 00:00:00", {
+		format: SQL_NAIVE, timezone: "America/Denver",
+	});
+	expect(dt.toUTC()).toBe("2025-05-01T06:00:00Z");
+});
+
+test("custom format strings pass through as Luxon format", () => {
+	const dt = new Datetime("01/06/2025 00:00", { format: "dd/MM/yyyy HH:mm", timezone: "UTC" });
+	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
 });

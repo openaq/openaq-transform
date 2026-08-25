@@ -82,7 +82,7 @@ export abstract class Client<
 	geometryProjection: string | PathExpression | ConstantValue | ParseFunction =
 		"projection";
 	datetimeType: DatetimeType = "string";
-	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
+	datetimeFormat?: string;
 	timeEnding: boolean = true;
 
 	// mapped data variables
@@ -184,8 +184,9 @@ export abstract class Client<
 		if (this._params?.datetimeFormat) {
 			this.datetimeFormat = this._params.datetimeFormat;
 		}
-		if (this.datetimeType !== "string" && this._params?.datetimeFormat) {
+		if (this.datetimeType !== "string" && this.datetimeFormat) {
 			throw new ConfigError(
+
 				`datetimeFormat is not used when datetimeType is "${this.datetimeType}"`,
 			);
 		}
@@ -380,9 +381,9 @@ export abstract class Client<
 		try {
 			const body = refreshToken
 				? JSON.stringify({
-						grant_type: "refresh_token",
-						refresh_token: refreshToken,
-					})
+					grant_type: "refresh_token",
+					refresh_token: refreshToken,
+				})
 				: undefined;
 
 			const res = await fetch(url, {
@@ -496,15 +497,20 @@ export abstract class Client<
 			);
 		}
 
+		const zone =
+			typeof dtValue === "string" && /([Zz]|[+-]\d{2}:?\d{2})$/.test(dtValue);
+
 		let dt =
-			this.datetimeType === "string"
-				? new Datetime(dtValue as string, {
-						format: this.datetimeFormat,
-						timezone: this.timezone,
-					})
+			this.datetimeType === "string" ?
+				new Datetime(dtValue as string, {
+
+					format: this.datetimeFormat,
+					...(zone ? { locationTimezone: this.timezone }
+						: { timezone: this.timezone }),
+				})
 				: new Datetime(toUnixSeconds(dtValue, this.datetimeType), {
-						locationTimezone: this.timezone,
-					});
+					locationTimezone: this.timezone,
+				});
 
 		if (!this.timeEnding) {
 			if (!averagingIntervalSeconds) {
@@ -629,13 +635,13 @@ export abstract class Client<
 
 		return this.normalizeDataStructure(
 			d as
-				| Partial<
-						Record<
-							"measurements" | "locations" | "meta" | "flags" | "sensors",
-							SourceRecord[]
-						>
-				  >
-				| SourceRecord[],
+			| Partial<
+				Record<
+					"measurements" | "locations" | "meta" | "flags" | "sensors",
+					SourceRecord[]
+				>
+			>
+			| SourceRecord[],
 		);
 	}
 
@@ -866,9 +872,9 @@ export abstract class Client<
 		const params: Array<
 			string | PathExpression | ConstantValue | ParseFunction
 		> = this.longFormat
-			? // for long format we will just pass the parameter name key and use that each time
+				? // for long format we will just pass the parameter name key and use that each time
 				[this.parameterName]
-			: this.measurements.parameterKeys();
+				: this.measurements.parameterKeys();
 
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
@@ -1030,8 +1036,7 @@ export abstract class Client<
 		}
 
 		throw new Error(
-			`Invalid parser method: ${JSON.stringify(method)}${
-				key ? ` with key "${key}"` : ""
+			`Invalid parser method: ${JSON.stringify(method)}${key ? ` with key "${key}"` : ""
 			}`,
 		);
 	}
@@ -1085,8 +1090,7 @@ export abstract class Client<
 		}
 
 		throw new Error(
-			`Invalid reader method: ${JSON.stringify(method)}${
-				key ? ` with key "${key}"` : ""
+			`Invalid reader method: ${JSON.stringify(method)}${key ? ` with key "${key}"` : ""
 			}`,
 		);
 	}
@@ -1166,7 +1170,7 @@ export abstract class Client<
 			provider: this.provider,
 			datetime: translateKey(this.datetime),
 			timezone: this.timezone,
-			datetimeFormat: this.datetimeFormat,
+			datetimeFormat: this.datetimeFormat ?? "ISO-8601",
 			geometryProjection: translateKey(this.geometryProjection),
 			yGeometry: translateKey(this.yGeometry),
 			xGeometry: translateKey(this.xGeometry),

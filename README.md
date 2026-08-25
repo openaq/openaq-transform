@@ -337,27 +337,54 @@ timestamp lives in the source row, same as any other field mapping:
 datetime = 'observed_at'
 ```
 
-#### Parsing the datetimes
+#### Parsing datetimes
 
 `datetimeType` tells transform how to interpret the value derived from `datetime`:
 
-| datetimeType | Description |
+| `datetimeType` | Description |
 |---|---|
 |"string" (default) |	A formatted date/time string, parsed using `datetimeFormat` and `timezone`.|
 |"seconds" | 	A Unix epoch value in seconds (number or numeric string).|
 | "milliseconds" |	A Unix epoch value in milliseconds (number or numeric string).|
 
-For string timestamps, set `datetimeFormat` to a [Luxon format string](https://github.com/moment/luxon/blob/master/docs/formatting.md#table-of-tokens)
-matching the source data formatting. Include`timezone` if the string does not already encode an offset:
+
+For string timestamps, `datetimeFormat` defaults to `ISO_UTC`, which handles ISO-8601,
+2026-06-30T22:00:00Z, with or without milliseconds, and with either a Z designator or
+a numeric offset.
+
+For other shapes, set `datetimeFormat` to a [Luxon format string](https://github.com/moment/luxon/blob/master/docs/formatting.md#table-of-tokens).
+
+Transform includes some named constants which provide common formats in a
+ convenient variable: 
+
+| Constant |	Matches |
+|---|---|
+| `ISO_UTC`  (default) | 	`2026-06-30T22:00:00Z`, 2026-06-30T22:00:00+00:00 | 
+| `SQL_UTC`	| `2026-06-30 22:00:00Z` space separator, Zulu designator |
+| `SQL_NAIVE` |	2026-06-30 22:00:00 — no zone info; requires timezone |
+
+
+```ts
+import { SQL_UTC } from '@openaq/transform/core';
+
+datetime = 'date_added';
+datetimeFormat = SQL_UTC;
+```
+
+> [!IMPORTANT]
+> Set` timezone` only when the source string carries no time zone information.
+> If the value already ends in `'Z'` or an offset (e.g. `'-05:00'`), supplying timezone throws
+>  a `TypeError`.
+
 
 ```ts
 datetime = 'observed_at';
 datetimeType = 'string'; // default, can be omitted
-datetimeFormat = "yyyy-MM-dd'T'HH:mm:ssZZ"; // default
-timezone = 'America/Los_Angeles'; // only needed if the string has no offset
+datetimeFormat = "ISO_NAIVE";
+timezone = 'America/Los_Angeles'; 
 ```
 
-For Unix timestamps, set `datetimeType` and omit `datetimeFormat`:
+For Unix timestamps, set `datetimeType`to `seconds` or `milliseconds` and omit `datetimeFormat`:
 
 ```ts
 datetime = 'observed_at';
@@ -489,7 +516,7 @@ column
 
 ```ts
 import { NodeClient } from 'openaq-transform/node';
-import { Resource } from 'openaq-transform/core';
+import { Resource, constant } from 'openaq-transform/core';
 
 
 export class Client extends NodeClient {
@@ -500,17 +527,16 @@ export class Client extends NodeClient {
   };
   parser = 'json';
   reader = 'api';
-  averagingIntervalKey = 3600;
-  isMobileKey = false;
+  averagingInterval = constant(3600);
+  isMobile = false;
   longFormat = true
-  locationIdKey = 'locationId'
-  datetimeKey = 'datetime'
-  locationLabelKey = 'name'
-  xGeometryKey = 'lon'
-  yGeometryKey = 'lat'
-  parameterNameKey = 'parameter'
-  parameterValueKey = 'value'
-  datetimeFormat = null
+  locationId = 'locationId'
+  datetime = 'datetime'
+  locationLabel = 'name'
+  xGeometry = 'lon'
+  yGeometry = 'lat'
+  parameterName = 'parameter'
+  parameterValue = 'value'
   parameters = [
     { parameter: 'pm25', unit: 'ug/m3', key: 'pm25' },
   ]
@@ -519,7 +545,8 @@ export class Client extends NodeClient {
 ```
 ## TransformData Output
 
-`TransformData` is the main output of the transform client, returned by `client.load()`. It contains everything the ingestor needs to process a batch of air quality data.
+`TransformData` is the main output of the transform client, returned by `client.load()`.
+It contains everything the ingestor needs to process a batch of air quality data.
 
 ### Structure
 

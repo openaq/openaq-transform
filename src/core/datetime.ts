@@ -1,6 +1,7 @@
 import { DateTime, Duration } from "luxon";
 import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
+import { ISO_UTC, SQL_UTC, SQL_NAIVE, DatetimeFormat } from './constants';
 
 function assertValid(
 	dt: DateTime,
@@ -13,6 +14,26 @@ function assertValid(
 function isValidDatetime(dt: DateTime): dt is DateTime<true> {
 	return dt.isValid;
 }
+
+
+export const ISO_FORMAT = Symbol("iso");
+
+
+const FORMATS: Record<string, string | typeof ISO_FORMAT> = {
+	[ISO_UTC]: ISO_FORMAT,
+	[SQL_UTC]: "yyyy-MM-dd HH:mm:ssZZ",
+	[SQL_NAIVE]: "yyyy-MM-dd HH:mm:ss",
+};
+
+
+/** @internal */
+export function resolveFormat(f?: DatetimeFormat) {
+	if (!f) {
+		return ISO_FORMAT;
+	}
+	return FORMATS[f] ?? f;
+}
+
 /**
  * A wrapper class for Luxon's `DateTime` that provides simplified
  * handling for various date and time inputs, with a focus on timezone management.
@@ -71,14 +92,20 @@ export class Datetime {
 		input: string | number | Date | DateTime,
 		options?: DatetimeOptions,
 	) {
-		if (
-			(options?.format?.includes("Z") ||
-				(typeof input === "string" && input.includes("Z"))) &&
-			options?.timezone
-		)
+
+		const resolvedFormat = resolveFormat(options?.format);
+		const formatHasZone =
+			typeof resolvedFormat === "string" && /Z/.test(resolvedFormat);
+		const inputHasZone = typeof input === "string" && /Z$/i.test(input);
+
+		if ((formatHasZone || inputHasZone) && options?.timezone) {
 			throw new TypeError(
-				`You cannot include both the Z option in your format (${options.format}) and a timezone (${options.timezone})`,
+				`Cannot set a timezone ("${options.timezone}") when the input or format ` +
+				`also has zone information.`,
 			);
+		}
+
+
 		if (input instanceof Date && !options?.timezone) {
 			throw new TypeError("Input of type Date must include timezone option");
 		}
@@ -108,6 +135,7 @@ export class Datetime {
 			throw new TypeError("Input required");
 		}
 		let parsedDate: DateTime;
+		const resolvedFormat = resolveFormat(this.format);
 
 		if (this.#input instanceof DateTime) {
 			parsedDate = this.#input;
@@ -119,33 +147,34 @@ export class Datetime {
 				setZone: true,
 			});
 		} else {
-			if (!this.format) {
-				// defaults to ISO-8601
-				// the setZone option will ensure that it sets the zone to the string offset and not the local zone
+			if (resolvedFormat === ISO_FORMAT) {
 				parsedDate = DateTime.fromISO(this.#input, { setZone: true });
 			} else {
-				if (this.timezone) {
-					parsedDate = DateTime.fromFormat(this.#input, this.format, {
-						zone: this.timezone,
-					});
-				} else {
-					parsedDate = DateTime.fromFormat(this.#input, this.format, {
-						setZone: true,
-					});
+				let input = this.#input;
+				if (/ZZ/.test(resolvedFormat)) {
+					input = input.replace(/Z$/i, "+00:00");
 				}
+
+				parsedDate = this.timezone
+					? DateTime.fromFormat(input, resolvedFormat, { zone: this.timezone })
+					: DateTime.fromFormat(input, resolvedFormat, { setZone: true });
 			}
 
 			if (!this.locationTimezone && parsedDate.zoneName) {
 				this.locationTimezone = parsedDate.zoneName;
 			}
 		}
+
 		assertValid(
 			parsedDate,
 			() =>
-				`Invalid date input: "${formatValueForLog(this.#input)}" with format "${this.format}: ${parsedDate.invalidReason}".`,
+				`Invalid date input: "${formatValueForLog(this.#input)}" with format ` +
+				`"${resolvedFormat === ISO_FORMAT ? "ISO-8601" : resolvedFormat}". ` +
+				`${parsedDate.invalidReason}: ${parsedDate.invalidExplanation ?? ""}`,
 		);
 		return parsedDate;
 	}
+
 
 	/**
 	 * Converts the internal Luxon `DateTime` to a native JavaScript `Date` object.

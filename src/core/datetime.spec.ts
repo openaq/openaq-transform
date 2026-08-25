@@ -392,12 +392,35 @@ test("SQL_UTC parses correctly", () => {
 	expect(dt.toUTC()).toBe("2025-06-01T00:00:00Z");
 });
 
-test("SQL_NAIVE requires a timezone", () => {
+// should this throw an error or work?
+test("SQL_UTC rejects timestamps with hours", () => {
+	expect(() => new Datetime("2025-06-01 00:00:00+05:00", {
+    format: SQL_UTC
+  })).toThrow(Error);
+});
+
+test("SQL_NAIVE uses a timezone", () => {
 	const dt = new Datetime("2025-05-01 00:00:00", {
 		format: SQL_NAIVE,
 		timezone: "America/Denver",
 	});
 	expect(dt.toUTC()).toBe("2025-05-01T06:00:00Z");
+});
+
+// right now this would fall back to using luxons default
+test("SQL_NAIVE requires a timezone", () => {
+  expect(() => new Datetime("2025-05-01 00:00:00", {
+		format: SQL_NAIVE,
+    timezone: undefined,
+	})).toThrow(Error);
+});
+
+// this currently works
+test("unknown format format code throws error", () => {
+	expect(() => new Datetime("01/06/2025 00:00", {
+		format: "UNKNOWN_FORMAT_CODE",
+		timezone: "UTC",
+	})).toThrow(Error);
 });
 
 test("custom format strings pass through as Luxon format", () => {

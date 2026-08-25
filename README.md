@@ -3,6 +3,8 @@
 ![NPM Version](https://img.shields.io/npm/v/@openaq/transform)
 [![Module type: ESM](https://img.shields.io/badge/module%20type-esm-brightgreen)](https://github.com/voxpelli/badges-cjs-esm)
 [![codecov](https://codecov.io/gh/openaq/openaq-transform/branch/main/graph/badge.svg?token=HETHDVU3AR)](https://codecov.io/gh/openaq/openaq-transform)
+[![Formatted with Biome](https://img.shields.io/badge/Formatted_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev/)
+[![Linted with Biome](https://img.shields.io/badge/Linted_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)
 
 A Typescript library for transforming air quality data sources into a single
 standardized output.

@@ -1,8 +1,8 @@
 import { DateTime, Duration } from "luxon";
 import { type DatetimeFormat, ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
+import { ConfigError } from "./errors";
 import type { DatetimeOptions, TimeOffset } from "./types/datetime";
 import { formatValueForLog } from "./utils";
-import { ConfigError } from "./errors";
 
 function assertValid(
 	dt: DateTime,
@@ -98,20 +98,19 @@ export class Datetime {
 		if ((formatHasZone || inputHasZone) && options?.timezone) {
 			throw new TypeError(
 				`Cannot set a timezone ("${options.timezone}") when the input or format ` +
-				`also has zone information.`,
+					`also has zone information.`,
 			);
 		}
 		if (options?.format === SQL_NAIVE && !options?.timezone) {
 			throw new ConfigError(
 				`Format "${SQL_NAIVE}" carries no zone information and requires a ` +
-				`"timezone" option to be interpreted.`,
+					`"timezone" option to be interpreted.`,
 			);
 		}
 
 		if (input instanceof Date && !options?.timezone) {
 			throw new TypeError("Input of type Date must include timezone option");
 		}
-
 
 		this.#input = input;
 		this.format = options?.format;
@@ -122,10 +121,9 @@ export class Datetime {
 		if (options?.format === SQL_UTC && this.date.offset !== 0) {
 			throw new ConfigError(
 				`Format "${SQL_UTC}" requires a UTC offset, but got ` +
-				`"${this.date.toFormat("ZZ")}" from "${formatValueForLog(input)}".`,
+					`"${this.date.toFormat("ZZ")}" from "${formatValueForLog(input)}".`,
 			);
 		}
-
 
 		if (this.date > DateTime.now()) {
 			throw new RangeError(

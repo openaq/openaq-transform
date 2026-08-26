@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - unreleased
 
+### Breaking
+- `datetimeFormat` option in client no longer defaults to `yyyy-MM-dd'T'HH:mm:ssZZ`,
+  now is optional and defers default to `Datetime` to resolve to Luxons default ISO 8601.
+
 ### Added
 
-- `Datteime` `format` option now accepts new named constants `ISO_UTC`,
+- `Datetime` `format` option now accepts new named constants `ISO_UTC`,
   `SQL_UTC`, and `SQL_NAIVE`, alongside raw Luxon format strings.
 
 ### Fixed

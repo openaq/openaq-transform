@@ -82,7 +82,7 @@ export abstract class Client<
 	geometryProjection: string | PathExpression | ConstantValue | ParseFunction =
 		"projection";
 	datetimeType: DatetimeType = "string";
-	datetimeFormat: string = "yyyy-MM-dd'T'HH:mm:ssZZ";
+	datetimeFormat?: string;
 	timeEnding: boolean = true;
 
 	// mapped data variables
@@ -184,7 +184,7 @@ export abstract class Client<
 		if (this._params?.datetimeFormat) {
 			this.datetimeFormat = this._params.datetimeFormat;
 		}
-		if (this.datetimeType !== "string" && this._params?.datetimeFormat) {
+		if (this.datetimeType !== "string" && this.datetimeFormat) {
 			throw new ConfigError(
 				`datetimeFormat is not used when datetimeType is "${this.datetimeType}"`,
 			);
@@ -496,11 +496,16 @@ export abstract class Client<
 			);
 		}
 
+		const zone =
+			typeof dtValue === "string" && /([Zz]|[+-]\d{2}:?\d{2})$/.test(dtValue);
+
 		let dt =
 			this.datetimeType === "string"
 				? new Datetime(dtValue as string, {
 						format: this.datetimeFormat,
-						timezone: this.timezone,
+						...(zone
+							? { locationTimezone: this.timezone }
+							: { timezone: this.timezone }),
 					})
 				: new Datetime(toUnixSeconds(dtValue, this.datetimeType), {
 						locationTimezone: this.timezone,
@@ -1166,7 +1171,7 @@ export abstract class Client<
 			provider: this.provider,
 			datetime: translateKey(this.datetime),
 			timezone: this.timezone,
-			datetimeFormat: this.datetimeFormat,
+			datetimeFormat: this.datetimeFormat ?? "ISO-8601",
 			geometryProjection: translateKey(this.geometryProjection),
 			yGeometry: translateKey(this.yGeometry),
 			xGeometry: translateKey(this.xGeometry),

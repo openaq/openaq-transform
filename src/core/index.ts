@@ -1,4 +1,6 @@
 export { Client } from "./client";
+export type { DatetimeFormat } from "./constants";
+export { ISO_UTC, SQL_NAIVE, SQL_UTC } from "./constants";
 export { Datetime } from "./datetime";
 export {
 	ConfigError,

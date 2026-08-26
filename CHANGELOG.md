@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - unreleased
+
+### Breaking
+- `datetimeFormat` option in client no longer defaults to `yyyy-MM-dd'T'HH:mm:ssZZ`,
+  now is optional and defers default to `Datetime` to resolve to Luxons default ISO 8601.
+
+### Added
+
+- `Datetime` `format` option now accepts new named constants `ISO_UTC`,
+  `SQL_UTC`, and `SQL_NAIVE`, alongside raw Luxon format strings.
+
+### Fixed
+
+- Inputs ending in `Z` now parse under formats containing `ZZ` the suffix is
+  normalized to `+00:00` before parsing.
 
 ## [0.7.0] - 2026-08-21
 
@@ -104,3 +119,4 @@ in favor of `value`.
 [security releases](https://nodejs.org/en/blog/vulnerability/june-2026-security-releases)
 * Replaced the internal `debug` logger utility with the `obug` library for core
 client diagnostic logging.
+

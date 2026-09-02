@@ -214,6 +214,147 @@ new Resource({
 | `context` | `Context \| (params, data) => Context` | | Fields merged onto rows from this resource, a static object or a function of the resolved parameters |
 | `strict` | `boolean` | `false` | If `true`, throws on first error. If `false`, errors are passed to `errorHandler` |
 
+
+### Authentication
+
+Authentication is configured at the `Resource` level via the `auth` parameter. Transform
+resolves auth at request time. Auth headers are merged into the request headers and
+query parameter-based auth keys are appended to the generated URL.
+
+Because `auth` lives on the resource rather than the client, a client with an
+indexed `resource` object can authenticate each endpoint differently.
+
+```ts
+new Resource({
+  url: 'https://api.example.com/data',
+  auth: {
+    type: 'Bearer',
+    token: 'abc123',
+  },
+});
+```
+
+#### Types
+
+| `type` | Required fields | Where it goes |
+| --- | --- | --- |
+| `"APIKey"` | `position`, `key`, `value` | Header, cookie, or query string, depending on `position` |
+| `"Bearer"` | `token` | `Authorization: Bearer <token>` header |
+| `"Basic"` | `username`, `password` | `Authorization: Basic <base64>` header |
+
+##### APIKey
+
+`APIKey` covers the common case of a provider-issued token passed as a named
+key/value pair. `position` decides where that pair is placed:
+
+| `position` | Behavior |
+| --- | --- |
+| `"header"` | Sets a request header named `key` with the value `value` |
+| `"query"` | Sets a query string parameter named `key` on every generated URL |
+| `"cookie"` | Sets the `Cookie` header to `value` |
+
+####### Examples
+
+**API Key Header**
+
+```ts
+new Resource({
+  url: 'https://api.example.com/data',
+  auth: {
+    type: 'APIKey',
+    position: 'header',
+    key: 'X-API-Key',
+    value: () => this.secrets.apiKey,
+  },
+});
+```
+
+Would result in an equivalent cURL command like: 
+
+```sh
+curl 'https://api.example.com/data' -H 'X-API-Key: abc123'
+```
+
+**API Key Query parameter**
+
+```ts
+new Resource({
+  url: 'https://api.example.com/data',
+  auth: {
+    type: 'APIKey',
+    position: 'query',
+    key: 'token',
+    value: () => this.secrets.apiKey,
+  },
+});
+```
+
+Would result in an equivalent cURL command like:
+
+```sh
+curl 'https://api.example.com/data?token=abc123'
+```
+
+> [!NOTE]
+> Query keys are set with `URLSearchParams.set`, so an API key placed in the query
+> string will overwrite a parameter of the same name produced by `parameters` on
+> the resource.
+
+##### Bearer Auth Header
+
+
+###### Example
+
+```ts
+new Resource({
+  url: 'https://api.example.com/data',
+  auth: {
+    type: 'Bearer',
+    token: 'abc123',
+  },
+});
+```
+
+```sh
+curl 'https://api.example.com/data' -H 'Authorization: Bearer eyJhbGciOi...'
+```
+##### Basic Auth
+
+`username` and `password` are joined and base64-encoded into a standard
+`Authorization: Basic` header.
+
+
+
+###### Example
+
+```ts
+new Resource({
+  url: 'https://api.example.com/data',
+  auth: {
+    type: 'Basic',
+    username: 'admin',
+    password: 'admin',
+  },
+});
+```
+
+```sh
+curl 'https://api.example.com/data' -H 'Authorization: Base YWRtaW46YWRtaW4='
+```
+
+#### Properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `type` | `"APIKey" \| "Bearer" \| "Basic"` | Authentication strategy |
+| `position` | `"header" \| "query" \| "cookie"` | `APIKey` only. Where the credential is placed |
+| `key` | `string \| () => string` | `APIKey` only. Header or query parameter name. Unused when `position` is `"cookie"` |
+| `value` | `string \| () => string` | `APIKey` only. The credential |
+| `token` | `string` | `Bearer` only. Passed through as-is |
+| `username` | `string \| () => string` | `Basic` only |
+| `password` | `string \| () => string` | `Basic` only |
+
+
 ### Readers
 
 Transform provides built-in readers to handle common methods of fetching data

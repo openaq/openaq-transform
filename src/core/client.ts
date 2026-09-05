@@ -1138,7 +1138,7 @@ export abstract class Client<
 
 	/** Class-level {@link info}; instantiates the subclass to read its defaults. */
 	static info<T extends Client>(this: new () => T): ClientInfo {
-		const client = new Client();
+		const client = new this();
 		client.setup();
 		return client.info();
 	}

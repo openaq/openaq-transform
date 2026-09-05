@@ -380,9 +380,9 @@ export abstract class Client<
 		try {
 			const body = refreshToken
 				? JSON.stringify({
-						grant_type: "refresh_token",
-						refresh_token: refreshToken,
-					})
+					grant_type: "refresh_token",
+					refresh_token: refreshToken,
+				})
 				: undefined;
 
 			const res = await fetch(url, {
@@ -502,14 +502,14 @@ export abstract class Client<
 		let dt =
 			this.datetimeType === "string"
 				? new Datetime(dtValue as string, {
-						format: this.datetimeFormat,
-						...(zone
-							? { locationTimezone: this.timezone }
-							: { timezone: this.timezone }),
-					})
+					format: this.datetimeFormat,
+					...(zone
+						? { locationTimezone: this.timezone }
+						: { timezone: this.timezone }),
+				})
 				: new Datetime(toUnixSeconds(dtValue, this.datetimeType), {
-						locationTimezone: this.timezone,
-					});
+					locationTimezone: this.timezone,
+				});
 
 		if (!this.timeEnding) {
 			if (!averagingIntervalSeconds) {
@@ -634,13 +634,13 @@ export abstract class Client<
 
 		return this.normalizeDataStructure(
 			d as
-				| Partial<
-						Record<
-							"measurements" | "locations" | "meta" | "flags" | "sensors",
-							SourceRecord[]
-						>
-				  >
-				| SourceRecord[],
+			| Partial<
+				Record<
+					"measurements" | "locations" | "meta" | "flags" | "sensors",
+					SourceRecord[]
+				>
+			>
+			| SourceRecord[],
 		);
 	}
 
@@ -871,9 +871,9 @@ export abstract class Client<
 		const params: Array<
 			string | PathExpression | ConstantValue | ParseFunction
 		> = this.longFormat
-			? // for long format we will just pass the parameter name key and use that each time
+				? // for long format we will just pass the parameter name key and use that each time
 				[this.parameterName]
-			: this.measurements.parameterKeys();
+				: this.measurements.parameterKeys();
 
 		measurements.forEach((measurementRow: SourceRecord) => {
 			try {
@@ -1035,8 +1035,7 @@ export abstract class Client<
 		}
 
 		throw new Error(
-			`Invalid parser method: ${JSON.stringify(method)}${
-				key ? ` with key "${key}"` : ""
+			`Invalid parser method: ${JSON.stringify(method)}${key ? ` with key "${key}"` : ""
 			}`,
 		);
 	}
@@ -1090,8 +1089,7 @@ export abstract class Client<
 		}
 
 		throw new Error(
-			`Invalid reader method: ${JSON.stringify(method)}${
-				key ? ` with key "${key}"` : ""
+			`Invalid reader method: ${JSON.stringify(method)}${key ? ` with key "${key}"` : ""
 			}`,
 		);
 	}
@@ -1136,37 +1134,16 @@ export abstract class Client<
 		};
 	}
 
+
+	/** Class-level {@link info}; instantiates the subclass to read its defaults. */
+	static info<T extends Client>(this: new () => T): ClientInfo {
+		return new this().info();
+	}
+
 	/**
 	 * Returns a summary of the client's configuration for display or debugging purposes.
 	 */
 	info(): ClientInfo {
-		const translateKey = (
-			key:
-				| string
-				| number
-				| boolean
-				| PathExpression
-				| ConstantValue
-				| ParseFunction,
-		): ClientInfoKey => {
-			let type: ClientInfoKey["type"];
-			let value: string | number | boolean | undefined;
-			if (typeof key === "function") {
-				type = "function";
-				value = String(getValueFromKey({}, key));
-			} else if (typeof key === "string") {
-				type = "field";
-				value = key;
-			} else if (typeof key === "object" && "value" in key) {
-				type = key.type;
-				value = key.value;
-			} else {
-				type = "field";
-				value = undefined;
-			}
-			return { type, value };
-		};
-
 		return {
 			provider: this.provider,
 			datetime: translateKey(this.datetime),
@@ -1190,4 +1167,35 @@ export abstract class Client<
 			})),
 		};
 	}
+}
+
+/**
+ * Normalizes a client field mapping into a `{ type, value }` pair for display.
+ *
+ * Client fields such as `datetime` or `manufacturer` may be expressed one if
+ * several ways: a source field name, a {@link ConstantValue} wrapper, or a
+ * {@link ParseFunction}. This flattens them into a uniform shape for {@link ClientInfo}.
+ *
+ * @param key, The field mapping to describe.
+ * @returns The flattened descriptor.
+ */
+export function translateKey(
+	key: string | number | boolean | PathExpression | ConstantValue | ParseFunction,
+): ClientInfoKey {
+	let type: ClientInfoKey["type"];
+	let value: string | number | boolean | undefined;
+	if (typeof key === "function") {
+		type = "function";
+		value = String(getValueFromKey({}, key));
+	} else if (typeof key === "string") {
+		type = "field";
+		value = key;
+	} else if (typeof key === "object" && "value" in key) {
+		type = key.type;
+		value = key.value;
+	} else {
+		type = "field";
+		value = undefined;
+	}
+	return { type, value };
 }

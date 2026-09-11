@@ -1136,37 +1136,17 @@ export abstract class Client<
 		};
 	}
 
+	/** Class-level {@link info}; instantiates the subclass to read its defaults. */
+	static info<T extends Client>(this: new () => T): ClientInfo {
+		const client = new this();
+		client.setup();
+		return client.info();
+	}
+
 	/**
 	 * Returns a summary of the client's configuration for display or debugging purposes.
 	 */
 	info(): ClientInfo {
-		const translateKey = (
-			key:
-				| string
-				| number
-				| boolean
-				| PathExpression
-				| ConstantValue
-				| ParseFunction,
-		): ClientInfoKey => {
-			let type: ClientInfoKey["type"];
-			let value: string | number | boolean | undefined;
-			if (typeof key === "function") {
-				type = "function";
-				value = String(getValueFromKey({}, key));
-			} else if (typeof key === "string") {
-				type = "field";
-				value = key;
-			} else if (typeof key === "object" && "value" in key) {
-				type = key.type;
-				value = key.value;
-			} else {
-				type = "field";
-				value = undefined;
-			}
-			return { type, value };
-		};
-
 		return {
 			provider: this.provider,
 			datetime: translateKey(this.datetime),
@@ -1190,4 +1170,49 @@ export abstract class Client<
 			})),
 		};
 	}
+}
+
+/**
+ * Normalizes a client field mapping into a `{ type, value }` pair for display.
+ *
+ * Client fields such as `datetime` or `manufacturer` may be expressed one if
+ * several ways: a source field name, a {@link ConstantValue} wrapper, or a
+ * {@link ParseFunction}. This flattens them into a uniform shape for {@link ClientInfo}.
+ *
+ * @param key, The field mapping to describe.
+ * @returns The flattened descriptor.
+ */
+export function translateKey(
+	key:
+		| string
+		| number
+		| boolean
+		| PathExpression
+		| ConstantValue
+		| ParseFunction,
+): ClientInfoKey {
+	let type: ClientInfoKey["type"];
+	let value: string | number | boolean | undefined;
+	if (typeof key === "function") {
+		type = "function";
+		try {
+			const result = getValueFromKey({}, key);
+			value = result === undefined ? undefined : String(result);
+		} catch {
+			value = undefined;
+		}
+	} else if (typeof key === "string") {
+		type = "field";
+		value = key;
+	} else if (typeof key === "boolean" || typeof key === "number") {
+		type = "constant";
+		value = key;
+	} else if (key !== null && typeof key === "object" && "value" in key) {
+		type = key.type;
+		value = key.value;
+	} else {
+		type = "field";
+		value = undefined;
+	}
+	return { type, value };
 }

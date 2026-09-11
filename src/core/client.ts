@@ -1,4 +1,5 @@
 import { createDebug } from "obug";
+import { Coordinates } from "./coordinates";
 import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
@@ -88,6 +89,8 @@ export abstract class Client<
 	// mapped data variables
 	locationId: string | PathExpression | ConstantValue | ParseFunction =
 		"location";
+	useGeohash: boolean = false;
+	geohashPrecision: number = 10;
 	locationLabel: string | PathExpression | ConstantValue | ParseFunction =
 		"label";
 	// if longFormat = false this value is ignored
@@ -191,6 +194,26 @@ export abstract class Client<
 		}
 		if (this._params?.timezone) {
 			this.timezone = this._params.timezone;
+		}
+		if (this._params?.useGeohash !== undefined) {
+			this.useGeohash = this._params.useGeohash;
+		}
+		if (this._params?.geohashPrecision !== undefined) {
+			this.geohashPrecision = this._params.geohashPrecision;
+		}
+		if (this.useGeohash && this._params?.locationId) {
+			throw new ConfigError(
+				"locationId cannot not be set when useGeohash is true",
+			);
+		}
+		if (
+			!Number.isInteger(this.geohashPrecision) ||
+			this.geohashPrecision < 1 ||
+			this.geohashPrecision > 12
+		) {
+			throw new ConfigError(
+				`geohashPrecision must be an integer between 1 and 12, got ${this.geohashPrecision}`,
+			);
 		}
 		if (this._params?.longFormat) {
 			this.longFormat = this._params.longFormat;
@@ -736,8 +759,23 @@ export abstract class Client<
 	 * Add a location to our list
 	 */
 	private getLocation(data: SourceRecord) {
-		const siteId = getString(data, this.locationId) ?? "";
-		// BUILDING KEY
+		const x = this.getNumber(data, this.xGeometry);
+		const y = this.getNumber(data, this.yGeometry);
+		const projection = getString(data, this.geometryProjection);
+
+		let siteId: string;
+		if (this.useGeohash) {
+			if (x === undefined || y === undefined) {
+				throw new MissingAttributeError("geometry", data);
+			}
+			const coordinates = new Coordinates(x, y, projection);
+			siteId = coordinates.geohash(this.geohashPrecision);
+		} else {
+			siteId = getString(data, this.locationId) ?? "";
+		}
+
+		siteId = siteId ?? "";
+
 		const key = Location.createKey({ provider: this.provider, siteId });
 
 		let location: Location | undefined = this._locations.get(key);

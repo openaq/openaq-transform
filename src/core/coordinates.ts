@@ -7,7 +7,7 @@ import {
 	LongitudeBoundsError,
 } from "./errors";
 import type { CoordinatesJSON } from "./types/coordinates";
-import { countDecimals } from "./utils";
+import { countDecimals, toGeohash } from "./utils";
 
 /**
  * Represents geographic coordinates, capable of handling different projections
@@ -119,6 +119,15 @@ export class Coordinates {
 	 */
 	get longitude(): number {
 		return this.#projected[0];
+	}
+
+	/**
+	 * Returns the geohash for the coordinates.
+	 *
+	 * @param precision The length of the geohash string. Defaults to 10
+	 */
+	geohash(precision: number = 10): string {
+		return toGeohash(this.latitude, this.longitude, precision);
 	}
 
 	/**

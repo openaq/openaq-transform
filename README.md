@@ -330,6 +330,33 @@ For certain fields that accept `boolean` or `number`, a literal value matching
 the appropriate type can be passed as constant in the case that a dynamic lookup
 or mapping is not applicable.
 
+#### Geohash derived IDs
+
+Some sources have no stable site identifier. Setting `useGeohash = true` derives
+`siteId` from each row's coordinates instead of looking up `locationId`:
+
+```ts
+export class Client extends NodeClient {
+  provider = 'example';
+  useGeohash = true;
+  xGeometry = 'lon';
+  yGeometry = 'lat';
+}
+````
+
+The site id is a geohash prefixed with `gh_`, e.g. `example/gh_c207nr1ugz`. Rows
+in the same cell resolve to the same location. The hash is always computed from
+WGS84 coordinates, reprojecting first if `geometryProjection` names something else.
+
+`geohashPrecision` (default 10) sets the cell size, and so how far apart two
+coordinates can be and still count as one location:
+
+
+> [!NOTE]
+> Coordinates must be present on every record, including measurement rows.
+> Sources that supply them only in a separate locations resource will throw a
+> `MissingAttributeError`.
+
 ### Datetime handling
 
 Transform turns each row's raw datetime value into a normalized, timezone-aware timestamp.

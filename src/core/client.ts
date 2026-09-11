@@ -1160,7 +1160,7 @@ export abstract class Client<
 	data(): TransformData {
 		return {
 			meta: {
-				schema: "v0.1",
+				schema: "transform",
 				sourceName: this.provider,
 				ingestMatchingMethod: this.ingestMatchingMethod,
 				startedOn: this._startedOn?.toString(),

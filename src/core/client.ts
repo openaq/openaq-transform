@@ -1195,11 +1195,19 @@ export function translateKey(
 	let value: string | number | boolean | undefined;
 	if (typeof key === "function") {
 		type = "function";
-		value = String(getValueFromKey({}, key));
+		try {
+			const result = getValueFromKey({}, key);
+			value = result === undefined ? undefined : String(result);
+		} catch {
+			value = undefined;
+		}
 	} else if (typeof key === "string") {
 		type = "field";
 		value = key;
-	} else if (typeof key === "object" && "value" in key) {
+	} else if (typeof key === "boolean" || typeof key === "number") {
+		type = "constant";
+		value = key;
+	} else if (key !== null && typeof key === "object" && "value" in key) {
 		type = key.type;
 		value = key.value;
 	} else {

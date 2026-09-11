@@ -1,4 +1,5 @@
 import { createDebug } from "obug";
+import { Coordinates } from "./coordinates";
 import { Datetime } from "./datetime";
 import type { TransformError } from "./errors";
 import {
@@ -88,6 +89,8 @@ export abstract class Client<
 	// mapped data variables
 	locationId: string | PathExpression | ConstantValue | ParseFunction =
 		"location";
+	useGeohash: boolean = false;
+	geohashPrecision: number = 10;
 	locationLabel: string | PathExpression | ConstantValue | ParseFunction =
 		"label";
 	// if longFormat = false this value is ignored
@@ -191,6 +194,26 @@ export abstract class Client<
 		}
 		if (this._params?.timezone) {
 			this.timezone = this._params.timezone;
+		}
+		if (this._params?.useGeohash !== undefined) {
+			this.useGeohash = this._params.useGeohash;
+		}
+		if (this._params?.geohashPrecision !== undefined) {
+			this.geohashPrecision = this._params.geohashPrecision;
+		}
+		if (this.useGeohash && this._params?.locationId) {
+			throw new ConfigError(
+				"locationId cannot not be set when useGeohash is true",
+			);
+		}
+		if (
+			!Number.isInteger(this.geohashPrecision) ||
+			this.geohashPrecision < 1 ||
+			this.geohashPrecision > 12
+		) {
+			throw new ConfigError(
+				`geohashPrecision must be an integer between 1 and 12, got ${this.geohashPrecision}`,
+			);
 		}
 		if (this._params?.longFormat) {
 			this.longFormat = this._params.longFormat;
@@ -736,8 +759,23 @@ export abstract class Client<
 	 * Add a location to our list
 	 */
 	private getLocation(data: SourceRecord) {
-		const siteId = getString(data, this.locationId) ?? "";
-		// BUILDING KEY
+		const x = this.getNumber(data, this.xGeometry);
+		const y = this.getNumber(data, this.yGeometry);
+		const projection = getString(data, this.geometryProjection);
+
+		let siteId: string;
+		if (this.useGeohash) {
+			if (x === undefined || y === undefined) {
+				throw new MissingAttributeError("geometry", data);
+			}
+			const coordinates = new Coordinates(x, y, projection);
+			siteId = coordinates.geohash(this.geohashPrecision);
+		} else {
+			siteId = getString(data, this.locationId) ?? "";
+		}
+
+		siteId = siteId ?? "";
+
 		const key = Location.createKey({ provider: this.provider, siteId });
 
 		let location: Location | undefined = this._locations.get(key);
@@ -1136,37 +1174,17 @@ export abstract class Client<
 		};
 	}
 
+	/** Class-level {@link info}; instantiates the subclass to read its defaults. */
+	static info<T extends Client>(this: new () => T): ClientInfo {
+		const client = new this();
+		client.setup();
+		return client.info();
+	}
+
 	/**
 	 * Returns a summary of the client's configuration for display or debugging purposes.
 	 */
 	info(): ClientInfo {
-		const translateKey = (
-			key:
-				| string
-				| number
-				| boolean
-				| PathExpression
-				| ConstantValue
-				| ParseFunction,
-		): ClientInfoKey => {
-			let type: ClientInfoKey["type"];
-			let value: string | number | boolean | undefined;
-			if (typeof key === "function") {
-				type = "function";
-				value = String(getValueFromKey({}, key));
-			} else if (typeof key === "string") {
-				type = "field";
-				value = key;
-			} else if (typeof key === "object" && "value" in key) {
-				type = key.type;
-				value = key.value;
-			} else {
-				type = "field";
-				value = undefined;
-			}
-			return { type, value };
-		};
-
 		return {
 			provider: this.provider,
 			datetime: translateKey(this.datetime),
@@ -1190,4 +1208,49 @@ export abstract class Client<
 			})),
 		};
 	}
+}
+
+/**
+ * Normalizes a client field mapping into a `{ type, value }` pair for display.
+ *
+ * Client fields such as `datetime` or `manufacturer` may be expressed one if
+ * several ways: a source field name, a {@link ConstantValue} wrapper, or a
+ * {@link ParseFunction}. This flattens them into a uniform shape for {@link ClientInfo}.
+ *
+ * @param key, The field mapping to describe.
+ * @returns The flattened descriptor.
+ */
+export function translateKey(
+	key:
+		| string
+		| number
+		| boolean
+		| PathExpression
+		| ConstantValue
+		| ParseFunction,
+): ClientInfoKey {
+	let type: ClientInfoKey["type"];
+	let value: string | number | boolean | undefined;
+	if (typeof key === "function") {
+		type = "function";
+		try {
+			const result = getValueFromKey({}, key);
+			value = result === undefined ? undefined : String(result);
+		} catch {
+			value = undefined;
+		}
+	} else if (typeof key === "string") {
+		type = "field";
+		value = key;
+	} else if (typeof key === "boolean" || typeof key === "number") {
+		type = "constant";
+		value = key;
+	} else if (key !== null && typeof key === "object" && "value" in key) {
+		type = key.type;
+		value = key.value;
+	} else {
+		type = "field";
+		value = undefined;
+	}
+	return { type, value };
 }

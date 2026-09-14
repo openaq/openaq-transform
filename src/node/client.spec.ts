@@ -585,7 +585,7 @@ describe("Client with measurement errors", () => {
 
 	const expected = {
 		meta: {
-			schema: "v0.1",
+			schema: "transform",
 			sourceName: "testing",
 			ingestMatchingMethod: "ingest-id",
 			startedOn: "2025-06-01T01:00:00-04:00",
@@ -736,7 +736,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 	const expected = {
 		errors: {},
 		meta: {
-			schema: "v0.1",
+			schema: "transform",
 			sourceName: "testing",
 			ingestMatchingMethod: "ingest-id",
 			startedOn: "2025-06-01T01:00:00-04:00",
@@ -960,5 +960,40 @@ describe("Client with timeEnding=false normalizes timestamps to time-ending", ()
 			"2024-01-01T01:00:00-08:00", // was 00:00
 			"2024-01-01T02:00:00-08:00", // was 01:00
 		]);
+	});
+});
+
+describe("Client that creates locationId from a geohash", () => {
+	class JsonClient extends Client {
+		resource = new Resource({
+			url: "https://blah.org/test-provider/wrapped-wide",
+			output: "object",
+			responsePath: "data",
+		});
+		provider = "testing";
+		useGeohash = true;
+		xGeometry = "longitude";
+		yGeometry = "latitude";
+		averagingInterval = 3600;
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
+
+	const expectedSiteId = "gh_c207nr1ugz";
+
+	test("siteId is the geohash of the coordinates", async () => {
+		const cln = new JsonClient();
+		const data = await cln.load();
+
+		expect(data.locations).toHaveLength(1);
+		expect(data.locations[0].site_id).toBe(expectedSiteId);
+		expect(data.locations[0].key).toBe(`testing/${expectedSiteId}`);
 	});
 });

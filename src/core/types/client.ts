@@ -191,6 +191,9 @@ export interface ClientConfiguration<S = object> {
 	secrets?: S;
 
 	locationId?: string | ParseFunction;
+	useGeohash?: boolean;
+	geohashPrecision?: number;
+
 	locationLabel?: string | ParseFunction;
 	parameterName?: string | ParseFunction;
 	parameterValue?: string | ParseFunction;

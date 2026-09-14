@@ -1,4 +1,6 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
+import geohash from "ngeohash";
+
 import { createDebug } from "obug";
 import { DatetimeError } from "./errors";
 import {
@@ -18,6 +20,8 @@ import {
 } from "./types/metric";
 
 const log = createDebug("openaq-transform:core:utils");
+
+const { encode } = geohash;
 
 export const stripNulls = <T extends object>(
 	obj: T,
@@ -425,4 +429,13 @@ export function isBlank(value: unknown): boolean {
 		value === undefined ||
 		(typeof value === "string" && value.trim() === "")
 	);
+}
+
+export function toGeohash(
+	lat: number,
+	lng: number,
+	precision: number = 10,
+): string {
+	const hash = encode(lat, lng, precision);
+	return `gh_${hash}`;
 }

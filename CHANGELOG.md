@@ -30,15 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `translateKey` was pulled out from `Client.info()` into a module-level
   function.
 
-### Breaking
-
-### Added
-
-### Fixed
-
-### Changed
-
-
 ## [0.8.0] - 2026-08-26
 
 ### Breaking

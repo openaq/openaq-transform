@@ -5,8 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.0] - unreleased
+## [0.9.0] - 2026-09-14
 
+### Breaking
+
+- `meta.schema` in the output is now `"transform"` instead of `"v0.1"`. Consumers
+  checking that value will need updating.
+
+### Added
+
+- Geohash-derived location IDs. Setting `useGeohash = true` on a client derives
+  `siteId` from each row's coordinates when a stable unique identifier.
+- Static `Client.info()` method  which instantiates and sets up the subclass to generate
+  configuration JSON.
+
+### Fixed
+
+- `translateKey` now reports bare `boolean` and `number` mappings as `constant`
+  rather than mislabelling them, tolerates `null`, and no longer throws when a
+  `ParseFunction` fails on an empty record.
+
+### Changed
+
+- `translateKey` was pulled out from `Client.info()` into a module-level
+  function.
 
 ### Breaking
 

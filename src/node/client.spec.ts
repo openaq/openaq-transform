@@ -585,7 +585,7 @@ describe("Client with measurement errors", () => {
 
 	const expected = {
 		meta: {
-			schema: "v0.1",
+			schema: "transform",
 			sourceName: "testing",
 			ingestMatchingMethod: "ingest-id",
 			startedOn: "2025-06-01T01:00:00-04:00",
@@ -736,7 +736,7 @@ describe("Client with digit group and decimal delimiter setting", () => {
 	const expected = {
 		errors: {},
 		meta: {
-			schema: "v0.1",
+			schema: "transform",
 			sourceName: "testing",
 			ingestMatchingMethod: "ingest-id",
 			startedOn: "2025-06-01T01:00:00-04:00",

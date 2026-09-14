@@ -70,7 +70,7 @@ export const csvdata = {
 
 export const expectedOutput = {
 	meta: {
-		schema: "v0.1",
+		schema: "transform",
 		sourceName: "testing",
 		ingestMatchingMethod: "ingest-id",
 		startedOn: "2025-06-01T01:00:00-04:00",

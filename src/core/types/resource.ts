@@ -220,6 +220,14 @@ export type BearerAuth = {
 	headers?: Headers;
 
 	/**
+	 * JSON body sent when first calling `tokenUrl`, for providers that expect
+	 * credentials in the body (e.g. a username and password). 
+	 *
+	 * @example body: () => ({ username: this.secrets.username, password: this.secrets.password })
+	 */
+	body?: TokenRequestBody;
+
+	/**
 	 * The active bearer token, included as `Authorization: Bearer <token>`
 	 * on outgoing requests. Absent until the token has been obtained
 	 * from `tokenUrl`.
@@ -249,7 +257,20 @@ export type BearerAuth = {
 		expiresIn?: string;
 		refreshToken?: string;
 	};
+
+	/**
+	 * Read the token from this response header instead of the JSON body,
+	 * for providers that return it as a header.
+	 *
+	 * @example 'st-access-token'
+	 */
+	tokenHeader?: string;
 };
+
+/** A JSON body for a token request, or a function that builds one. */
+export type TokenRequestBody =
+	| Record<string, unknown>
+	| (() => Record<string, unknown>);
 
 export type Parameters = Record<string, string | number | boolean>;
 

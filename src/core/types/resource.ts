@@ -221,7 +221,7 @@ export type BearerAuth = {
 
 	/**
 	 * JSON body sent when first calling `tokenUrl`, for providers that expect
-	 * credentials in the body (e.g. a username and password). 
+	 * credentials in the body (e.g. a username and password).
 	 *
 	 * @example body: () => ({ username: this.secrets.username, password: this.secrets.password })
 	 */

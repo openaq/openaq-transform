@@ -48,7 +48,11 @@ import type {
 } from "./types/metric";
 import { isParser, type Parser, type ParserMethods } from "./types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "./types/readers";
-import type { BearerAuth, ResourceKeys } from "./types/resource";
+import type {
+	BearerAuth,
+	ResourceKeys,
+	TokenRequestBody,
+} from "./types/resource";
 import type { SystemData } from "./types/system";
 import {
 	cleanKey,
@@ -63,6 +67,9 @@ import {
 } from "./utils";
 
 const log = createDebug("openaq-transform:core:client");
+
+const resolveBody = (body: TokenRequestBody) =>
+	typeof body === "function" ? body() : body;
 
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,
@@ -340,25 +347,42 @@ export abstract class Client<
 	}
 
 	private async initAuth() {
-		if (!this.resource || isIndexed(this.resource)) {
+		if (!this.resource) {
 			return;
 		}
-		const resource = this.resource;
+		const resources = isIndexed(this.resource)
+			? Object.values(this.resource).filter((r) => r !== undefined)
+			: [this.resource];
 
-		const { auth } = resource;
-		if (auth?.type !== "Bearer") {
-			return;
-		}
-		if (!auth.tokenUrl) {
-			return;
-		}
+		// resources that share a tokenUrl share one login
+		const done = new Map<string, BearerAuth>();
 
-		if (auth.token) {
-			await this.refreshAuth(resource);
-			return;
-		}
+		for (const resource of resources) {
+			const { auth } = resource;
+			if (auth?.type !== "Bearer") {
+				continue;
+			}
+			if (!auth.tokenUrl) {
+				continue;
+			}
 
-		await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+			const shared = done.get(auth.tokenUrl);
+			if (shared) {
+				const { token, expiresAt, refreshToken } = shared;
+				resource.auth = { ...auth, token, expiresAt, refreshToken };
+				continue;
+			}
+
+			if (auth.token) {
+				await this.refreshAuth(resource);
+			} else {
+				await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+			}
+
+			if (resource.auth?.type === "Bearer") {
+				done.set(auth.tokenUrl, resource.auth);
+			}
+		}
 	}
 
 	private async refreshAuth(resource: Resource) {
@@ -406,7 +430,9 @@ export abstract class Client<
 						grant_type: "refresh_token",
 						refresh_token: refreshToken,
 					})
-				: undefined;
+				: auth.body
+					? JSON.stringify(resolveBody(auth.body))
+					: undefined;
 
 			const res = await fetch(url, {
 				method: "POST",
@@ -430,12 +456,17 @@ export abstract class Client<
 			const expiresKey = keys.expiresIn ?? "expires_in";
 			const refreshKey = keys.refreshToken ?? "refresh_token";
 
-			const data = await res.json();
-			const token = data[tokenKey];
+			// the body may be empty when the token comes back as a header
+			const data = await res.json().catch(() => ({}));
+			const token = auth.tokenHeader
+				? res.headers.get(auth.tokenHeader)
+				: data[tokenKey];
 
 			if (!token) {
 				throw new Error(
-					`Bearer token response did not contain expected field "${tokenKey}"`,
+					auth.tokenHeader
+						? `Bearer token response did not include the "${auth.tokenHeader}" header`
+						: `Bearer token response did not contain expected field "${tokenKey}"`,
 				);
 			}
 

@@ -86,6 +86,12 @@ describe("Metric", () => {
 		// 760 mmHg ≈ 1013.247 hPa, rounded to 1 decimal -> 1013.2
 		expect(m.process(760)).toBe(1013.2);
 	});
+
+	test("pressure accepts Pa and converts to hPa", () => {
+		const m = new Metric("pressure", "pa");
+		expect(m.process(101325)).toBe(1013.3);
+		expect(m.process(81248.9)).toBe(812.5);
+	});
 });
 
 describe("Metric.process", () => {

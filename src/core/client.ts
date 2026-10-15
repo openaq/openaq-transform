@@ -434,12 +434,14 @@ export abstract class Client<
 					? JSON.stringify(resolveBody(auth.body))
 					: undefined;
 
+			const headers = new Headers(auth.headers);
+			if (!headers.has("Content-Type")) {
+				headers.set("Content-Type", "application/json");
+			}
+
 			const res = await fetch(url, {
 				method: "POST",
-				headers: new Headers({
-					"Content-Type": "application/json",
-					...Object.fromEntries(auth.headers ?? []),
-				}),
+				headers,
 				...(body && { body }),
 			});
 
@@ -458,14 +460,15 @@ export abstract class Client<
 
 			// the body may be empty when the token comes back as a header
 			const data = await res.json().catch(() => ({}));
-			const token = auth.tokenHeader
-				? res.headers.get(auth.tokenHeader)
+			const fromHeader = typeof tokenKey === "object";
+			const token = fromHeader
+				? res.headers.get(tokenKey.header)
 				: data[tokenKey];
 
 			if (!token) {
 				throw new Error(
-					auth.tokenHeader
-						? `Bearer token response did not include the "${auth.tokenHeader}" header`
+					fromHeader
+						? `Bearer token response did not include the "${tokenKey.header}" header`
 						: `Bearer token response did not contain expected field "${tokenKey}"`,
 				);
 			}

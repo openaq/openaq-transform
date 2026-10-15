@@ -337,7 +337,7 @@ auth = {
   tokenUrl: 'https://api.example.com/auth/login',
   body: () => ({ username: this.secrets.username, password: this.secrets.password }),
   tokenResponseKeys: { token: 'Token' }, // token is in the JSON response, default 'access_token'
-  // tokenHeader: 'x-access-token',      // or: token comes back as a response header
+  // tokenResponseKeys: { token: { header: 'x-access-token' } }, // or: in a response header
 };
 ```
 
@@ -376,8 +376,7 @@ curl 'https://api.example.com/data' -H 'Authorization: Base YWRtaW46YWRtaW4='
 | `token` | `string` | `Bearer` only. Passed through as-is |
 | `tokenUrl` | `string` | `Bearer` only. Login endpoint; the client POSTs to it once before fetching |
 | `body` | `object \| () => object` | `Bearer` only. JSON body for the `tokenUrl` request |
-| `tokenResponseKeys` | `{ token?, expiresIn?, refreshToken? }` | `Bearer` only. Field names in the login response (default `access_token`, …) |
-| `tokenHeader` | `string` | `Bearer` only. Read the token from this response header instead |
+| `tokenResponseKeys` | `{ token?, expiresIn?, refreshToken? }` | `Bearer` only. Field names in the login response (default `access_token`, …). `token` can also be `{ header: '…' }` to read it from a response header |
 | `username` | `string \| () => string` | `Basic` only |
 | `password` | `string \| () => string` | `Basic` only |
 

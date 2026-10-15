@@ -1126,9 +1126,9 @@ describe("Client that logs in for a token", () => {
 		resource = resources({
 			type: "Bearer",
 			tokenUrl: "https://blah.org/login/header",
-			headers: new Headers({ "x-auth-mode": "header" }),
+			headers: { "x-auth-mode": "header" },
 			body: () => ({ email: this.secrets?.username }),
-			tokenHeader: "x-access-token",
+			tokenResponseKeys: { token: { header: "x-access-token" } },
 		});
 	}
 

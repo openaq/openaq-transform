@@ -10,6 +10,7 @@ import type {
 import {
 	type DataContext,
 	type IndexedReaderOptions,
+	isBodyInit,
 	isIndexedReaderOptions,
 	type RawContent,
 	type ReadAs,
@@ -93,6 +94,28 @@ export function mergeObjects<T = unknown>(objects: unknown[]): T {
 	}
 
 	return merged as T;
+}
+
+function requestInit(options: UrlReaderOptions, body: unknown): RequestInit {
+	if (body === undefined) {
+		return { ...options, method: options.method ?? "GET" };
+	}
+	const headers = new Headers(options.headers);
+	let payload: BodyInit;
+	if (isBodyInit(body)) {
+		payload = body;
+	} else {
+		payload = JSON.stringify(body);
+		if (!headers.has("Content-Type")) {
+			headers.set("Content-Type", "application/json");
+		}
+	}
+	return {
+		...options,
+		method: options.method ?? "POST",
+		headers,
+		body: payload,
+	};
 }
 
 export async function apiReader(
@@ -186,19 +209,21 @@ export async function apiReader(
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url, context }) => {
+			batch.map(async ({ url, body, context }) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
 
 				// Step 1: Fetch and read content
 				try {
-					log(`fetching ${url}...`);
-					const res = await fetch(url, fetchOptions);
+					log(`fetching ${fetchOptions.method} ${url}...`);
+					const res = await fetch(url, requestInit(readerOptions, body));
 					log(`fetching ${url} received HTTP ${res.status}`);
 
-					if (res.status !== 200) {
+					if (!res.ok) {
+						const text = await res.text().catch(() => "");
+						log(`response body: ${text.slice(0, 1000)}`);
 						throw new FetchError(
-							`${res.status} ${res.statusText}`,
+							`${res.status} ${res.statusText}${text ? `: ${text.slice(0, 500)}` : ""}`,
 							url,
 							res.status,
 						);

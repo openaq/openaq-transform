@@ -147,3 +147,18 @@ export type RawContent =
 	| { readAs: "json"; content: unknown }
 	| { readAs: "text"; content: string }
 	| { readAs: "blob"; content: Blob };
+
+/**
+ * Type guard for values `fetch` accepts as a request body without encoding.
+ */
+export function isBodyInit(value: unknown): value is BodyInit {
+	return (
+		typeof value === "string" ||
+		value instanceof URLSearchParams ||
+		value instanceof FormData ||
+		value instanceof Blob ||
+		value instanceof ArrayBuffer ||
+		ArrayBuffer.isView(value) ||
+		value instanceof ReadableStream
+	);
+}

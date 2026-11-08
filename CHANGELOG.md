@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `pressure` parameter now supports a `pa` unit converter (pascals to hectopascals).
+- `BearerAuth.body`: a JSON body (or a function returning one) sent on the
+  first `tokenUrl` request, for providers that take credentials in the body.
+- `tokenResponseKeys.token` also accepts `{ header }`, to read the token from a
+  response header instead of the JSON body, e.g. `{ header: 'st-access-token' }`.
+- `BearerAuth.headers` also accepts a plain object.
+
 ## [0.9.0] - 2026-09-14
 
 ### Breaking

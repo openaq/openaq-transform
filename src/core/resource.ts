@@ -13,9 +13,11 @@ import {
 	type Auth,
 	type AuthValueFunction,
 	type Body,
+	type BodyFunction,
 	type Context,
 	type ContextFunction,
 	isAuthValueFunction,
+	type JsonBody,
 	type Parameters,
 	type ParametersFunction,
 	type ResourceUrl,
@@ -48,7 +50,8 @@ export class Resource {
 	private _file?: File | Array<File>;
 	private _url?: string;
 	private _parameters?: Parameters[] | ParametersFunction | PathExpression;
-	private _body?: Body;
+	private _body?: Body | JsonBody | BodyFunction;
+
 	private _data: DataContext;
 	private _context?: Context | ContextFunction;
 	private _responsePath?: PathExpression | string;
@@ -278,7 +281,20 @@ export class Resource {
 		}
 	}
 
-	private static buildBody(body: Body, parameters: Parameters): Body {
+	private resolveBody(params: Parameters): Body | JsonBody | undefined {
+		if (this._body === undefined) {
+			return undefined;
+		}
+		if (typeof this._body === "function") {
+			return this._body(params, this._data);
+		}
+		return Resource.buildBody(this._body, params);
+	}
+
+	private static buildBody(
+		body: Body | JsonBody,
+		parameters: Parameters,
+	): Body | JsonBody {
 		if (typeof body === "string") {
 			return Resource.replaceTemplateVariables(body, parameters);
 		}
@@ -340,10 +356,7 @@ export class Resource {
 
 			for (const params of parameters) {
 				const url = this.buildUrl(params);
-				const body =
-					this._body !== undefined
-						? Resource.buildBody(this._body, params)
-						: undefined;
+				const body = this.resolveBody(params);
 				const context = this.resolveContext(params);
 
 				urls.push({
@@ -353,9 +366,12 @@ export class Resource {
 				});
 			}
 		} else {
+			const body = this.resolveBody({});
+
 			urls.push({
 				url: this._url,
-				...(this._body && { body: this._body }),
+				...(body !== undefined && { body }),
+
 				...(typeof this._context === "object" && { context: this._context }),
 			});
 		}

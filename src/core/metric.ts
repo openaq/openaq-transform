@@ -362,6 +362,7 @@ export const PARAMETERS: ParameterMap = {
 			mb: noConversion,
 			mbar: noConversion,
 			kpa: (d: number | string) => +d * 10,
+			pa: (d: number | string) => +d / 100,
 			mmhg: (d: number | string) => +d * 1.33322,
 		},
 	},

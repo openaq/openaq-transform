@@ -77,6 +77,13 @@ export type ResourceKeys = (typeof RESOURCE_KEYS)[number];
  */
 export type Body = Exclude<BodyInit, Blob>;
 
+export type JsonBody = Record<string, unknown> | unknown[];
+
+export type BodyFunction = (
+	params: Parameters,
+	data: DataContext,
+) => Body | Record<string, unknown>;
+
 export type AuthValueFunction = () => string;
 
 export function isAuthValueFunction(
@@ -267,9 +274,7 @@ export type BearerAuth = {
 };
 
 /** A JSON body for a token request, or a function that builds one. */
-export type TokenRequestBody =
-	| Record<string, unknown>
-	| (() => Record<string, unknown>);
+export type TokenRequestBody = Record<string, unknown> | (() => JsonBody);
 
 export type Parameters = Record<string, string | number | boolean>;
 
@@ -277,7 +282,7 @@ export type ParametersFunction = (data?: DataContext) => Parameters[];
 
 export interface ResourceUrl {
 	url: string;
-	body?: Body;
+	body?: Body | JsonBody;
 	context?: Context;
 }
 

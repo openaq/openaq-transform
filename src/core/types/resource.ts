@@ -77,6 +77,15 @@ export type ResourceKeys = (typeof RESOURCE_KEYS)[number];
  */
 export type Body = Exclude<BodyInit, Blob>;
 
+export type JsonBody = Record<string, unknown> | unknown[];
+
+export type TokenRequestBody = JsonBody | (() => JsonBody);
+
+export type BodyFunction = (
+	params: Parameters,
+	data: DataContext,
+) => Body | Record<string, unknown>;
+
 export type AuthValueFunction = () => string;
 
 export function isAuthValueFunction(
@@ -277,7 +286,7 @@ export type ParametersFunction = (data?: DataContext) => Parameters[];
 
 export interface ResourceUrl {
 	url: string;
-	body?: Body;
+	body?: Body | JsonBody;
 	context?: Context;
 }
 

@@ -79,8 +79,6 @@ export type Body = Exclude<BodyInit, Blob>;
 
 export type JsonBody = Record<string, unknown> | unknown[];
 
-export type TokenRequestBody = JsonBody | (() => JsonBody);
-
 export type BodyFunction = (
 	params: Parameters,
 	data: DataContext,
@@ -276,9 +274,7 @@ export type BearerAuth = {
 };
 
 /** A JSON body for a token request, or a function that builds one. */
-export type TokenRequestBody =
-	| Record<string, unknown>
-	| (() => Record<string, unknown>);
+export type TokenRequestBody = Record<string, unknown> | (() => JsonBody);
 
 export type Parameters = Record<string, string | number | boolean>;
 

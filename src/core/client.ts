@@ -495,6 +495,10 @@ export abstract class Client<
 		}
 	}
 
+	protected get datetimeRange(): { from?: Datetime; to: Datetime } {
+		return { from: this._datetimeFrom, to: this._datetimeTo };
+	}
+
 	async preLoad() {
 		await this.initAuth();
 	}

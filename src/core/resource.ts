@@ -177,7 +177,7 @@ export class Resource {
 		return this._auth;
 	}
 
-	get authHeaders(): Record<string, string> {
+	get authHeaders(): Record<string, Secret> {
 		const { auth } = this;
 		if (!auth) return {};
 
@@ -187,11 +187,11 @@ export class Resource {
 					const key = reveal(resolve(auth.key));
 					const value = reveal(resolve(auth.value));
 					return {
-						[key]: value,
+						[key]: new Secret(value),
 					};
 				}
 				if (auth.position === "cookie") {
-					return { Cookie: reveal(resolve(auth.value)) };
+					return { Cookie: new Secret(reveal(resolve(auth.value))) };
 				}
 				if (auth.position === "query") {
 					return {};
@@ -200,13 +200,13 @@ export class Resource {
 			}
 			case "Bearer": {
 				const token = auth.token ? reveal(resolve(auth.token)) : undefined;
-				return token ? { Authorization: `Bearer ${token}` } : {};
+				return token ? { Authorization: new Secret(`Bearer ${token}`) } : {};
 			}
 			case "Basic": {
 				const username = reveal(resolve(auth.username));
 				const password = reveal(resolve(auth.password));
 				const encoded = btoa(`${username}:${password}`);
-				return { Authorization: `Basic ${encoded}` };
+				return { Authorization: new Secret(`Basic ${encoded}`) };
 			}
 
 			default:
@@ -214,19 +214,24 @@ export class Resource {
 		}
 	}
 
+	private get headerEntries(): Array<[string, unknown]> {
+		return [
+			...Object.entries(this._readerOptions?.headers ?? {}).map(
+				([k, v]): [string, unknown] => [k, resolve(v)],
+			),
+			...Object.entries(this.authHeaders),
+		];
+	}
+
 	get headers(): Headers {
 		const merged = new Headers();
+		for (const [k, v] of this.headerEntries) merged.set(k, String(reveal(v)));
+		return merged;
+	}
 
-		if (this._readerOptions?.headers) {
-			for (const [key, value] of Object.entries(this._readerOptions.headers)) {
-				merged.set(key, String(reveal(resolve(value))));
-			}
-		}
-
-		for (const [key, value] of Object.entries(this.authHeaders)) {
-			merged.set(key, value);
-		}
-
+	get displayHeaders(): Headers {
+		const merged = new Headers();
+		for (const [k, v] of this.headerEntries) merged.set(k, String(v));
 		return merged;
 	}
 

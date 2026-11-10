@@ -1,4 +1,5 @@
 import { type JSONValue, search } from "@jmespath-community/jmespath";
+import { reveal, Secret } from "./secrets";
 import type { PathExpression } from "./types";
 import { isPathExpression } from "./types/metric";
 import type { KnownParserOptions, ParserOptions } from "./types/parsers";
@@ -8,20 +9,20 @@ import type {
 	ReaderOptions,
 	UrlReaderOptions,
 } from "./types/readers";
-import type { ResourceConfig, ResourceOutput } from "./types/resource";
-import {
-	type Auth,
-	type AuthValueFunction,
-	type Body,
-	type BodyFunction,
-	type Context,
-	type ContextFunction,
-	isAuthValueFunction,
-	type JsonBody,
-	type Parameters,
-	type ParametersFunction,
-	type ResourceUrl,
+import type {
+	Auth,
+	Body,
+	BodyFunction,
+	Context,
+	ContextFunction,
+	JsonBody,
+	Parameters,
+	ParametersFunction,
+	ResourceConfig,
+	ResourceOutput,
+	ResourceUrl,
 } from "./types/resource";
+import { fillTemplate, resolve, withQueryParam } from "./utils";
 
 /**
  * A data source configuration for fetching and processing remote or local data.
@@ -180,29 +181,30 @@ export class Resource {
 		const { auth } = this;
 		if (!auth) return {};
 
-		const resolve = (v: string | AuthValueFunction) =>
-			isAuthValueFunction(v) ? v() : v;
-
 		switch (auth.type) {
 			case "APIKey": {
 				if (auth.position === "header") {
-					return { [resolve(auth.key)]: resolve(auth.value) };
+					const key = reveal(resolve(auth.key));
+					const value = reveal(resolve(auth.value));
+					return {
+						[key]: value,
+					};
 				}
 				if (auth.position === "cookie") {
-					return { Cookie: resolve(auth.value) };
+					return { Cookie: reveal(resolve(auth.value)) };
 				}
 				if (auth.position === "query") {
 					return {};
 				}
 				return {};
 			}
-			case "Bearer":
-				if (!auth.token) return {};
-				return { Authorization: `Bearer ${auth.token}` };
-
+			case "Bearer": {
+				const token = auth.token ? reveal(resolve(auth.token)) : undefined;
+				return token ? { Authorization: `Bearer ${token}` } : {};
+			}
 			case "Basic": {
-				const username = resolve(auth.username);
-				const password = resolve(auth.password);
+				const username = reveal(resolve(auth.username));
+				const password = reveal(resolve(auth.password));
 				const encoded = btoa(`${username}:${password}`);
 				return { Authorization: `Basic ${encoded}` };
 			}
@@ -217,7 +219,7 @@ export class Resource {
 
 		if (this._readerOptions?.headers) {
 			for (const [key, value] of Object.entries(this._readerOptions.headers)) {
-				merged.set(key, typeof value === "function" ? value() : value);
+				merged.set(key, String(reveal(resolve(value))));
 			}
 		}
 
@@ -246,37 +248,31 @@ export class Resource {
 		};
 	}
 
-	private static replaceTemplateVariables(
-		text: string,
-		parameters: Parameters,
-	): string {
-		return text.replace(/:(\w+)/g, (match, key) => {
-			const value = parameters[key];
-			return value !== undefined ? String(value) : match;
-		});
-	}
-
-	private buildUrl(parameters: Parameters): string {
+	private buildUrl(parameters: Parameters): {
+		url: string;
+		displayUrl: string;
+	} {
 		if (!this._url) {
 			throw new TypeError(
 				"Cannot build URL: resource is file-based, not URL-based",
 			);
 		}
-		const replaced = this._url.replace(/:(\w+)/g, (_match, key) => {
-			const value = parameters[key];
-			if (value === undefined) {
-				throw new Error(`Missing required parameter: ${key}`);
-			}
-			return encodeURIComponent(String(value));
+
+		const url = fillTemplate(this._url, parameters, {
+			required: true,
+			format: (v) => encodeURIComponent(String(reveal(v))),
+		});
+		const displayUrl = fillTemplate(this._url, parameters, {
+			required: true,
+			format: (v) => encodeURIComponent(String(v)),
 		});
 
 		try {
-			const url = new URL(replaced);
-			return url.href;
+			return { url: new URL(url).href, displayUrl };
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
 			throw new TypeError(
-				`Invalid URL after template substitution: ${replaced}. ${message}`,
+				`Invalid URL after template substitution: ${displayUrl}. ${message}`,
 			);
 		}
 	}
@@ -291,20 +287,24 @@ export class Resource {
 		return Resource.buildBody(this._body, params);
 	}
 
+	private static fillBody(text: string, parameters: Parameters): string {
+		return fillTemplate(text, parameters, { format: (v) => String(reveal(v)) });
+	}
+
 	private static buildBody(
 		body: Body | JsonBody,
 		parameters: Parameters,
 	): Body | JsonBody {
 		if (typeof body === "string") {
-			return Resource.replaceTemplateVariables(body, parameters);
+			return Resource.fillBody(body, parameters);
 		}
 
 		if (body instanceof URLSearchParams) {
 			const searchParams = new URLSearchParams();
 			for (const [key, value] of body.entries()) {
 				searchParams.append(
-					Resource.replaceTemplateVariables(key, parameters),
-					Resource.replaceTemplateVariables(value, parameters),
+					Resource.fillBody(key, parameters),
+					Resource.fillBody(value, parameters),
 				);
 			}
 			return searchParams;
@@ -315,12 +315,13 @@ export class Resource {
 			for (const [key, value] of body.entries()) {
 				if (typeof value === "string") {
 					formData.append(
-						Resource.replaceTemplateVariables(key, parameters),
-						Resource.replaceTemplateVariables(value, parameters),
+						Resource.fillBody(key, parameters),
+						Resource.fillBody(value, parameters),
 					);
 				} else {
 					formData.append(
-						Resource.replaceTemplateVariables(key, parameters),
+						Resource.fillBody(key, parameters),
+
 						value,
 					);
 				}
@@ -355,36 +356,38 @@ export class Resource {
 			const parameters = this.resolveParameters();
 
 			for (const params of parameters) {
-				const url = this.buildUrl(params);
+				const { url, displayUrl } = this.buildUrl(params);
 				const body = this.resolveBody(params);
 				const context = this.resolveContext(params);
 
 				urls.push({
 					url,
-					...(body && { body: body }),
+					displayUrl,
+					...(body !== undefined && { body }),
 					...(context && { context }),
 				});
 			}
 		} else {
 			const body = this.resolveBody({});
+			const context = this.resolveContext({});
 
 			urls.push({
 				url: this._url,
+				displayUrl: this._url,
 				...(body !== undefined && { body }),
-
-				...(typeof this._context === "object" && { context: this._context }),
+				...(context && { context }),
 			});
 		}
 		const { auth } = this;
+
 		if (auth?.type === "APIKey" && auth.position === "query") {
-			return urls.map((resourceUrl) => {
-				const url = new URL(resourceUrl.url);
-				const key = typeof auth.key === "function" ? auth.key() : auth.key;
-				const value =
-					typeof auth.value === "function" ? auth.value() : auth.value;
-				url.searchParams.set(key, value);
-				return { ...resourceUrl, url: url.href };
-			});
+			const key = reveal(resolve(auth.key));
+			const value = new Secret(reveal(resolve(auth.value)));
+			return urls.map((resourceUrl) => ({
+				...resourceUrl,
+				url: withQueryParam(resourceUrl.url, key, value.reveal()),
+				displayUrl: withQueryParam(resourceUrl.displayUrl, key, String(value)),
+			}));
 		}
 
 		return urls;

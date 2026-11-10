@@ -218,10 +218,10 @@ export async function apiReader(
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url, displayUrl, body, context }) => {
+			batch.map(async ({ url, displayUrl, body, context }, idx) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
-				const n = `[${i + j + 1}/${urls.length}]`;
+				const n = `[${i + idx + 1}/${urls.length}]`;
 
 				try {
 					const init = requestInit(readerOptions, body);

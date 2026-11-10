@@ -381,6 +381,73 @@ curl 'https://api.example.com/data' -H 'Authorization: Base YWRtaW46YWRtaW4='
 | `password` | `string \| () => string` | `Basic` only |
 
 
+#### Secrets
+
+Transform supports secrets such as API keys, tokens, usernames and passwords in
+`NodeClient`, `BrowserClient` and any other `Client` subclass. Secrets can be
+used in a resource's `auth`, `body` and `parameters`, and are only revealed when
+a request is sent to the provider, which guards against them leaking into logs,
+error messages or output by accident.
+
+Clients take an optional type argument describing the shape of their secrets,
+and the values themselves are passed in the `secrets` option when the client is
+created. When the client is configured, every string, number and boolean in
+`secrets`, at any depth, is wrapped in a `Secret`, which masks the value when it
+is printed, converted to a string or serialized to JSON.
+
+##### Basic usage
+
+```ts
+interface Secrets {
+  apiKey: string;
+}
+
+export class ExampleClient extends   NodeClient<Secrets> {
+  provider = 'example';
+  resource = new Resource({
+    url: 'https://api.example.com/data',
+    auth: {
+      type: 'APIKey',
+      position: 'query',
+      key: 'token',
+      value: () => this.secrets?.apiKey,
+    },
+  });
+}
+
+const client = new ExampleClient({ secrets: { apiKey: 'abc123' } });
+```
+
+This would result in a request to a URL:
+
+```
+https://api.example.com/data?token?abc123
+````
+
+Declare `Secrets` with the types for the values (`string`, `number`, ...). Inside the
+client, `this.secrets` has the wrapped types, so `this.secrets.apiKey` is a
+`Secret`.
+
+> [!NOTE]
+> `this.secrets` is not populated until after class field initializers run.
+> Any resource config that reads from `this.secrets` must do so through a function e.g.
+> `() => this.secrets?.apiKey`.
+
+##### Using secrets
+
+Secrets can be passed as they are to anything that builds a request. Transform
+reveals them only where the request is sent:
+
+| Where | Example |
+| --- | --- |
+| `auth` values | `value: () => this.secrets?.apiKey` |
+| request bodies | `body: () => ({ username: this.secrets?.username, password: this.secrets?.password })` |
+| Resource bodies | `body: () => ({ key: this.secrets?.apiKey, station: '2' })` |
+| `Resource` `parameters` | `parameters: () => [{ key: this.secrets?.apiKey }]` with `url: '.../:key/data'` |
+
+Numbers and booleans maintain their type when revealed, i.e. a numeric secret is
+sent as a JSON number.
+
 ### Readers
 
 Transform provides built-in readers to handle common methods of fetching data

@@ -1,5 +1,6 @@
 import { createDebug } from "obug";
 import { FetchError, ParseError } from "./errors";
+import { reveal, revealSecrets } from "./secrets";
 import type { SourceRecord } from "./types/data";
 import type {
 	BlobParser,
@@ -96,19 +97,25 @@ export function mergeObjects<T = unknown>(objects: unknown[]): T {
 	return merged as T;
 }
 
-function requestInit(options: UrlReaderOptions, body: unknown): RequestInit {
-	if (body === undefined) {
-		return { ...options, method: options.method ?? "GET" };
-	}
+function requestInit(
+	options: UrlReaderOptions = {},
+	body: unknown,
+): RequestInit {
 	const headers = new Headers(options.headers);
+
+	for (const [k, v] of Object.entries(options.headers ?? {})) {
+		headers.set(k, String(reveal(v)));
+	}
+	if (body === undefined) {
+		return { ...options, method: options.method ?? "GET", headers };
+	}
 	let payload: BodyInit;
 	if (isBodyInit(body)) {
 		payload = body;
 	} else {
-		payload = JSON.stringify(body);
-		if (!headers.has("Content-Type")) {
+		payload = JSON.stringify(body, revealSecrets);
+		if (!headers.has("Content-Type"))
 			headers.set("Content-Type", "application/json");
-		}
 	}
 	return {
 		...options,
@@ -194,30 +201,45 @@ export async function apiReader(
 	const readerOptions = resource.readerOptions as UrlReaderOptions;
 	const parserOptions = resource.parserOptions;
 
-	// overrides default if needed
-	const fetchOptions: UrlReaderOptions = {
-		method: "GET",
-		...readerOptions,
-	};
-
 	const urls = resource.urls;
 	const results: object[] = [];
 	let batchError: Error | null = null;
-	log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
+	log(
+		"resource: %d URL(s), concurrency %d, output=%s, readAs=%s, strict=%s, auth=%s",
+		urls.length,
+		concurrency,
+		resource.output,
+		resource.readAs,
+		resource.strict,
+		resource.auth?.type,
+	);
 
 	for (let i = 0; i < urls.length; i += concurrency) {
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url, body, context }) => {
+			batch.map(async ({ url, displayUrl, body, context }, idx) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
+				const n = `[${i + idx + 1}/${urls.length}]`;
 
-				// Step 1: Fetch and read content
 				try {
-					log(`fetching ${fetchOptions.method} ${url}...`);
-					const res = await fetch(url, requestInit(readerOptions, body));
-					log(`fetching ${url} received HTTP ${res.status}`);
+					const init = requestInit(readerOptions, body);
+					log("%s %s %s", n, init.method, displayUrl);
+					log("%s headers: %O", n, Object.fromEntries(resource.displayHeaders));
+					if (body !== undefined)
+						log("%s body type: %s", n, body?.constructor?.name ?? typeof body);
+					if (context) log("%s context: %O", n, context);
+
+					const started = performance.now();
+					const res = await fetch(url, init);
+					log(
+						"%s HTTP %d in %dms, content-type: %s",
+						n,
+						res.status,
+						Math.round(performance.now() - started),
+						res.headers.get("Content-Type"),
+					);
 
 					if (!res.ok) {
 						const text = await res.text().catch(() => "");
@@ -288,6 +310,13 @@ export async function apiReader(
 						throw new ParseError(`Parser returned a non-object value`, url);
 					}
 
+					log(
+						"%s parsed: %s",
+						n,
+						Array.isArray(result)
+							? `${result.length} rows`
+							: `object with keys [${Object.keys(result).join(", ")}]`,
+					);
 					parsed = result as SourceRecord | SourceRecord[];
 				} catch (error) {
 					const parseError =
@@ -327,11 +356,24 @@ export async function apiReader(
 			}),
 		);
 
+		log(
+			"batch done: %d/%d URLs, %d results so far",
+			Math.min(i + concurrency, urls.length),
+			urls.length,
+			results.length,
+		);
+
 		// If we're in strict mode and an error occurred, throw it now
 		if (batchError) {
 			throw batchError;
 		}
 	}
+
+	log(
+		"returning %d result(s) using output %s",
+		results.length,
+		resource.output,
+	);
 
 	// Handle output strategy
 	if (resource.output === "object") {

@@ -1,6 +1,6 @@
 import type { Redacted, SecretValue } from "./types/secrets";
 
-const SECRET_MASK = "*******";
+const SECRET_MASK = "*****";
 
 /**
  * A wrapper class for secrets to prevent logging and leaking values

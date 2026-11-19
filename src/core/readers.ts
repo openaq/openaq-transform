@@ -324,7 +324,7 @@ export async function apiReader(
 						log(`response body: ${text.slice(0, 1000)}`);
 						throw new FetchError(
 							`${res.status} ${res.statusText}${text ? `: ${text.slice(0, 500)}` : ""}`,
-							url,
+							displayUrl,
 							res.status,
 						);
 					}
@@ -355,7 +355,7 @@ export async function apiReader(
 							? error
 							: new FetchError(
 									error instanceof Error ? error.message : String(error),
-									url,
+									displayUrl,
 								);
 
 					// Track first error for strict mode
@@ -367,7 +367,10 @@ export async function apiReader(
 						// this will rethrow if we are in strict mode
 						errorHandler(fetchError, resource.strict || fetchError.strict);
 					} else {
-						console.error(`Reader fetch error at ${url}:`, fetchError.message);
+						console.error(
+							`Reader fetch error at ${displayUrl}:`,
+							fetchError.message,
+						);
 					}
 
 					return; // Early return on fetch error
@@ -385,7 +388,10 @@ export async function apiReader(
 					}
 
 					if (!result || typeof result !== "object") {
-						throw new ParseError(`Parser returned a non-object value`, url);
+						throw new ParseError(
+							`Parser returned a non-object value`,
+							displayUrl,
+						);
 					}
 
 					log(
@@ -402,7 +408,7 @@ export async function apiReader(
 							? error
 							: new ParseError(
 									error instanceof Error ? error.message : String(error),
-									url,
+									displayUrl,
 									error instanceof Error ? error : undefined,
 								);
 

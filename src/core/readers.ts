@@ -16,6 +16,7 @@ import {
 	type RawContent,
 	type ReadAs,
 	type ReaderOptions,
+	type RequestBody,
 	type UrlReaderOptions,
 	type UrlReaderParameters,
 } from "./types/readers";
@@ -52,6 +53,67 @@ const contentTypeMap = new Map<string | null | undefined, ReadAs>([
 // const r2Fetch = async({}) => {} // rs://
 
 // const googleStorageFetcher = async() => {} // gs://
+
+function toBase64(bytes: Uint8Array): string {
+	let bin = "";
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(bin);
+}
+
+function decode(data: ArrayBuffer | ArrayBufferView): string {
+	const bytes =
+		data instanceof ArrayBuffer
+			? new Uint8Array(data)
+			: new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+	try {
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return `<binary, base64> ${toBase64(bytes)}`;
+	}
+}
+
+/**
+ * Builds a human-readable description of a request body for debug logging.
+ * Works from the original body rather than the serialized payload, so any
+ * Secret values serialize masked instead of being revealed. Blobs and binary
+ * buffers can be read without consuming them, so they are logged in full.
+ *
+ * Never rejects: read failures are returned as a description.
+ */
+async function describeBody(body: unknown): Promise<string> {
+	if (body === undefined) return "<none>";
+	if (body === null) return "null";
+	if (typeof body === "string") {
+		return `string(${body.length}): ${body}`;
+	}
+	if (body instanceof URLSearchParams) {
+		return `URLSearchParams: ${body.toString()}`;
+	}
+	try {
+		if (typeof FormData !== "undefined" && body instanceof FormData) {
+			const fields = await Promise.all(
+				[...body.entries()].map(async ([k, v]) =>
+					typeof v === "string"
+						? `${k}=${v}`
+						: `${k}=<file ${v.name || "unnamed"}, ${v.size}b, ${v.type || "no type"}> ${decode(await v.arrayBuffer())}`,
+				),
+			);
+			return `FormData { ${fields.join(", ")} }`;
+		}
+		if (typeof Blob !== "undefined" && body instanceof Blob) {
+			return `Blob(${body.size}b, ${body.type || "no type"}): ${decode(await body.arrayBuffer())}`;
+		}
+		if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
+			return `binary(${body.byteLength}b): ${decode(body)}`;
+		}
+		return `json: ${JSON.stringify(body)}`;
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		return `<${(body as object)?.constructor?.name ?? typeof body}, could not read for logging: ${reason}>`;
+	}
+}
 
 /**
  * Merges multiple objects by concatenating arrays with matching keys.
@@ -109,7 +171,10 @@ function requestInit(
 	if (body === undefined) {
 		return { ...options, method: options.method ?? "GET", headers };
 	}
-	let payload: BodyInit;
+	if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) {
+		throw new TypeError("ReadableStream request bodies are not supported.");
+	}
+	let payload: RequestBody;
 	if (isBodyInit(body)) {
 		payload = body;
 	} else {
@@ -227,8 +292,21 @@ export async function apiReader(
 					const init = requestInit(readerOptions, body);
 					log("%s %s %s", n, init.method, displayUrl);
 					log("%s headers: %O", n, Object.fromEntries(resource.displayHeaders));
-					if (body !== undefined)
-						log("%s body type: %s", n, body?.constructor?.name ?? typeof body);
+					log(
+						"%s content-type: %s",
+						n,
+						(init.headers as Headers).get("Content-Type") ?? "<none>",
+					);
+
+					const bodyKind =
+						body === undefined
+							? "none"
+							: isBodyInit(body)
+								? "sent as-is"
+								: "JSON-serialized";
+					if (log.enabled) {
+						log("%s body (%s): %s", n, bodyKind, await describeBody(body));
+					}
 					if (context) log("%s context: %O", n, context);
 
 					const started = performance.now();

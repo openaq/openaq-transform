@@ -1,5 +1,7 @@
 import type { Redacted, SecretValue } from "./types/secrets";
 
+const SECRET_MASK = "*******";
+
 /**
  * A wrapper class for secrets to prevent logging and leaking values
  *
@@ -36,10 +38,20 @@ export class Secret<T extends SecretValue = string> {
 	/**
 	 * Returns a masked value instead of the secret value.
 	 *
-	 * @returns The string `"*****"`.
+	 * @returns The string value of SECRET_MASK`.
 	 */
 	toString(): string {
-		return "*****";
+		return SECRET_MASK;
+	}
+
+	/**
+	 * Returns a masked value so `JSON.stringify` never writes the secret.
+	 * Use {@link revealSecrets} as the replacer to serialize the real value.
+	 *
+	 * @returns The string value of SECRET_MASK.
+	 */
+	toJSON(): string {
+		return SECRET_MASK;
 	}
 }
 
@@ -104,5 +116,11 @@ export function reveal<T>(value: T): T extends Secret<infer V> ? V : T {
  * JSON.stringify(body, revealSecrets); // '{"username":"user","station":"42"}'
  * JSON.stringify(body);                // '{"username":{},"station":"42"}'
  */
-export const revealSecrets = (_key: string, value: unknown): unknown =>
-	reveal(value);
+export function revealSecrets(
+	this: unknown,
+	key: string,
+	value: unknown,
+): unknown {
+	const original = (this as Record<string, unknown>)[key];
+	return original instanceof Secret ? original.reveal() : value;
+}

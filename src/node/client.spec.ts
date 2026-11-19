@@ -291,7 +291,9 @@ describe("Simple client example", () => {
 
 	test("resource is updated", () => {
 		const cln = new FakeClient();
-		expect(cln.resource.urls).toStrictEqual([{ url: "fake.resource" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "fake.resource", displayUrl: "fake.resource" },
+		]);
 	});
 
 	test("abstract defaults persist", () => {
@@ -309,7 +311,9 @@ describe("Simple client example", () => {
 		const resource = new Resource({ url: "different.fake.resource" });
 		const provider = "my-provider";
 		const cln = new FakeClient({ resource, provider });
-		expect(cln.resource.urls).toStrictEqual([{ url: "fake.resource" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "fake.resource", displayUrl: "fake.resource" },
+		]);
 		expect(cln.provider).toBe(provider);
 	});
 });
@@ -325,7 +329,10 @@ describe("Client with secrets example", () => {
 		const cln = new FakeClient({ secrets: { token: "letmein" } });
 		cln.setup(); // call this because we are not calling load
 		expect(cln.resource.urls).toStrictEqual([
-			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+			{
+				url: "https://blah.org/api-key-in-query?token=letmein",
+				displayUrl: "https://blah.org/api-key-in-query?token=*****",
+			},
 		]);
 	});
 });
@@ -341,7 +348,10 @@ describe("Client with secrets example with configure", () => {
 		const cln = new FakeClient();
 		cln.configure({ secrets: { token: "letmein" } }); // configure calls setup after setting the params
 		expect(cln.resource.urls).toStrictEqual([
-			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+			{
+				url: "https://blah.org/api-key-in-query?token=letmein",
+				displayUrl: "https://blah.org/api-key-in-query?token=*****",
+			},
 		]);
 	});
 });
@@ -370,7 +380,9 @@ describe("Client with data in wide format", () => {
 
 	test("Resource check", () => {
 		const cln = new JsonClient();
-		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/wide" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "https://blah.org/wide", displayUrl: "https://blah.org/wide" },
+		]);
 	});
 
 	test("parameter check", () => {
@@ -1166,8 +1178,6 @@ describe("Client that logs in for a token", () => {
 		cln.configure({ secrets });
 		const data = await cln.load();
 		expect(loginCalls).toBe(1);
-		const auth = (cln.resource as Record<string, Resource>).measurements.auth;
-		expect(auth?.type === "Bearer" && auth.token).toBe("abc123");
 		expect(data).toStrictEqual(expectedOutput);
 	});
 

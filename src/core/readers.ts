@@ -1,5 +1,6 @@
 import { createDebug } from "obug";
 import { FetchError, ParseError } from "./errors";
+import { reveal, revealSecrets } from "./secrets";
 import type { SourceRecord } from "./types/data";
 import type {
 	BlobParser,
@@ -15,6 +16,7 @@ import {
 	type RawContent,
 	type ReadAs,
 	type ReaderOptions,
+	type RequestBody,
 	type UrlReaderOptions,
 	type UrlReaderParameters,
 } from "./types/readers";
@@ -51,6 +53,67 @@ const contentTypeMap = new Map<string | null | undefined, ReadAs>([
 // const r2Fetch = async({}) => {} // rs://
 
 // const googleStorageFetcher = async() => {} // gs://
+
+function toBase64(bytes: Uint8Array): string {
+	let bin = "";
+	for (let i = 0; i < bytes.length; i += 0x8000) {
+		bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+	}
+	return btoa(bin);
+}
+
+function decode(data: ArrayBuffer | ArrayBufferView): string {
+	const bytes =
+		data instanceof ArrayBuffer
+			? new Uint8Array(data)
+			: new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+	try {
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		return `<binary, base64> ${toBase64(bytes)}`;
+	}
+}
+
+/**
+ * Builds a human-readable description of a request body for debug logging.
+ * Works from the original body rather than the serialized payload, so any
+ * Secret values serialize masked instead of being revealed. Blobs and binary
+ * buffers can be read without consuming them, so they are logged in full.
+ *
+ * Never rejects: read failures are returned as a description.
+ */
+async function describeBody(body: unknown): Promise<string> {
+	if (body === undefined) return "<none>";
+	if (body === null) return "null";
+	if (typeof body === "string") {
+		return `string(${body.length}): ${body}`;
+	}
+	if (body instanceof URLSearchParams) {
+		return `URLSearchParams: ${body.toString()}`;
+	}
+	try {
+		if (typeof FormData !== "undefined" && body instanceof FormData) {
+			const fields = await Promise.all(
+				[...body.entries()].map(async ([k, v]) =>
+					typeof v === "string"
+						? `${k}=${v}`
+						: `${k}=<file ${v.name || "unnamed"}, ${v.size}b, ${v.type || "no type"}> ${decode(await v.arrayBuffer())}`,
+				),
+			);
+			return `FormData { ${fields.join(", ")} }`;
+		}
+		if (typeof Blob !== "undefined" && body instanceof Blob) {
+			return `Blob(${body.size}b, ${body.type || "no type"}): ${decode(await body.arrayBuffer())}`;
+		}
+		if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) {
+			return `binary(${body.byteLength}b): ${decode(body)}`;
+		}
+		return `json: ${JSON.stringify(body)}`;
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : String(error);
+		return `<${(body as object)?.constructor?.name ?? typeof body}, could not read for logging: ${reason}>`;
+	}
+}
 
 /**
  * Merges multiple objects by concatenating arrays with matching keys.
@@ -96,19 +159,28 @@ export function mergeObjects<T = unknown>(objects: unknown[]): T {
 	return merged as T;
 }
 
-function requestInit(options: UrlReaderOptions, body: unknown): RequestInit {
-	if (body === undefined) {
-		return { ...options, method: options.method ?? "GET" };
-	}
+function requestInit(
+	options: UrlReaderOptions = {},
+	body: unknown,
+): RequestInit {
 	const headers = new Headers(options.headers);
-	let payload: BodyInit;
+
+	for (const [k, v] of Object.entries(options.headers ?? {})) {
+		headers.set(k, String(reveal(v)));
+	}
+	if (body === undefined) {
+		return { ...options, method: options.method ?? "GET", headers };
+	}
+	if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) {
+		throw new TypeError("ReadableStream request bodies are not supported.");
+	}
+	let payload: RequestBody;
 	if (isBodyInit(body)) {
 		payload = body;
 	} else {
-		payload = JSON.stringify(body);
-		if (!headers.has("Content-Type")) {
+		payload = JSON.stringify(body, revealSecrets);
+		if (!headers.has("Content-Type"))
 			headers.set("Content-Type", "application/json");
-		}
 	}
 	return {
 		...options,
@@ -194,37 +266,65 @@ export async function apiReader(
 	const readerOptions = resource.readerOptions as UrlReaderOptions;
 	const parserOptions = resource.parserOptions;
 
-	// overrides default if needed
-	const fetchOptions: UrlReaderOptions = {
-		method: "GET",
-		...readerOptions,
-	};
-
 	const urls = resource.urls;
 	const results: object[] = [];
 	let batchError: Error | null = null;
-	log(`fetching ${resource.urls.length} URLS with concurrency ${concurrency}`);
+	log(
+		"resource: %d URL(s), concurrency %d, output=%s, readAs=%s, strict=%s, auth=%s",
+		urls.length,
+		concurrency,
+		resource.output,
+		resource.readAs,
+		resource.strict,
+		resource.auth?.type,
+	);
 
 	for (let i = 0; i < urls.length; i += concurrency) {
 		const batch = urls.slice(i, i + concurrency);
 
 		await Promise.allSettled(
-			batch.map(async ({ url, body, context }) => {
+			batch.map(async ({ url, displayUrl, body, context }, idx) => {
 				let raw: RawContent;
 				let readAsFormat: ReadAs | undefined;
+				const n = `[${i + idx + 1}/${urls.length}]`;
 
-				// Step 1: Fetch and read content
 				try {
-					log(`fetching ${fetchOptions.method} ${url}...`);
-					const res = await fetch(url, requestInit(readerOptions, body));
-					log(`fetching ${url} received HTTP ${res.status}`);
+					const init = requestInit(readerOptions, body);
+					log("%s %s %s", n, init.method, displayUrl);
+					log("%s headers: %O", n, Object.fromEntries(resource.displayHeaders));
+					log(
+						"%s content-type: %s",
+						n,
+						(init.headers as Headers).get("Content-Type") ?? "<none>",
+					);
+
+					const bodyKind =
+						body === undefined
+							? "none"
+							: isBodyInit(body)
+								? "sent as-is"
+								: "JSON-serialized";
+					if (log.enabled) {
+						log("%s body (%s): %s", n, bodyKind, await describeBody(body));
+					}
+					if (context) log("%s context: %O", n, context);
+
+					const started = performance.now();
+					const res = await fetch(url, init);
+					log(
+						"%s HTTP %d in %dms, content-type: %s",
+						n,
+						res.status,
+						Math.round(performance.now() - started),
+						res.headers.get("Content-Type"),
+					);
 
 					if (!res.ok) {
 						const text = await res.text().catch(() => "");
 						log(`response body: ${text.slice(0, 1000)}`);
 						throw new FetchError(
 							`${res.status} ${res.statusText}${text ? `: ${text.slice(0, 500)}` : ""}`,
-							url,
+							displayUrl,
 							res.status,
 						);
 					}
@@ -255,7 +355,7 @@ export async function apiReader(
 							? error
 							: new FetchError(
 									error instanceof Error ? error.message : String(error),
-									url,
+									displayUrl,
 								);
 
 					// Track first error for strict mode
@@ -267,7 +367,10 @@ export async function apiReader(
 						// this will rethrow if we are in strict mode
 						errorHandler(fetchError, resource.strict || fetchError.strict);
 					} else {
-						console.error(`Reader fetch error at ${url}:`, fetchError.message);
+						console.error(
+							`Reader fetch error at ${displayUrl}:`,
+							fetchError.message,
+						);
 					}
 
 					return; // Early return on fetch error
@@ -285,9 +388,19 @@ export async function apiReader(
 					}
 
 					if (!result || typeof result !== "object") {
-						throw new ParseError(`Parser returned a non-object value`, url);
+						throw new ParseError(
+							`Parser returned a non-object value`,
+							displayUrl,
+						);
 					}
 
+					log(
+						"%s parsed: %s",
+						n,
+						Array.isArray(result)
+							? `${result.length} rows`
+							: `object with keys [${Object.keys(result).join(", ")}]`,
+					);
 					parsed = result as SourceRecord | SourceRecord[];
 				} catch (error) {
 					const parseError =
@@ -295,7 +408,7 @@ export async function apiReader(
 							? error
 							: new ParseError(
 									error instanceof Error ? error.message : String(error),
-									url,
+									displayUrl,
 									error instanceof Error ? error : undefined,
 								);
 
@@ -327,11 +440,24 @@ export async function apiReader(
 			}),
 		);
 
+		log(
+			"batch done: %d/%d URLs, %d results so far",
+			Math.min(i + concurrency, urls.length),
+			urls.length,
+			results.length,
+		);
+
 		// If we're in strict mode and an error occurred, throw it now
 		if (batchError) {
 			throw batchError;
 		}
 	}
+
+	log(
+		"returning %d result(s) using output %s",
+		results.length,
+		resource.output,
+	);
 
 	// Handle output strategy
 	if (resource.output === "object") {

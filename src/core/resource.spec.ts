@@ -8,16 +8,30 @@ test("resource with static parameters works", () => {
 	});
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
-		{ url: "https://example.com/locations/42" },
-		{ url: "https://example.com/locations/43" },
-		{ url: "https://example.com/locations/44" },
+		{
+			url: "https://example.com/locations/42",
+			displayUrl: "https://example.com/locations/42",
+		},
+		{
+			url: "https://example.com/locations/43",
+			displayUrl: "https://example.com/locations/43",
+		},
+		{
+			url: "https://example.com/locations/44",
+			displayUrl: "https://example.com/locations/44",
+		},
 	]);
 });
 
 test("resource with single static url works", () => {
 	const resource = new Resource({ url: "https://example.com/locations/2178" });
 	const urls = resource.urls;
-	expect(urls).toStrictEqual([{ url: "https://example.com/locations/2178" }]);
+	expect(urls).toStrictEqual([
+		{
+			displayUrl: "https://example.com/locations/2178",
+			url: "https://example.com/locations/2178",
+		},
+	]);
 });
 
 test("resource with parameters function that returns static values works", () => {
@@ -31,9 +45,18 @@ test("resource with parameters function that returns static values works", () =>
 	});
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
-		{ url: "https://example.com/locations/42" },
-		{ url: "https://example.com/locations/43" },
-		{ url: "https://example.com/locations/44" },
+		{
+			displayUrl: "https://example.com/locations/42",
+			url: "https://example.com/locations/42",
+		},
+		{
+			displayUrl: "https://example.com/locations/43",
+			url: "https://example.com/locations/43",
+		},
+		{
+			displayUrl: "https://example.com/locations/44",
+			url: "https://example.com/locations/44",
+		},
 	]);
 });
 
@@ -55,9 +78,18 @@ test("resource with dynamic function and data works", () => {
 	resource.data = data;
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
-		{ url: "https://example.com/locations/42" },
-		{ url: "https://example.com/locations/43" },
-		{ url: "https://example.com/locations/44" },
+		{
+			url: "https://example.com/locations/42",
+			displayUrl: "https://example.com/locations/42",
+		},
+		{
+			url: "https://example.com/locations/43",
+			displayUrl: "https://example.com/locations/43",
+		},
+		{
+			url: "https://example.com/locations/44",
+			displayUrl: "https://example.com/locations/44",
+		},
 	]);
 });
 
@@ -78,9 +110,18 @@ test("resource with jmespath and data works", () => {
 	resource.data = data;
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
-		{ url: "https://example.com/locations/42" },
-		{ url: "https://example.com/locations/43" },
-		{ url: "https://example.com/locations/44" },
+		{
+			url: "https://example.com/locations/42",
+			displayUrl: "https://example.com/locations/42",
+		},
+		{
+			url: "https://example.com/locations/43",
+			displayUrl: "https://example.com/locations/43",
+		},
+		{
+			url: "https://example.com/locations/44",
+			displayUrl: "https://example.com/locations/44",
+		},
 	]);
 });
 
@@ -113,8 +154,14 @@ test("resource with parameters and object output", () => {
 	});
 	expect(resource.output).toBe("object");
 	expect(resource.urls).toStrictEqual([
-		{ url: "https://example.com/data?page=1" },
-		{ url: "https://example.com/data?page=2" },
+		{
+			url: "https://example.com/data?page=1",
+			displayUrl: "https://example.com/data?page=1",
+		},
+		{
+			url: "https://example.com/data?page=2",
+			displayUrl: "https://example.com/data?page=2",
+		},
 	]);
 });
 
@@ -191,7 +238,10 @@ test("resource with API Key query parameter", () => {
 	});
 	const urls = resource.urls;
 	expect(urls).toStrictEqual([
-		{ url: "https://example.com/?api_key=secretapikey1234" },
+		{
+			url: "https://example.com/?api_key=secretapikey1234",
+			displayUrl: "https://example.com/?api_key=*****",
+		},
 	]);
 });
 
@@ -206,7 +256,9 @@ test("resource with API Key header", () => {
 		},
 	});
 	const urls = resource.urls;
-	expect(urls).toStrictEqual([{ url: "https://example.com" }]);
+	expect(urls).toStrictEqual([
+		{ url: "https://example.com", displayUrl: "https://example.com" },
+	]);
 	const headers = resource.headers;
 	expect(headers).toStrictEqual(
 		new Headers({
@@ -225,7 +277,9 @@ test("resource with Basic auth header", () => {
 		},
 	});
 	const urls = resource.urls;
-	expect(urls).toStrictEqual([{ url: "https://example.com" }]);
+	expect(urls).toStrictEqual([
+		{ url: "https://example.com", displayUrl: "https://example.com" },
+	]);
 	const headers = resource.headers;
 	expect(headers).toStrictEqual(
 		new Headers({
@@ -244,7 +298,9 @@ test("resource with Basic auth header using function values", () => {
 		},
 	});
 	const urls = resource.urls;
-	expect(urls).toStrictEqual([{ url: "https://example.com" }]);
+	expect(urls).toStrictEqual([
+		{ url: "https://example.com", displayUrl: "https://example.com" },
+	]);
 	const headers = resource.headers;
 	expect(headers).toStrictEqual(
 		new Headers({
@@ -262,7 +318,9 @@ test("resource with Bearer auth header", () => {
 		},
 	});
 	const urls = resource.urls;
-	expect(urls).toStrictEqual([{ url: "https://example.com" }]);
+	expect(urls).toStrictEqual([
+		{ url: "https://example.com", displayUrl: "https://example.com" },
+	]);
 	const headers = resource.headers;
 	expect(headers).toStrictEqual(
 		new Headers({
@@ -300,10 +358,14 @@ test("resource with static context applies it to every url", () => {
 	expect(resource.urls).toStrictEqual([
 		{
 			url: "https://example.com/locations/42",
+			displayUrl: "https://example.com/locations/42",
+
 			context: { provider: "foo" },
 		},
 		{
 			url: "https://example.com/locations/43",
+			displayUrl: "https://example.com/locations/43",
+
 			context: { provider: "foo" },
 		},
 	]);
@@ -319,10 +381,14 @@ test("resource with context function derives context from each parameter set", (
 	expect(resource.urls).toStrictEqual([
 		{
 			url: "https://example.com/locations/42/measures",
+			displayUrl: "https://example.com/locations/42/measures",
+
 			context: { locationId: 42 },
 		},
 		{
 			url: "https://example.com/locations/43/measures",
+			displayUrl: "https://example.com/locations/43/measures",
+
 			context: { locationId: 43 },
 		},
 	]);
@@ -331,10 +397,14 @@ test("resource with context function derives context from each parameter set", (
 test("resource without context does not add a context key", () => {
 	const resource = new Resource({
 		url: "https://example.com/locations/:locationsId",
+
 		parameters: [{ locationsId: 42 }],
 	});
 
 	expect(resource.urls).toStrictEqual([
-		{ url: "https://example.com/locations/42" },
+		{
+			url: "https://example.com/locations/42",
+			displayUrl: "https://example.com/locations/42",
+		},
 	]);
 });

@@ -18,6 +18,7 @@ import {
 	PARAMETERS,
 } from "./metric";
 import type { Resource } from "./resource";
+import { revealSecrets, Secret, wrapSecrets } from "./secrets";
 import { Sensor, Sensors } from "./sensor";
 import type { PathExpression } from "./types";
 import {
@@ -53,6 +54,7 @@ import type {
 	ResourceKeys,
 	TokenRequestBody,
 } from "./types/resource";
+import type { Redacted } from "./types/secrets";
 import type { SystemData } from "./types/system";
 import {
 	cleanKey,
@@ -78,7 +80,7 @@ export abstract class Client<
 > {
 	provider!: string;
 	resource?: Resource | IndexedResource;
-	secrets?: S;
+	secrets?: Redacted<S>;
 	reader: ClientReader<R> = "api";
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;
@@ -300,7 +302,7 @@ export abstract class Client<
 			this.providerFlags = this._params.providerFlags;
 		}
 		if (this._params?.secrets) {
-			this.secrets = this._params.secrets;
+			this.secrets = wrapSecrets(this._params.secrets);
 		}
 		if (this._params?.datetimeFrom) {
 			try {
@@ -426,12 +428,12 @@ export abstract class Client<
 	) {
 		try {
 			const body = refreshToken
-				? JSON.stringify({
-						grant_type: "refresh_token",
-						refresh_token: refreshToken,
-					})
+				? JSON.stringify(
+						{ grant_type: "refresh_token", refresh_token: refreshToken },
+						revealSecrets,
+					)
 				: auth.body
-					? JSON.stringify(resolveBody(auth.body))
+					? JSON.stringify(resolveBody(auth.body), revealSecrets)
 					: undefined;
 
 			const headers = new Headers(auth.headers);
@@ -478,17 +480,16 @@ export abstract class Client<
 
 			resource.auth = {
 				...auth,
-				token,
+				token: new Secret(token),
+				...(newRefreshToken
+					? { refreshToken: new Secret(newRefreshToken) }
+					: refreshToken
+						? { refreshToken }
+						: {}),
 				// expiresIn is seconds-from-now, convert to absolute unix timestamp
 				...(expiresIn && {
 					expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
 				}),
-				// use rotated refresh token if provider returned one, otherwise keep existing
-				...(newRefreshToken
-					? { refreshToken: newRefreshToken }
-					: refreshToken
-						? { refreshToken }
-						: {}),
 			};
 		} catch (err) {
 			this.errorHandler(err instanceof Error ? err : new Error(String(err)));

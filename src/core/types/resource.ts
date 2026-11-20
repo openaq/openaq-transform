@@ -1,3 +1,4 @@
+import type { Secret } from "../secrets";
 import type { PathExpression } from "./metric";
 import type { KnownParserOptions, ParserOptions } from "./parsers";
 import type { DataContext, ReadAs, ReaderOptions } from "./readers";
@@ -84,10 +85,10 @@ export type BodyFunction = (
 	data: DataContext,
 ) => Body | Record<string, unknown>;
 
-export type AuthValueFunction = () => string;
+export type AuthValueFunction = () => string | Secret;
 
 export function isAuthValueFunction(
-	value: string | AuthValueFunction,
+	value: string | Secret | AuthValueFunction,
 ): value is AuthValueFunction {
 	return typeof value === "function";
 }
@@ -276,12 +277,13 @@ export type BearerAuth = {
 /** A JSON body for a token request, or a function that builds one. */
 export type TokenRequestBody = Record<string, unknown> | (() => JsonBody);
 
-export type Parameters = Record<string, string | number | boolean>;
+export type Parameters = Record<string, string | number | boolean | Secret>;
 
 export type ParametersFunction = (data?: DataContext) => Parameters[];
 
 export interface ResourceUrl {
 	url: string;
+	displayUrl: string;
 	body?: Body | JsonBody;
 	context?: Context;
 }

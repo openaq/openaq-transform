@@ -19,6 +19,8 @@ import {
 	type PathExpression,
 } from "./types/metric";
 
+import type { Lazy } from "./types/utils";
+
 const log = createDebug("openaq-transform:core:utils");
 
 const { encode } = geohash;
@@ -438,4 +440,44 @@ export function toGeohash(
 ): string {
 	const hash = encode(lat, lng, precision);
 	return `gh_${hash}`;
+}
+
+/**
+ * Replaces placeholders in a template with values from `parameters`.
+ *
+ * @param template - The template string.
+ * @param parameters - Values to substitute keyed by placeholder name.
+ * @param options.format - Converts each value to text. Defaults to `String`.
+ * @param options.required - Throw on a missing parameter instead of leaving the placeholder.
+ */
+export function fillTemplate<V>(
+	template: string,
+	parameters: Record<string, V>,
+	{
+		format = String,
+		required = false,
+	}: { format?: (value: V) => string; required?: boolean } = {},
+): string {
+	return template.replace(/:(\w+)/g, (match, key) => {
+		const value = parameters[key];
+		if (value === undefined) {
+			if (required) throw new Error(`Missing required parameter: ${key}`);
+			return match;
+		}
+		return format(value);
+	});
+}
+
+export function withQueryParam(
+	url: string,
+	key: string,
+	value: string,
+): string {
+	const u = new URL(url);
+	u.searchParams.set(key, value);
+	return u.href;
+}
+
+export function resolve<T>(value: Lazy<T>): T {
+	return typeof value === "function" ? (value as () => T)() : value;
 }

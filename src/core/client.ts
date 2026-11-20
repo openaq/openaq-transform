@@ -18,6 +18,7 @@ import {
 	PARAMETERS,
 } from "./metric";
 import type { Resource } from "./resource";
+import { revealSecrets, Secret, wrapSecrets } from "./secrets";
 import { Sensor, Sensors } from "./sensor";
 import type { PathExpression } from "./types";
 import {
@@ -48,7 +49,12 @@ import type {
 } from "./types/metric";
 import { isParser, type Parser, type ParserMethods } from "./types/parsers";
 import { isReader, type Reader, type ReaderMethods } from "./types/readers";
-import type { BearerAuth, ResourceKeys } from "./types/resource";
+import type {
+	BearerAuth,
+	ResourceKeys,
+	TokenRequestBody,
+} from "./types/resource";
+import type { Redacted } from "./types/secrets";
 import type { SystemData } from "./types/system";
 import {
 	cleanKey,
@@ -64,6 +70,9 @@ import {
 
 const log = createDebug("openaq-transform:core:client");
 
+const resolveBody = (body: TokenRequestBody) =>
+	typeof body === "function" ? body() : body;
+
 export abstract class Client<
 	R extends ReaderMethods = ReaderMethods,
 	P extends ParserMethods = ParserMethods,
@@ -71,7 +80,7 @@ export abstract class Client<
 > {
 	provider!: string;
 	resource?: Resource | IndexedResource;
-	secrets?: S;
+	secrets?: Redacted<S>;
 	reader: ClientReader<R> = "api";
 	parser: ClientParser<P> = "json";
 	protected readonly readers: R;
@@ -293,7 +302,7 @@ export abstract class Client<
 			this.providerFlags = this._params.providerFlags;
 		}
 		if (this._params?.secrets) {
-			this.secrets = this._params.secrets;
+			this.secrets = wrapSecrets(this._params.secrets);
 		}
 		if (this._params?.datetimeFrom) {
 			try {
@@ -340,25 +349,42 @@ export abstract class Client<
 	}
 
 	private async initAuth() {
-		if (!this.resource || isIndexed(this.resource)) {
+		if (!this.resource) {
 			return;
 		}
-		const resource = this.resource;
+		const resources = isIndexed(this.resource)
+			? Object.values(this.resource).filter((r) => r !== undefined)
+			: [this.resource];
 
-		const { auth } = resource;
-		if (auth?.type !== "Bearer") {
-			return;
-		}
-		if (!auth.tokenUrl) {
-			return;
-		}
+		// resources that share a tokenUrl share one login
+		const done = new Map<string, BearerAuth>();
 
-		if (auth.token) {
-			await this.refreshAuth(resource);
-			return;
-		}
+		for (const resource of resources) {
+			const { auth } = resource;
+			if (auth?.type !== "Bearer") {
+				continue;
+			}
+			if (!auth.tokenUrl) {
+				continue;
+			}
 
-		await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+			const shared = done.get(auth.tokenUrl);
+			if (shared) {
+				const { token, expiresAt, refreshToken } = shared;
+				resource.auth = { ...auth, token, expiresAt, refreshToken };
+				continue;
+			}
+
+			if (auth.token) {
+				await this.refreshAuth(resource);
+			} else {
+				await this.fetchBearerToken(resource, auth.tokenUrl, auth);
+			}
+
+			if (resource.auth?.type === "Bearer") {
+				done.set(auth.tokenUrl, resource.auth);
+			}
+		}
 	}
 
 	private async refreshAuth(resource: Resource) {
@@ -402,18 +428,22 @@ export abstract class Client<
 	) {
 		try {
 			const body = refreshToken
-				? JSON.stringify({
-						grant_type: "refresh_token",
-						refresh_token: refreshToken,
-					})
-				: undefined;
+				? JSON.stringify(
+						{ grant_type: "refresh_token", refresh_token: refreshToken },
+						revealSecrets,
+					)
+				: auth.body
+					? JSON.stringify(resolveBody(auth.body), revealSecrets)
+					: undefined;
+
+			const headers = new Headers(auth.headers);
+			if (!headers.has("Content-Type")) {
+				headers.set("Content-Type", "application/json");
+			}
 
 			const res = await fetch(url, {
 				method: "POST",
-				headers: new Headers({
-					"Content-Type": "application/json",
-					...Object.fromEntries(auth.headers ?? []),
-				}),
+				headers,
 				...(body && { body }),
 			});
 
@@ -430,12 +460,18 @@ export abstract class Client<
 			const expiresKey = keys.expiresIn ?? "expires_in";
 			const refreshKey = keys.refreshToken ?? "refresh_token";
 
-			const data = await res.json();
-			const token = data[tokenKey];
+			// the body may be empty when the token comes back as a header
+			const data = await res.json().catch(() => ({}));
+			const fromHeader = typeof tokenKey === "object";
+			const token = fromHeader
+				? res.headers.get(tokenKey.header)
+				: data[tokenKey];
 
 			if (!token) {
 				throw new Error(
-					`Bearer token response did not contain expected field "${tokenKey}"`,
+					fromHeader
+						? `Bearer token response did not include the "${tokenKey.header}" header`
+						: `Bearer token response did not contain expected field "${tokenKey}"`,
 				);
 			}
 
@@ -444,21 +480,24 @@ export abstract class Client<
 
 			resource.auth = {
 				...auth,
-				token,
+				token: new Secret(token),
+				...(newRefreshToken
+					? { refreshToken: new Secret(newRefreshToken) }
+					: refreshToken
+						? { refreshToken }
+						: {}),
 				// expiresIn is seconds-from-now, convert to absolute unix timestamp
 				...(expiresIn && {
 					expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
 				}),
-				// use rotated refresh token if provider returned one, otherwise keep existing
-				...(newRefreshToken
-					? { refreshToken: newRefreshToken }
-					: refreshToken
-						? { refreshToken }
-						: {}),
 			};
 		} catch (err) {
 			this.errorHandler(err instanceof Error ? err : new Error(String(err)));
 		}
+	}
+
+	protected get datetimeRange(): { from?: Datetime; to: Datetime } {
+		return { from: this._datetimeFrom, to: this._datetimeTo };
 	}
 
 	async preLoad() {

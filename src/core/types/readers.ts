@@ -147,3 +147,31 @@ export type RawContent =
 	| { readAs: "json"; content: unknown }
 	| { readAs: "text"; content: string }
 	| { readAs: "blob"; content: Blob };
+
+/**
+ * Request bodies the URL reader sends.
+ * @remarks
+ * A subset of the standard `BodyInit` without `ReadableStream`. Any other
+ * value is serialized with `JSON.stringify`.
+ */
+export type RequestBody =
+	| string
+	| URLSearchParams
+	| FormData
+	| Blob
+	| ArrayBuffer
+	| ArrayBufferView;
+
+/**
+ * Type guard for values `fetch` accepts as a request body without encoding.
+ */
+export function isBodyInit(value: unknown): value is RequestBody {
+	return (
+		typeof value === "string" ||
+		value instanceof URLSearchParams ||
+		value instanceof FormData ||
+		value instanceof Blob ||
+		value instanceof ArrayBuffer ||
+		ArrayBuffer.isView(value)
+	);
+}

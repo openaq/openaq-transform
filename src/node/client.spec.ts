@@ -14,6 +14,7 @@ Settings.now = () => expectedNow.toMillis();
 
 import { enable } from "obug";
 import { Resource } from "../core/resource.ts";
+import type { Auth } from "../core/types/resource.ts";
 import { constant } from "../core/utils.ts";
 
 enable("openaq*");
@@ -210,6 +211,76 @@ const handlers = [
 	}),
 ];
 
+// token logins: a Bearer token from the JSON body or from a response header
+let loginCalls = 0;
+const loginStations = [
+	{
+		station: "ts1",
+		site_name: "test site #1",
+		latitude: 45.56665,
+		longitude: -123.12121,
+		averaging: 3600,
+	},
+];
+const loginMeasurements = [
+	{
+		station: "ts1",
+		datetime: "2024-01-01T00:00:00-08:00",
+		particulate_matter_25: 10,
+		particulate_matter_10: 0,
+		tempf: 80,
+	},
+	{ station: "ts1", datetime: "2024-01-01T01:00:00-08:00", tempf: 80 },
+];
+const isLoggedIn = (request: Request) =>
+	request.headers.get("Authorization") === "Bearer abc123";
+
+handlers.push(
+	http.post("https://blah.org/login/bearer", async ({ request }) => {
+		loginCalls++;
+		const body = (await request.json()) as Record<string, string>;
+		if (body.Username !== "user" || body.Password !== "pw") {
+			return new HttpResponse(null, { status: 401 });
+		}
+		return HttpResponse.json({ Token: "abc123" });
+	}),
+	http.post("https://blah.org/login/bearer-no-body", async ({ request }) => {
+		loginCalls++;
+		if ((await request.text()) !== "") {
+			return new HttpResponse(null, { status: 400 });
+		}
+		return HttpResponse.json({ access_token: "abc123" });
+	}),
+	http.post("https://blah.org/login/header", async ({ request }) => {
+		loginCalls++;
+		const body = (await request.json()) as Record<string, string>;
+		if (
+			request.headers.get("x-auth-mode") !== "header" ||
+			body.email !== "user"
+		) {
+			return new HttpResponse(null, { status: 400 });
+		}
+		return HttpResponse.json(
+			{ status: "OK" },
+			{ headers: { "x-access-token": "abc123" } },
+		);
+	}),
+	http.post("https://blah.org/login/denied", async () => {
+		loginCalls++;
+		return new HttpResponse(null, { status: 401 });
+	}),
+	http.get("https://blah.org/login/stations", async ({ request }) =>
+		isLoggedIn(request)
+			? HttpResponse.json(loginStations)
+			: new HttpResponse(null, { status: 401 }),
+	),
+	http.get("https://blah.org/login/measurements", async ({ request }) =>
+		isLoggedIn(request)
+			? HttpResponse.json(loginMeasurements)
+			: new HttpResponse(null, { status: 401 }),
+	),
+);
+
 const server = setupServer(...handlers);
 server.listen();
 
@@ -220,7 +291,9 @@ describe("Simple client example", () => {
 
 	test("resource is updated", () => {
 		const cln = new FakeClient();
-		expect(cln.resource.urls).toStrictEqual([{ url: "fake.resource" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "fake.resource", displayUrl: "fake.resource" },
+		]);
 	});
 
 	test("abstract defaults persist", () => {
@@ -238,7 +311,9 @@ describe("Simple client example", () => {
 		const resource = new Resource({ url: "different.fake.resource" });
 		const provider = "my-provider";
 		const cln = new FakeClient({ resource, provider });
-		expect(cln.resource.urls).toStrictEqual([{ url: "fake.resource" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "fake.resource", displayUrl: "fake.resource" },
+		]);
 		expect(cln.provider).toBe(provider);
 	});
 });
@@ -254,7 +329,10 @@ describe("Client with secrets example", () => {
 		const cln = new FakeClient({ secrets: { token: "letmein" } });
 		cln.setup(); // call this because we are not calling load
 		expect(cln.resource.urls).toStrictEqual([
-			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+			{
+				url: "https://blah.org/api-key-in-query?token=letmein",
+				displayUrl: "https://blah.org/api-key-in-query?token=*****",
+			},
 		]);
 	});
 });
@@ -270,7 +348,10 @@ describe("Client with secrets example with configure", () => {
 		const cln = new FakeClient();
 		cln.configure({ secrets: { token: "letmein" } }); // configure calls setup after setting the params
 		expect(cln.resource.urls).toStrictEqual([
-			{ url: "https://blah.org/api-key-in-query?token=letmein" },
+			{
+				url: "https://blah.org/api-key-in-query?token=letmein",
+				displayUrl: "https://blah.org/api-key-in-query?token=*****",
+			},
 		]);
 	});
 });
@@ -299,7 +380,9 @@ describe("Client with data in wide format", () => {
 
 	test("Resource check", () => {
 		const cln = new JsonClient();
-		expect(cln.resource.urls).toStrictEqual([{ url: "https://blah.org/wide" }]);
+		expect(cln.resource.urls).toStrictEqual([
+			{ url: "https://blah.org/wide", displayUrl: "https://blah.org/wide" },
+		]);
 	});
 
 	test("parameter check", () => {
@@ -995,5 +1078,116 @@ describe("Client that creates locationId from a geohash", () => {
 		expect(data.locations).toHaveLength(1);
 		expect(data.locations[0].site_id).toBe(expectedSiteId);
 		expect(data.locations[0].key).toBe(`testing/${expectedSiteId}`);
+	});
+});
+
+describe("Client that logs in for a token", () => {
+	type Secrets = { username: string; password: string };
+
+	abstract class LoginClient extends Client<Secrets> {
+		provider = "testing";
+		xGeometry = "longitude";
+		averagingInterval = "averaging";
+		sensorStatus = () => "asdf";
+		yGeometry = "latitude";
+		locationId = "station";
+		locationLabel = "site_name";
+		geometryProjection = () => "WGS84";
+		owner = () => "test_owner";
+		isMobile = () => false;
+		parameters = [
+			{ parameter: "pm25", unit: "ug/m3", key: "particulate_matter_25" },
+			{ parameter: "pm10", unit: "ug/m3", key: "particulate_matter_10" },
+			{ parameter: "temperature", unit: "f", key: "tempf" },
+		];
+	}
+
+	const resources = (auth: Auth) => ({
+		locations: new Resource({
+			url: "https://blah.org/login/stations",
+			output: "array",
+			auth,
+		}),
+		measurements: new Resource({
+			url: "https://blah.org/login/measurements",
+			output: "array",
+			auth,
+		}),
+	});
+
+	class BearerBodyClient extends LoginClient {
+		resource = resources({
+			type: "Bearer",
+			tokenUrl: "https://blah.org/login/bearer",
+			body: () => ({
+				Username: this.secrets?.username,
+				Password: this.secrets?.password,
+			}),
+			tokenResponseKeys: { token: "Token" },
+		});
+	}
+
+	class BearerNoBodyClient extends LoginClient {
+		resource = resources({
+			type: "Bearer",
+			tokenUrl: "https://blah.org/login/bearer-no-body",
+		});
+	}
+
+	class TokenHeaderClient extends LoginClient {
+		resource = resources({
+			type: "Bearer",
+			tokenUrl: "https://blah.org/login/header",
+			headers: { "x-auth-mode": "header" },
+			body: () => ({ email: this.secrets?.username }),
+			tokenResponseKeys: { token: { header: "x-access-token" } },
+		});
+	}
+
+	class DeniedClient extends LoginClient {
+		resource = resources({
+			type: "Bearer",
+			tokenUrl: "https://blah.org/login/denied",
+			body: { Username: "user", Password: "wrong" },
+		});
+	}
+
+	const secrets = { username: "user", password: "pw" };
+
+	test("sends a Bearer body and shares one token across resources", async () => {
+		loginCalls = 0;
+		const cln = new BearerBodyClient();
+		cln.configure({ secrets });
+		const data = await cln.load();
+		expect(loginCalls).toBe(1);
+		expect(data).toStrictEqual(expectedOutput);
+	});
+
+	test("still sends no body when a Bearer auth has none", async () => {
+		loginCalls = 0;
+		const cln = new BearerNoBodyClient();
+		cln.configure({ secrets });
+		const data = await cln.load();
+		expect(loginCalls).toBe(1);
+		expect(data).toStrictEqual(expectedOutput);
+	});
+
+	test("reads the token from a response header", async () => {
+		loginCalls = 0;
+		const cln = new TokenHeaderClient();
+		cln.configure({ secrets });
+		const data = await cln.load();
+		expect(loginCalls).toBe(1);
+		expect(data).toStrictEqual(expectedOutput);
+	});
+
+	test("stops the load when the login is refused (401s are strict)", async () => {
+		loginCalls = 0;
+		const cln = new DeniedClient();
+		cln.configure({ secrets });
+		await expect(cln.load()).rejects.toThrow(
+			"Failed to obtain Bearer token: 401",
+		);
+		expect(loginCalls).toBe(1);
 	});
 });

@@ -1,3 +1,4 @@
+import type { Secret } from "../secrets";
 import type { PathExpression } from "./metric";
 import type { KnownParserOptions, ParserOptions } from "./parsers";
 import type { DataContext, ReadAs, ReaderOptions } from "./readers";
@@ -77,10 +78,17 @@ export type ResourceKeys = (typeof RESOURCE_KEYS)[number];
  */
 export type Body = Exclude<BodyInit, Blob>;
 
-export type AuthValueFunction = () => string;
+export type JsonBody = Record<string, unknown> | unknown[];
+
+export type BodyFunction = (
+	params: Parameters,
+	data: DataContext,
+) => Body | Record<string, unknown>;
+
+export type AuthValueFunction = () => string | Secret;
 
 export function isAuthValueFunction(
-	value: string | AuthValueFunction,
+	value: string | Secret | AuthValueFunction,
 ): value is AuthValueFunction {
 	return typeof value === "function";
 }
@@ -215,9 +223,17 @@ export type BearerAuth = {
 	/**
 	 * Additional headers sent when calling `tokenUrl` or `refreshUrl`.
 	 * Useful for providers that require `Content-Type` or custom headers
-	 * alongside the token request.
+	 * alongside the token request. A plain object or a `Headers` instance.
 	 */
-	headers?: Headers;
+	headers?: Headers | Record<string, string>;
+
+	/**
+	 * JSON body sent when first calling `tokenUrl`, for providers that expect
+	 * credentials in the body (e.g. a username and password).
+	 *
+	 * @example body: () => ({ username: this.secrets.username, password: this.secrets.password })
+	 */
+	body?: TokenRequestBody;
 
 	/**
 	 * The active bearer token, included as `Authorization: Bearer <token>`
@@ -245,19 +261,30 @@ export type BearerAuth = {
 	refreshUrl?: string;
 
 	tokenResponseKeys?: {
-		token?: string;
+		/**
+		 * Where the token is in the `tokenUrl` response: a field in the JSON
+		 * body (default `access_token`), or `{ header }` for a response header.
+		 *
+		 * @example 'Token'
+		 * @example { header: 'st-access-token' }
+		 */
+		token?: string | { header: string };
 		expiresIn?: string;
 		refreshToken?: string;
 	};
 };
 
-export type Parameters = Record<string, string | number | boolean>;
+/** A JSON body for a token request, or a function that builds one. */
+export type TokenRequestBody = Record<string, unknown> | (() => JsonBody);
+
+export type Parameters = Record<string, string | number | boolean | Secret>;
 
 export type ParametersFunction = (data?: DataContext) => Parameters[];
 
 export interface ResourceUrl {
 	url: string;
-	body?: Body;
+	displayUrl: string;
+	body?: Body | JsonBody;
 	context?: Context;
 }
 

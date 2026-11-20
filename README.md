@@ -239,7 +239,7 @@ new Resource({
 | `type` | Required fields | Where it goes |
 | --- | --- | --- |
 | `"APIKey"` | `position`, `key`, `value` | Header, cookie, or query string, depending on `position` |
-| `"Bearer"` | `token` | `Authorization: Bearer <token>` header |
+| `"Bearer"` | Either `token`, or `tokenUrl` (a login endpoint transform calls to get the token) | `Authorization: Bearer <token>` header |
 | `"Basic"` | `username`, `password` | `Authorization: Basic <base64>` header |
 
 ##### APIKey
@@ -318,6 +318,29 @@ new Resource({
 ```sh
 curl 'https://api.example.com/data' -H 'Authorization: Bearer eyJhbGciOi...'
 ```
+
+####### Passing credentials in the POST body
+
+If credentials need to be passed in the body of the POST, use the `body` argument and
+specify the credentials. We're using body as a function below, since secrets aren't 
+set until `configure`.
+
+If the server provides a token from a login endpoint, use `tokenUrl` instead of
+`token`. 
+
+###### Example
+
+
+```ts
+auth = {
+  type: 'Bearer',
+  tokenUrl: 'https://api.example.com/auth/login',
+  body: () => ({ username: this.secrets.username, password: this.secrets.password }),
+  tokenResponseKeys: { token: 'Token' }, // token is in the JSON response, default 'access_token'
+  // tokenResponseKeys: { token: { header: 'x-access-token' } }, // or: in a response header
+};
+```
+
 ##### Basic Auth
 
 `username` and `password` are joined and base64-encoded into a standard
@@ -351,9 +374,79 @@ curl 'https://api.example.com/data' -H 'Authorization: Base YWRtaW46YWRtaW4='
 | `key` | `string \| () => string` | `APIKey` only. Header or query parameter name. Unused when `position` is `"cookie"` |
 | `value` | `string \| () => string` | `APIKey` only. The credential |
 | `token` | `string` | `Bearer` only. Passed through as-is |
+| `tokenUrl` | `string` | `Bearer` only. Login endpoint; the client POSTs to it once before fetching |
+| `body` | `object \| () => object` | `Bearer` only. JSON body for the `tokenUrl` request |
+| `tokenResponseKeys` | `{ token?, expiresIn?, refreshToken? }` | `Bearer` only. Field names in the login response (default `access_token`, …). `token` can also be `{ header: '…' }` to read it from a response header |
 | `username` | `string \| () => string` | `Basic` only |
 | `password` | `string \| () => string` | `Basic` only |
 
+
+#### Secrets
+
+Transform supports secrets such as API keys, tokens, usernames and passwords in
+`NodeClient`, `BrowserClient` and any other `Client` subclass. Secrets can be
+used in a resource's `auth`, `body` and `parameters`, and are only revealed when
+a request is sent to the provider, which guards against them leaking into logs,
+error messages or output by accident.
+
+Clients take an optional type argument describing the shape of their secrets,
+and the values themselves are passed in the `secrets` option when the client is
+created. When the client is configured, every string, number and boolean in
+`secrets`, at any depth, is wrapped in a `Secret`, which masks the value when it
+is printed, converted to a string or serialized to JSON.
+
+##### Basic usage
+
+```ts
+interface Secrets {
+  apiKey: string;
+}
+
+export class ExampleClient extends   NodeClient<Secrets> {
+  provider = 'example';
+  resource = new Resource({
+    url: 'https://api.example.com/data',
+    auth: {
+      type: 'APIKey',
+      position: 'query',
+      key: 'token',
+      value: () => this.secrets?.apiKey,
+    },
+  });
+}
+
+const client = new ExampleClient({ secrets: { apiKey: 'abc123' } });
+```
+
+This would result in a request to a URL:
+
+```
+https://api.example.com/data?token?abc123
+````
+
+Declare `Secrets` with the types for the values (`string`, `number`, ...). Inside the
+client, `this.secrets` has the wrapped types, so `this.secrets.apiKey` is a
+`Secret`.
+
+> [!NOTE]
+> `this.secrets` is not populated until after class field initializers run.
+> Any resource config that reads from `this.secrets` must do so through a function e.g.
+> `() => this.secrets?.apiKey`.
+
+##### Using secrets
+
+Secrets can be passed as they are to anything that builds a request. Transform
+reveals them only where the request is sent:
+
+| Where | Example |
+| --- | --- |
+| `auth` values | `value: () => this.secrets?.apiKey` |
+| request bodies | `body: () => ({ username: this.secrets?.username, password: this.secrets?.password })` |
+| Resource bodies | `body: () => ({ key: this.secrets?.apiKey, station: '2' })` |
+| `Resource` `parameters` | `parameters: () => [{ key: this.secrets?.apiKey }]` with `url: '.../:key/data'` |
+
+Numbers and booleans maintain their type when revealed, i.e. a numeric secret is
+sent as a JSON number.
 
 ### Readers
 

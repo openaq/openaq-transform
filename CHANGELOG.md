@@ -5,16 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0] - 2026-11-20
+
+### Breaking
+
+- `Client.secrets` values are now wrapped in `Secret` (`Redacted<S>`).
+- `Resource.urls` entries include a `displayUrl` with secrets masked.
+- `Resource.authHeaders` returns `Secret` values.
 
 ### Added
 
-- `pressure` parameter now supports a `pa` unit converter (pascals to hectopascals).
-- `BearerAuth.body`: a JSON body (or a function returning one) sent on the
-  first `tokenUrl` request, for providers that take credentials in the body.
-- `tokenResponseKeys.token` also accepts `{ header }`, to read the token from a
-  response header instead of the JSON body, e.g. `{ header: 'st-access-token' }`.
-- `BearerAuth.headers` also accepts a plain object.
+- Secrets support: `Secret`, `wrapSecrets`, `reveal`, `revealSecrets`. Secrets
+  are masked in logs and errors and revealed only when a request is sent.
+- `Resource` `body` accepts a function or a plain JSON object.
+- `BearerAuth.body` for credentials sent to `tokenUrl`.
+- `tokenResponseKeys.token` accepts `{ header }` to read the token from a
+  response header.
+- `BearerAuth.headers` accepts a plain object.
+- `pa` unit for `pressure`.
+- More detailed debug logging in the API reader.
+
+### Changed
+
+- Bearer login now works with indexed resources, resources sharing a
+  `tokenUrl` share one login.
+- HTTP 2xx response counts as success, not just `200`.
+
+### Fixed
+
+- `Resource` bodies are now sent with requests.
+
 
 ## [0.9.0] - 2026-09-14
 
